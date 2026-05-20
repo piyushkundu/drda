@@ -1,0 +1,1 @@
+﻿const https = require('https'); https.get('https://updes.up.nic.in/esd/font_converter/transliteration-tools.js', {rejectUnauthorized: false}, (res) => { let data = ''; res.on('data', (c) => data += c); res.on('end', () => require('fs').writeFileSync('transliteration-tools.js', data)); });

@@ -1,0 +1,746 @@
+'use client';
+
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import Highlight from '@tiptap/extension-highlight';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { FontFamily } from '@tiptap/extension-font-family';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TableCell } from '@tiptap/extension-table-cell';
+import Placeholder from '@tiptap/extension-placeholder';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import { useDocumentStore } from '@/stores/documentStore';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { inscriptMap } from '@/lib/keyboardLayouts';
+import { krutiDevToUnicode } from '@/lib/fontConversion';
+import { Indent } from './extensions/Indent';
+import { GhostText } from './extensions/GhostText';
+import { LineHeight } from './extensions/LineHeight';
+import { DOMSerializer } from 'prosemirror-model';
+
+// Custom extensions to preserve styles
+const CustomTable = Table.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: { default: null, parseHTML: el => el.getAttribute('style'), renderHTML: attrs => attrs.style ? { style: attrs.style } : {} }
+    }
+  }
+});
+const CustomTableRow = TableRow.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: { default: null, parseHTML: el => el.getAttribute('style'), renderHTML: attrs => attrs.style ? { style: attrs.style } : {} }
+    }
+  }
+});
+const CustomTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: { default: null, parseHTML: el => el.getAttribute('style'), renderHTML: attrs => attrs.style ? { style: attrs.style } : {} }
+    }
+  }
+});
+const CustomTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: { default: null, parseHTML: el => el.getAttribute('style'), renderHTML: attrs => attrs.style ? { style: attrs.style } : {} }
+    }
+  }
+});
+
+// Global font mode — set by RibbonToolbar
+let globalFontMode: 'unicode' | 'mangal' | 'krutidev' = 'unicode';
+export function setGlobalFontMode(m: 'unicode' | 'mangal' | 'krutidev') {
+  globalFontMode = m;
+}
+
+interface PageEditorProps {
+  pageIndex: number;
+  content: string;
+  isActive: boolean;
+  totalPages: number;
+  onFocus: (i: number) => void;
+  onUpdate: (i: number, html: string) => void;
+  onRemove: (i: number) => void;
+  onSplitPage: (index: number, newContent: string) => void;
+}
+
+function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdate, onRemove, onSplitPage }: PageEditorProps) {
+  const isSettingContent = useRef(false);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      Underline,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Highlight.configure({ multicolor: true }),
+      TextStyle, Color, FontFamily,
+      CustomTable.configure({ resizable: true }), CustomTableRow, CustomTableHeader, CustomTableCell,
+      Indent,
+      GhostText,
+      LineHeight,
+      Subscript, Superscript,
+      Placeholder.configure({ placeholder: `पृष्ठ ${pageIndex + 1} — यहाँ टाइप करें...` }),
+    ],
+    content,
+    onUpdate: ({ editor }) => {
+      if (!isSettingContent.current) onUpdate(pageIndex, editor.getHTML());
+    },
+    onFocus: () => onFocus(pageIndex),
+    editorProps: {
+      attributes: { class: 'tiptap focus:outline-none', spellcheck: 'false' },
+
+      // ── Smart Word Paste ──
+      // Preserves Word tables, formatting, and fixes KrutiDev smart quote corruption.
+      handlePaste(view, event) {
+        const cd = event.clipboardData;
+        if (!cd) return false;
+
+        const htmlData = cd.getData('text/html');
+        const plainData = cd.getData('text/plain');
+
+        if (!htmlData && !plainData) return false;
+
+        if (htmlData) {
+          event.preventDefault();
+
+          // 1. Parse the Word HTML
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlData, 'text/html');
+          const body = doc.body;
+
+          // 2. Remove Word meta/style/script elements
+          body.querySelectorAll('style, meta, link, title, xml, script, comment').forEach(el => el.remove());
+
+          // 3. Remove HTML comments (Word conditional comments <!--[if ...]-->)
+          const removeComments = (node: Node) => {
+            const toRemove: Node[] = [];
+            node.childNodes.forEach(child => {
+              if (child.nodeType === Node.COMMENT_NODE) {
+                toRemove.push(child);
+              } else if (child.childNodes.length) {
+                removeComments(child);
+              }
+            });
+            toRemove.forEach(n => n.parentNode?.removeChild(n));
+          };
+          removeComments(body);
+
+          // 4. Remove Word namespace elements (o:p, w:sdt, etc.) but keep content
+          const allEls = body.querySelectorAll('*');
+          const nsToRemove: Element[] = [];
+          allEls.forEach(el => {
+            const tag = el.tagName.toLowerCase();
+            if (tag.includes(':')) nsToRemove.push(el);
+          });
+          nsToRemove.forEach(el => {
+            const txt = el.textContent || '';
+            if (txt.trim() && txt.trim() !== '\u00a0') {
+              el.replaceWith(doc.createTextNode(txt));
+            } else {
+              el.remove();
+            }
+          });
+
+          // 5. Clean all elements — keep only TipTap-compatible styles
+          const cleanEl = (el: Element) => {
+            // Remove all attributes except style, colspan, rowspan
+            const keep = new Set(['style', 'colspan', 'rowspan']);
+            const attrsToRemove: string[] = [];
+            for (let i = 0; i < el.attributes.length; i++) {
+              if (!keep.has(el.attributes[i].name.toLowerCase())) {
+                attrsToRemove.push(el.attributes[i].name);
+              }
+            }
+            attrsToRemove.forEach(a => el.removeAttribute(a));
+
+            // Clean styles — keep only what TipTap understands
+            const style = el.getAttribute('style');
+            let hasFontFamily = '';
+            let isKrutiDev = false;
+
+            if (style) {
+              const isBlock = /^(P|DIV|TD|TH|H[1-6]|LI|BLOCKQUOTE)$/i.test(el.tagName);
+              const kept: string[] = [];
+
+              style.split(';').forEach(rule => {
+                const s = rule.trim();
+                if (!s) return;
+                const idx = s.indexOf(':');
+                if (idx === -1) return;
+                const prop = s.substring(0, idx).trim().toLowerCase();
+
+                // Skip ALL mso-* and unwanted layout/spacing properties
+                if (prop.startsWith('mso-')) return;
+                if (/^(margin|padding|line-height|text-indent|tab-stops|font-size|page-break|widows|orphans|word-spacing|letter-spacing)/.test(prop)) return;
+
+                // Extract font-family to push it to spans later, or flag for KrutiDev conversion
+                if (prop === 'font-family') { 
+                  hasFontFamily = rule.substring(idx + 1).trim();
+                  if (/Kruti\s*Dev/i.test(hasFontFamily)) {
+                    isKrutiDev = true;
+                    // DO NOT keep Kruti Dev font-family, we will convert text to Unicode!
+                  } else {
+                    if (!isBlock) kept.push(s); 
+                  }
+                  return; 
+                }
+
+                // Keep useful styling
+                if (prop === 'text-align' && isBlock) { kept.push(s); return; }
+                if (['font-weight', 'font-style', 'text-decoration'].includes(prop)) { kept.push(s); return; }
+                if (prop === 'color' || prop.includes('background')) { kept.push(s); return; }
+              });
+
+              if (kept.length) {
+                el.setAttribute('style', kept.join('; '));
+              } else {
+                el.removeAttribute('style');
+              }
+            }
+
+            // Flag element if it contains Kruti Dev text
+            if (isKrutiDev) {
+              el.setAttribute('data-krutidev', 'true');
+            }
+
+            Array.from(el.children).forEach(child => cleanEl(child));
+
+            // If this was a block element with a non-KrutiDev font-family, wrap its contents.
+            if (hasFontFamily && !isKrutiDev && /^(P|DIV|TD|TH|H[1-6]|LI|BLOCKQUOTE)$/i.test(el.tagName)) {
+              if (el.innerHTML.trim()) {
+                const span = doc.createElement('span');
+                span.setAttribute('style', `font-family: ${hasFontFamily}`);
+                while (el.firstChild) {
+                  span.appendChild(el.firstChild);
+                }
+                el.appendChild(span);
+              }
+            }
+          };
+          Array.from(body.children).forEach(child => cleanEl(child));
+
+          // 6. Handle KrutiDev text - DO NOT convert to Unicode automatically!
+          // Ensure it has the KrutiDev font applied so it renders correctly as Hindi.
+          // The user will manually convert it later using the "KrutiDev → Mangal" button.
+          const handleKrutiDevElements = (node: Node, inKrutiDevContext: boolean = false) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const el = node as Element;
+              const isKrutiMarked = el.getAttribute('data-krutidev') === 'true';
+              
+              if (isKrutiMarked) {
+                el.removeAttribute('data-krutidev');
+                
+                // Ensure this element has KrutiDev font applied
+                const currentStyle = el.getAttribute('style') || '';
+                if (!/kruti/i.test(currentStyle)) {
+                  el.setAttribute('style', `${currentStyle}${currentStyle.endsWith(';') ? '' : ';'} font-family: 'Kruti Dev 010', sans-serif;`);
+                }
+              }
+              
+              // Recurse into children
+              Array.from(node.childNodes).forEach(child => 
+                handleKrutiDevElements(child, isKrutiMarked || inKrutiDevContext)
+              );
+            } else if (node.nodeType === Node.TEXT_NODE) {
+              // Only normalize smart quotes for NON-KrutiDev text
+              let text = node.nodeValue || '';
+              if (text && !inKrutiDevContext) {
+                text = text
+                  .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+                  .replace(/[\u201C\u201D\u201E\u201F]/g, '"');
+                node.nodeValue = text;
+              }
+            }
+          };
+          handleKrutiDevElements(body);
+
+
+          // 7. Remove empty paragraphs (whitespace/nbsp only)
+          body.querySelectorAll('p').forEach(p => {
+            const text = (p.textContent || '').replace(/\u00a0/g, '').trim();
+            if (!text && !p.querySelector('img, table')) {
+              p.remove();
+            }
+          });
+
+          // 8. Get cleaned HTML and normalize KrutiDev font names
+          let html = body.innerHTML
+            .replace(/Kruti\s*Dev\s*(\d+)/gi, 'Kruti Dev $1');
+
+          html = html.trim();
+          
+          if (editor && html) {
+            editor.chain().focus().insertContent(html, {
+              parseOptions: { preserveWhitespace: false }
+            }).run();
+          }
+          console.log('[PageHindi] Pasted DOM-parsed HTML with KrutiDev fixes');
+          return true;
+        }
+
+        // Fallback to plain text if no HTML
+        if (plainData) {
+          event.preventDefault();
+          let text = plainData
+            .replace(/[\u2018\u2019]/g, "'")
+            .replace(/[\u201C\u201D]/g, '"')
+            .replace(/[\u2013\u2014]/g, "-");
+            
+          const lines = text.split(/\r?\n/).filter(l => l.trim());
+          const html = lines.map(l => `<p>${l}</p>`).join('');
+          if (editor && html) {
+            editor.chain().focus().insertContent(html).run();
+          }
+          return true;
+        }
+
+        return false;
+      },
+
+      handleKeyDown(view, event) {
+        // Page Break Shortcut (Ctrl + Enter)
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+          event.preventDefault();
+          
+          const { state, dispatch } = view;
+          const { from, to } = state.selection;
+          const endPos = state.doc.content.size;
+          
+          // Slice the content after the cursor
+          const sliceAfter = state.doc.slice(to, endPos);
+          
+          // Serialize the sliced content to HTML
+          const tempDiv = document.createElement('div');
+          const fragment = DOMSerializer.fromSchema(state.schema).serializeFragment(sliceAfter.content);
+          tempDiv.appendChild(fragment);
+          const htmlAfter = tempDiv.innerHTML || '<p></p>';
+          
+          // Delete content after cursor on the current page
+          const tr = state.tr.delete(from, endPos);
+          dispatch(tr);
+          
+          // Insert the new page with the remaining content
+          onSplitPage(pageIndex, htmlAfter);
+          return true;
+        }
+
+        // Unicode mode — let browser/OS handle everything naturally
+        if (globalFontMode === 'unicode') return false;
+
+        // Pass through Ctrl/Alt/Meta combos and special keys
+        if (event.ctrlKey || event.altKey || event.metaKey) return false;
+        if (event.key.length !== 1) return false;
+
+        // ── KrutiDev mode ──
+        // User types using Remington layout (KrutiDev keys). We insert ASCII characters
+        // and explicitly wrap them in the Kruti Dev 010 font mark so they render as Hindi visually.
+        if (globalFontMode === 'krutidev') {
+          event.preventDefault();
+          const { state, dispatch } = view;
+          const { from, to } = state.selection;
+          
+          const mark = state.schema.marks.textStyle.create({ fontFamily: "'Kruti Dev 010'" });
+          
+          const activeMarks = state.storedMarks || state.selection.$from.marks();
+          const allMarks = [...activeMarks.filter(m => m.type.name !== 'textStyle'), mark];
+          
+          const tr = state.tr.replaceWith(from, to, state.schema.text(event.key, allMarks));
+          dispatch(tr);
+          return true;
+        }
+
+        // ── Mangal mode ──
+        // Mangal is a Unicode font. For standard Hindi typing without an OS IME, we provide the standard InScript layout.
+        if (globalFontMode === 'mangal') {
+          // If they are already typing Hindi characters (e.g. using Windows Hindi IME), just pass it through
+          if (/[\u0900-\u097F]/.test(event.key)) return false;
+
+          const mappedChar = inscriptMap[event.key];
+          if (mappedChar) {
+            event.preventDefault();
+            const { state, dispatch } = view;
+            const { from, to } = state.selection;
+            
+            // Explicitly apply Mangal font mark so the toolbar doesn't revert to Unicode
+            const mark = state.schema.marks.textStyle.create({ fontFamily: 'Mangal' });
+            
+            // Also preserve any other active marks (like bold, italic)
+            const activeMarks = state.storedMarks || state.selection.$from.marks();
+            const allMarks = [...activeMarks.filter(m => m.type.name !== 'textStyle'), mark];
+            
+            const tr = state.tr.replaceWith(from, to, state.schema.text(mappedChar, allMarks));
+            dispatch(tr);
+            return true;
+          }
+        }
+        
+        return false;
+      },
+    },
+  });
+
+  useEffect(() => {
+    if (editor && editor.getHTML() !== content) {
+      isSettingContent.current = true;
+      editor.commands.setContent(content);
+      isSettingContent.current = false;
+    }
+  }, [content]); // eslint-disable-line
+
+  useEffect(() => {
+    if (isActive && editor) {
+      (window as unknown as Record<string, unknown>).__tiptapEditor = editor;
+    }
+  }, [isActive, editor]);
+
+  return (
+    <div className={`page-sheet ${isActive ? 'page-sheet--active' : ''}`} onClick={() => onFocus(pageIndex)}>
+      <div className="page-number">पृष्ठ {pageIndex + 1} / {totalPages}</div>
+      {totalPages > 1 && (
+        <button
+          className="page-delete-btn"
+          onClick={(e) => { e.stopPropagation(); onRemove(pageIndex); }}
+          title="यह पृष्ठ हटाएं"
+        >✕</button>
+      )}
+      <EditorContent editor={editor} className="tiptap-editor page-content" />
+    </div>
+  );
+}
+
+function InteractiveRuler() {
+  const [textIndent, setTextIndent] = useState(0);
+  const [paddingLeft, setPaddingLeft] = useState(0);
+  const [paddingRight, setPaddingRight] = useState(0);
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [guideLine, setGuideLine] = useState<number | null>(null);
+
+  const rulerRef = useRef<HTMLDivElement>(null);
+
+  // Sync ruler markers with the cursor position in the active editor
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const editor = (window as any).__tiptapEditor;
+      if (editor && !dragging) {
+        const attrs = editor.getAttributes('paragraph');
+        setTextIndent(parseInt(attrs.textIndent) || 0);
+        setPaddingLeft(parseInt(attrs.paddingLeft) || 0);
+        setPaddingRight(parseInt(attrs.paddingRight) || 0);
+      }
+    }, 150);
+    return () => clearInterval(interval);
+  }, [dragging]);
+
+  const applyIndent = useCallback((ti: number, pl: number, pr: number) => {
+    const editor = (window as any).__tiptapEditor;
+    if (editor) {
+      editor.commands.setIndent({
+        textIndent: ti || null,
+        paddingLeft: pl || null,
+        paddingRight: pr || null,
+      });
+    }
+  }, []);
+
+  const handlePointerDown = (e: React.PointerEvent, type: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setDragging(type);
+  };
+
+  useEffect(() => {
+    if (!dragging) {
+      setGuideLine(null);
+      return;
+    }
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!rulerRef.current) return;
+
+      const rulerRect = rulerRef.current.getBoundingClientRect();
+      const x = e.clientX - rulerRect.left;
+
+      // Margin area is 80px on each side of 816px page
+      const PAGE_PADDING = 80;
+      const PAGE_WIDTH = 816;
+
+      if (dragging === 'firstLine') {
+        const value = Math.max(-200, Math.min(x - PAGE_PADDING - paddingLeft, 400));
+        const rounded = Math.round(value / 4) * 4; // snap to 4px grid
+        setTextIndent(rounded);
+        setGuideLine(PAGE_PADDING + paddingLeft + rounded);
+      } else if (dragging === 'leftIndent') {
+        const value = Math.max(0, Math.min(x - PAGE_PADDING, 400));
+        const rounded = Math.round(value / 4) * 4;
+        setPaddingLeft(rounded);
+        setGuideLine(PAGE_PADDING + rounded);
+        // Also move first-line indent marker along with it
+      } else if (dragging === 'rightIndent') {
+        const value = Math.max(0, Math.min(PAGE_WIDTH - x - PAGE_PADDING, 400));
+        const rounded = Math.round(value / 4) * 4;
+        setPaddingRight(rounded);
+        setGuideLine(PAGE_WIDTH - PAGE_PADDING - rounded);
+      }
+    };
+
+    const handlePointerUp = () => {
+      if (dragging) {
+        applyIndent(textIndent, paddingLeft, paddingRight);
+        setDragging(null);
+      }
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [dragging, textIndent, paddingLeft, paddingRight, applyIndent]);
+
+  // Page width is 816px. Base padding is 80px left/right.
+  const PAGE_PADDING = 80;
+  const firstLinePos = PAGE_PADDING + paddingLeft + textIndent;
+  const leftIndentPos = PAGE_PADDING + paddingLeft;
+  const rightIndentPos = 816 - PAGE_PADDING - paddingRight;
+
+  return (
+    <div className="ruler-wrapper" style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 50,
+      background: 'var(--bg-primary)',
+      padding: '8px 0 0 0',
+      display: 'flex',
+      justifyContent: 'center',
+    }}>
+      <div ref={rulerRef} style={{
+        width: '816px',
+        height: '28px',
+        position: 'relative',
+        userSelect: 'none',
+      }}>
+        {/* Ruler background — gray margin areas like MS Word */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          borderRadius: '2px',
+          overflow: 'hidden',
+        }}>
+          {/* Left margin (gray) */}
+          <div style={{ width: `${PAGE_PADDING}px`, background: '#d4d4d8', height: '100%' }} />
+          {/* Content area (white) */}
+          <div style={{ flex: 1, background: '#f9fafb', height: '100%' }} />
+          {/* Right margin (gray) */}
+          <div style={{ width: `${PAGE_PADDING}px`, background: '#d4d4d8', height: '100%' }} />
+        </div>
+
+        {/* Tick marks */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'flex-end',
+        }}>
+          {Array.from({ length: 33 }).map((_, i) => {
+            // Each inch ≈ 96px at 100%. Page content = 816 - 160 = 656px ≈ ~6.8 inches
+            // We use equal divisions across the full width
+            const isMajor = i % 4 === 0;
+            const isMid = i % 2 === 0 && !isMajor;
+            const h = isMajor ? '16px' : isMid ? '10px' : '6px';
+            return (
+              <div key={i} style={{
+                flex: 1,
+                display: 'flex',
+                justifyContent: 'flex-start',
+                alignItems: 'flex-end',
+                height: '100%',
+                position: 'relative',
+              }}>
+                <div style={{
+                  width: '1px',
+                  height: h,
+                  background: isMajor ? '#71717a' : '#a1a1aa',
+                }} />
+                {isMajor && i > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '3px',
+                    left: '4px',
+                    fontSize: '9px',
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#52525b',
+                    userSelect: 'none',
+                    fontWeight: 500,
+                  }}>
+                    {i / 4}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Drag guide line (vertical dotted line extending down into page) */}
+        {guideLine !== null && (
+          <div style={{
+            position: 'absolute',
+            left: `${guideLine}px`,
+            top: '28px',
+            width: '1px',
+            height: '1100px',
+            borderLeft: '1px dashed var(--accent-primary)',
+            opacity: 0.5,
+            pointerEvents: 'none',
+            zIndex: 100,
+          }} />
+        )}
+
+        {/* ── First Line Indent Marker (▼ top triangle) ── */}
+        <div
+          className={`ruler-marker marker-first-line ${dragging === 'firstLine' ? 'dragging' : ''}`}
+          style={{
+            position: 'absolute',
+            left: `${firstLinePos}px`,
+            top: '0px',
+            transform: 'translateX(-6px)',
+            cursor: 'ew-resize',
+            pointerEvents: 'auto',
+            zIndex: 61,
+            padding: '2px',
+          }}
+          onPointerDown={(e) => handlePointerDown(e, 'firstLine')}
+          title="पहली पंक्ति इंडेंट (First Line Indent)"
+        >
+          <svg width="12" height="10" viewBox="0 0 12 10">
+            <path d="M1,0 L11,0 L6,8 Z" fill={dragging === 'firstLine' ? '#6c5ce7' : '#555'} stroke="#fff" strokeWidth="0.5" />
+          </svg>
+        </div>
+
+        {/* ── Left Indent Marker (▲ bottom triangle + □ rectangle) ── */}
+        <div
+          className={`ruler-marker marker-left-indent ${dragging === 'leftIndent' ? 'dragging' : ''}`}
+          style={{
+            position: 'absolute',
+            left: `${leftIndentPos}px`,
+            bottom: '0px',
+            transform: 'translateX(-6px)',
+            cursor: 'ew-resize',
+            pointerEvents: 'auto',
+            zIndex: 61,
+            padding: '0 2px',
+          }}
+          onPointerDown={(e) => handlePointerDown(e, 'leftIndent')}
+          title="बाएँ इंडेंट (Left Indent)"
+        >
+          <svg width="12" height="14" viewBox="0 0 12 14">
+            <path d="M6,0 L11,7 L1,7 Z" fill={dragging === 'leftIndent' ? '#6c5ce7' : '#555'} stroke="#fff" strokeWidth="0.5" />
+            <rect x="1.5" y="9" width="9" height="5" rx="1" fill={dragging === 'leftIndent' ? '#6c5ce7' : '#555'} stroke="#fff" strokeWidth="0.5" />
+          </svg>
+        </div>
+
+        {/* ── Right Indent Marker (▲ bottom triangle) ── */}
+        <div
+          className={`ruler-marker marker-right-indent ${dragging === 'rightIndent' ? 'dragging' : ''}`}
+          style={{
+            position: 'absolute',
+            left: `${rightIndentPos}px`,
+            bottom: '0px',
+            transform: 'translateX(-6px)',
+            cursor: 'ew-resize',
+            pointerEvents: 'auto',
+            zIndex: 61,
+            padding: '0 2px',
+          }}
+          onPointerDown={(e) => handlePointerDown(e, 'rightIndent')}
+          title="दाएँ इंडेंट (Right Indent)"
+        >
+          <svg width="12" height="10" viewBox="0 0 12 10">
+            <path d="M6,0 L11,8 L1,8 Z" fill={dragging === 'rightIndent' ? '#6c5ce7' : '#555'} stroke="#fff" strokeWidth="0.5" />
+          </svg>
+        </div>
+
+        {/* Border line at bottom */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '100%',
+          height: '1px',
+          background: '#a1a1aa',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+export default function Editor() {
+  const { pages, activePageIndex, addPage, insertPageAfter, removePage, updatePage, setActivePageIndex, newDocument, zoom } = useDocumentStore();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pages || pages.length === 0) newDocument();
+  }, []); // eslint-disable-line
+
+  const handleFocus  = useCallback((i: number) => setActivePageIndex(i), [setActivePageIndex]);
+  const handleUpdate = useCallback((i: number, html: string) => updatePage(i, html), [updatePage]);
+  const handleRemove = useCallback((i: number) => removePage(i), [removePage]);
+  const handleSplitPage = useCallback((i: number, html: string) => insertPageAfter(i, html), [insertPageAfter]);
+
+  useEffect(() => {
+    (window as unknown as Record<string, unknown>).__addPage = addPage;
+    return () => { delete (window as unknown as Record<string, unknown>).__addPage; };
+  }, [addPage]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const el = container.querySelectorAll('.page-sheet')[activePageIndex] as HTMLElement;
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [activePageIndex]);
+
+  // Use scale for zooming. Transform origin top center so it scales out equally.
+  const scale = zoom / 100;
+
+  return (
+    <div ref={containerRef} className="multi-page-editor h-full overflow-auto" style={{ background: 'var(--bg-primary)' }}>
+      <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minHeight: '100%', paddingBottom: '100px' }}>
+        <InteractiveRuler />
+        <div className="pages-container">
+          {(pages || ['<p></p>']).map((pc, i) => (
+            <PageEditor
+              key={i}
+              pageIndex={i}
+              content={pc}
+              isActive={i === activePageIndex}
+              totalPages={pages.length}
+              onFocus={handleFocus}
+              onUpdate={handleUpdate}
+              onRemove={handleRemove}
+              onSplitPage={handleSplitPage}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

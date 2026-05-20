@@ -1,0 +1,702 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@300;400;500;600;700;800&display=swap');
+@import url('https://db.onlinewebfonts.com/c/a69b5b3fc8384265aa52523629365ffb?family=Kruti+Dev+010');
+@import "tailwindcss";
+
+/* Local KrutiDev font as reliable fallback */
+@font-face {
+  font-family: 'Kruti Dev 010';
+  src: url('/fonts/KrutiDev010.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg-primary: #0f0f23;
+  --bg-secondary: #1a1a3e;
+  --bg-tertiary: #252550;
+  --bg-glass: rgba(30, 30, 70, 0.6);
+  --bg-glass-hover: rgba(40, 40, 90, 0.7);
+  --bg-card: rgba(25, 25, 60, 0.8);
+  --text-primary: #e8e8ff;
+  --text-secondary: #a0a0d0;
+  --text-muted: #6b6ba0;
+  --accent-primary: #6c5ce7;
+  --accent-secondary: #a29bfe;
+  --accent-glow: rgba(108, 92, 231, 0.3);
+  --accent-gradient: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 50%, #74b9ff 100%);
+  --border-color: rgba(108, 92, 231, 0.2);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --shadow-glow: 0 0 30px rgba(108, 92, 231, 0.15);
+  --ribbon-bg: rgba(20, 20, 50, 0.95);
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 68px;
+  --ribbon-height: 110px;
+  --statusbar-height: 32px;
+  --success: #00b894;
+  --warning: #fdcb6e;
+  --danger: #e17055;
+  --info: #74b9ff;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f0f2f8;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e8eaf6;
+  --bg-glass: rgba(255, 255, 255, 0.75);
+  --bg-glass-hover: rgba(255, 255, 255, 0.85);
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a6a;
+  --text-muted: #8888aa;
+  --accent-primary: #5b4cdb;
+  --accent-secondary: #7c6ff0;
+  --accent-glow: rgba(91, 76, 219, 0.15);
+  --border-color: rgba(91, 76, 219, 0.15);
+  --border-glass: rgba(0, 0, 0, 0.06);
+  --shadow-glow: 0 0 30px rgba(91, 76, 219, 0.08);
+  --ribbon-bg: rgba(255, 255, 255, 0.95);
+}
+
+@theme inline {
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+  --font-sans: 'Inter', 'Noto Sans Devanagari', sans-serif;
+  --font-hindi: 'Noto Sans Devanagari', 'Mangal', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--accent-primary); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-secondary); }
+
+/* Glass morphism */
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+}
+
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  box-shadow: var(--shadow-glow);
+}
+
+/* TipTap Editor Styles */
+.tiptap-editor {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.tiptap-editor .tiptap {
+  padding: 60px 80px;
+  min-height: 100%;
+  outline: none;
+  font-family: 'Noto Sans Devanagari', 'Mangal', serif;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text-primary);
+}
+
+.tiptap-editor .tiptap p {
+  margin-top: 0;
+  margin-bottom: 0px;
+}
+
+.tiptap-editor .tiptap h1 { font-size: 1.8em; font-weight: 700; margin: 0.5em 0; }
+.tiptap-editor .tiptap h2 { font-size: 1.5em; font-weight: 600; margin: 0.5em 0; }
+.tiptap-editor .tiptap h3 { font-size: 1.3em; font-weight: 600; margin: 0.5em 0; }
+
+.tiptap-editor .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--text-muted);
+  pointer-events: none;
+  height: 0;
+}
+
+.tiptap-editor .tiptap ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.tiptap-editor .tiptap ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.tiptap-editor .tiptap li {
+  margin-bottom: 0.25rem;
+}
+
+/* Table styles */
+.tiptap-editor .tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  table-layout: fixed;
+  overflow: hidden;
+}
+
+.tiptap-editor .tiptap table td,
+.tiptap-editor .tiptap table th {
+  border: 1.5px solid var(--border-color);
+  padding: 8px 12px;
+  vertical-align: top;
+  min-width: 60px;
+  position: relative;
+}
+
+.tiptap-editor .tiptap table th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+}
+
+.tiptap-editor .tiptap table .selectedCell {
+  background: var(--accent-glow);
+}
+
+/* Page Break (HR used as page separator) */
+.tiptap-editor .tiptap hr {
+  border: none;
+  border-top: 2px dashed var(--accent-primary);
+  margin: 32px 0 24px;
+  position: relative;
+  opacity: 0.5;
+}
+
+.tiptap-editor .tiptap hr::after {
+  content: '── नया पृष्ठ ──';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-secondary);
+  padding: 0 12px;
+  font-size: 10px;
+  color: var(--accent-secondary);
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+/* Print: page break on HR */
+@media print {
+  .tiptap-editor .tiptap hr {
+    page-break-after: always;
+    border: none;
+    margin: 0;
+  }
+  .tiptap-editor .tiptap hr::after {
+    display: none;
+  }
+}
+
+
+/* ── Multi-Page Editor Layout ─────────────────────────────── */
+.multi-page-editor {
+  background: var(--bg-primary);
+}
+
+.pages-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px;
+  gap: 32px;
+  min-height: 100%;
+}
+
+/* Each A4 page sheet */
+.page-sheet {
+  position: relative;
+  width: 816px;
+  min-height: 1056px;
+  background: #ffffff;
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.35);
+  border-radius: 2px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+}
+
+.page-sheet--active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.35), 0 0 0 2px rgba(108, 92, 231, 0.25);
+}
+
+[data-theme="light"] .page-sheet {
+  background: #ffffff;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Page number badge */
+.page-number {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Delete page button */
+.page-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(225, 112, 85, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(225, 112, 85, 0.3);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.page-sheet:hover .page-delete-btn {
+  opacity: 1;
+}
+
+.page-delete-btn:hover {
+  background: rgba(225, 112, 85, 0.3);
+}
+
+/* Editor content inside a page */
+.page-content {
+  height: 100%;
+  min-height: 1056px;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+.page-content .tiptap {
+  padding: 72px 80px;
+  min-height: 1056px;
+  outline: none;
+  font-family: 'Noto Sans Devanagari', 'Mangal', serif;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1a1a2e;
+}
+
+[data-theme="dark"] .page-content .tiptap,
+.page-content .tiptap {
+  color: #1a1a2e; /* Always dark text on white page */
+}
+
+.page-content .tiptap p {
+  margin-top: 0;
+  margin-bottom: 0px;
+  color: #1a1a2e;
+}
+
+.page-content .tiptap h1 { font-size: 1.8em; font-weight: 700; margin: 0.5em 0; color: #1a1a2e; }
+.page-content .tiptap h2 { font-size: 1.5em; font-weight: 600; margin: 0.5em 0; color: #1a1a2e; }
+.page-content .tiptap h3 { font-size: 1.3em; font-weight: 600; margin: 0.5em 0; color: #1a1a2e; }
+
+.page-content .tiptap ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.page-content .tiptap ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.page-content .tiptap li {
+  margin-bottom: 0.25rem;
+}
+
+.page-content .tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+.page-content .tiptap table td,
+.page-content .tiptap table th {
+  border: 1.5px solid #c0c0d0;
+  padding: 8px 12px;
+  vertical-align: top;
+  color: #1a1a2e;
+}
+.page-content .tiptap table th {
+  background: #f0f0f8;
+  font-weight: 600;
+}
+
+.page-content .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #aaaacc;
+  pointer-events: none;
+  height: 0;
+}
+
+/* ── PRINT STYLES ───────────────────────────────────────────── */
+@media print {
+  body * { visibility: hidden !important; }
+
+  .pages-container,
+  .pages-container * { visibility: visible !important; }
+
+  body {
+    background: white !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .multi-page-editor {
+    position: fixed !important;
+    top: 0; left: 0;
+    width: 100%; height: auto;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  .pages-container {
+    gap: 0 !important;
+    padding: 0 !important;
+    align-items: stretch !important;
+  }
+
+  .page-sheet {
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .page-sheet:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .page-number,
+  .page-delete-btn,
+  .ruler-wrapper { display: none !important; }
+
+  .page-content .tiptap {
+    padding: 15mm 20mm !important;
+    color: #000 !important;
+  }
+}
+
+
+/* Ribbon Toolbar */
+.ribbon-toolbar {
+  background: var(--ribbon-bg);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.ribbon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  gap: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  background: transparent;
+  min-width: 44px;
+}
+
+.ribbon-btn:hover {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.ribbon-btn.active {
+  background: var(--accent-glow);
+  color: var(--accent-secondary);
+  border-color: var(--accent-primary);
+}
+
+.ribbon-btn svg { width: 18px; height: 18px; }
+
+.ribbon-separator {
+  width: 1px;
+  height: 50px;
+  background: var(--border-glass);
+  margin: 0 4px;
+}
+
+/* Sidebar */
+.sidebar {
+  background: var(--ribbon-bg);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-glass);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  margin: 2px 8px;
+}
+
+/* ── Interactive Ruler Styles ─────────────────────────────── */
+.ruler-marker-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.ruler-marker {
+  position: absolute;
+  pointer-events: auto;
+  cursor: ew-resize;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3));
+}
+
+.ruler-marker:hover svg path {
+  fill: var(--accent-primary);
+}
+
+.ruler-marker.dragging svg path {
+  fill: var(--accent-secondary);
+}
+
+.marker-first-line {
+  top: 0px;
+}
+
+.marker-left-indent {
+  bottom: 0px;
+}
+
+.marker-right-indent {
+  bottom: 0px;
+}
+
+.sidebar-item:hover {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-item.active {
+  background: var(--accent-glow);
+  color: var(--accent-secondary);
+}
+
+.sidebar-item svg { min-width: 20px; width: 20px; height: 20px; }
+
+/* Status bar */
+.status-bar {
+  background: var(--accent-primary);
+  color: white;
+  font-size: 11px;
+  height: var(--statusbar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+}
+
+/* Panel animations */
+.panel-content {
+  animation: panelSlideIn 0.3s ease;
+}
+
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 10px var(--accent-glow); }
+  50% { box-shadow: 0 0 25px var(--accent-glow); }
+}
+
+.glow-pulse { animation: glowPulse 2s ease-in-out infinite; }
+
+/* Form inputs */
+.input-field {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  width: 100%;
+  font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+}
+
+.input-field:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.btn-primary {
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px var(--accent-glow);
+}
+
+.btn-secondary {
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--accent-primary);
+}
+
+/* Select styling */
+.select-field {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.select-field:focus {
+  border-color: var(--accent-primary);
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.badge-success { background: rgba(0,184,148,0.15); color: var(--success); }
+.badge-warning { background: rgba(253,203,110,0.15); color: var(--warning); }
+.badge-danger { background: rgba(225,112,85,0.15); color: var(--danger); }
+.badge-info { background: rgba(116,185,255,0.15); color: var(--info); }
+
+/* ============================================================
+   PRINT STYLES — Only editor page prints, all UI is hidden
+   ============================================================ */
+@media print {
+  /* Hide everything */
+  body * { visibility: hidden !important; }
+
+  /* Show only the editor page and its content */
+  .editor-page,
+  .editor-page *,
+  .tiptap-editor,
+  .tiptap-editor * { visibility: visible !important; }
+
+  /* Reset body layout for print */
+  body {
+    background: white !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Position the editor page to fill the print area */
+  .editor-page {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  .tiptap-editor .tiptap {
+    padding: 15mm 20mm !important;
+    color: #000 !important;
+    background: white !important;
+  }
+
+  /* Page break support */
+  .page-break { page-break-before: always; }
+}
+
