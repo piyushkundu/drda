@@ -23,7 +23,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  sidebarCollapsed: false,
+  sidebarCollapsed: true,
   sidebarPanel: 'dashboard',
   ribbonTab: 'home',
   theme: 'light',

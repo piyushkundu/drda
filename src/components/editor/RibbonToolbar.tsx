@@ -787,10 +787,22 @@ export default function RibbonToolbar() {
             <div className="flex items-center gap-2 h-full">
               <button className="flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-lg h-[56px] min-w-[56px] transition-all hover:shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400" onClick={() => {
                 const editor = getEditor(); if (!editor) return;
-                const text = editor.state.doc.textContent;
-                if (!text.trim()) return;
+                const html = editor.getHTML();
+                if (!html.trim()) return;
+
+                // Detect if content is in KrutiDev font mode
+                const isKrutiDev = fontMode === 'krutidev';
+
+                // If KrutiDev, convert to Unicode first so AI can understand Hindi
+                let htmlToSend = html;
+                if (isKrutiDev) {
+                  htmlToSend = convertEditorContent(html, (t) => {
+                    try { return convertFont(t, 'krutidev-to-mangal'); } catch { return t; }
+                  }, 'krutidev-to-mangal');
+                }
+
                 fetch('/api/ai/correct', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ text, model: aiModel }) })
+                  body: JSON.stringify({ text: htmlToSend, model: aiModel }) })
                   .then(async (res) => {
                     const reader = res.body?.getReader(); if (!reader) return;
                     const decoder = new TextDecoder(); let result = '';
@@ -802,7 +814,19 @@ export default function RibbonToolbar() {
                         try { result += JSON.parse(data).text; } catch {}
                       });
                     }
-                    if (result) editor.commands.setContent(`<p>${result}</p>`);
+                    if (result) {
+                      // Remove markdown code fences if the AI wraps output in ```html ... ```
+                      result = result.replace(/^```html?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+                      // If original was KrutiDev, convert corrected Unicode back to KrutiDev
+                      if (isKrutiDev) {
+                        result = convertEditorContent(result, (t) => {
+                          try { return convertFont(t, 'mangal-to-krutidev'); } catch { return t; }
+                        }, 'mangal-to-krutidev');
+                      }
+
+                      editor.commands.setContent(result);
+                    }
                   });
               }} title="Correct Grammar & Spelling">
                 <Sparkles className="w-5 h-5" />

@@ -694,12 +694,17 @@ function InteractiveRuler() {
 }
 
 export default function Editor() {
-  const { pages, activePageIndex, addPage, insertPageAfter, removePage, updatePage, setActivePageIndex, newDocument, zoom } = useDocumentStore();
+  const { pages, activePageIndex, addPage, insertPageAfter, removePage, updatePage, setActivePageIndex, newDocument, zoom, hydrateFromStorage, isHydrated } = useDocumentStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Hydrate from localStorage on mount (client-side only)
   useEffect(() => {
-    if (!pages || pages.length === 0) newDocument();
+    hydrateFromStorage();
   }, []); // eslint-disable-line
+
+  useEffect(() => {
+    if (isHydrated && (!pages || pages.length === 0)) newDocument();
+  }, [isHydrated]); // eslint-disable-line
 
   const handleFocus  = useCallback((i: number) => setActivePageIndex(i), [setActivePageIndex]);
   const handleUpdate = useCallback((i: number, html: string) => updatePage(i, html), [updatePage]);

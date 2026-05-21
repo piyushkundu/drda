@@ -58,7 +58,7 @@ export default function Sidebar() {
               key={item.id}
               onClick={() => setSidebarPanel(item.id)}
               className={`sidebar-item w-full text-left ${isActive ? 'active' : ''}`}
-              title={item.labelHi}
+              title={item.label}
             >
               <Icon className="shrink-0" />
               {!sidebarCollapsed && (
@@ -67,7 +67,7 @@ export default function Sidebar() {
                   animate={{ opacity: 1 }}
                   className="truncate"
                 >
-                  {item.labelHi}
+                  {item.label}
                 </motion.span>
               )}
             </button>

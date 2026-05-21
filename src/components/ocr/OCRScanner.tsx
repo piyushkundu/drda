@@ -2,19 +2,26 @@
 
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ScanLine, Upload, Loader2, Copy, FileText, Languages } from 'lucide-react';
+import { ScanLine, Upload, Loader2, Copy, FileText } from 'lucide-react';
 import { useDocumentStore } from '@/stores/documentStore';
 import { useUIStore } from '@/stores/uiStore';
 
 export default function OCRScanner() {
   const [extractedText, setExtractedText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [language, setLanguage] = useState<'hin' | 'eng' | 'hin+eng'>('hin');
   const [preview, setPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { updateContent } = useDocumentStore();
   const { setSidebarPanel } = useUIStore();
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -24,24 +31,29 @@ export default function OCRScanner() {
     const url = URL.createObjectURL(file);
     setPreview(url);
     setIsProcessing(true);
-    setProgress(0);
     setExtractedText('');
 
     try {
-      const { createWorker } = await import('tesseract.js');
-      const worker = await createWorker(language, undefined, {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
-            setProgress(Math.round(m.progress * 100));
-          }
-        },
+      // Convert file to base64 data URL
+      const base64Image = await fileToBase64(file);
+
+      // Call Groq Vision API via our backend route
+      const response = await fetch('/api/ai/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64Image }),
       });
 
-      const { data } = await worker.recognize(file);
-      setExtractedText(data.text);
-      await worker.terminate();
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.details || errorData.error || 'OCR API error');
+      }
+
+      const data = await response.json();
+      setExtractedText(data.text || '❌ कोई टेक्स्ट नहीं मिला।');
     } catch (err) {
-      setExtractedText('❌ OCR प्रोसेसिंग में त्रुटि। कृपया पुनः प्रयास करें।');
+      console.error('OCR error:', err);
+      setExtractedText(`❌ OCR प्रोसेसिंग में त्रुटि। कृपया पुनः प्रयास करें।\n\nError: ${String(err)}`);
     } finally {
       setIsProcessing(false);
     }
@@ -63,33 +75,11 @@ export default function OCRScanner() {
             </div>
             <div>
               <h2 className="text-lg font-bold">OCR स्कैनर</h2>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Extract Hindi text from images using Tesseract.js</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>हिंदी और English दोनों से टेक्स्ट निकालें — AI-powered by Llama 4 Scout</p>
             </div>
           </div>
         </motion.div>
 
-        {/* Language Selector */}
-        <div className="glass-card p-4">
-          <label className="text-xs font-medium mb-2 flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
-            <Languages className="w-3.5 h-3.5" />भाषा (Language)
-          </label>
-          <div className="flex gap-2">
-            {([
-              { value: 'hin', label: 'हिंदी' },
-              { value: 'eng', label: 'English' },
-              { value: 'hin+eng', label: 'हिंदी + English' },
-            ] as const).map(lang => (
-              <button
-                key={lang.value}
-                onClick={() => setLanguage(lang.value)}
-                className={`badge cursor-pointer ${language === lang.value ? 'badge-info' : ''}`}
-                style={language !== lang.value ? { background: 'var(--bg-tertiary)', color: 'var(--text-muted)' } : {}}
-              >
-                {lang.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Upload Area */}
         <div
@@ -116,18 +106,15 @@ export default function OCRScanner() {
           </div>
         )}
 
-        {/* Progress */}
+        {/* Processing State */}
         {isProcessing && (
           <div className="glass-card p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--accent-secondary)' }} />
-              <span className="text-sm">प्रोसेसिंग... {progress}%</span>
-            </div>
-            <div className="w-full h-2 rounded-full" style={{ background: 'var(--bg-tertiary)' }}>
-              <div
-                className="h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%`, background: 'var(--accent-gradient)' }}
-              />
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--accent-secondary)' }} />
+              <div>
+                <span className="text-sm font-medium">AI से टेक्स्ट निकाला जा रहा है...</span>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Llama 4 Scout Vision model processing</p>
+              </div>
             </div>
           </div>
         )}
