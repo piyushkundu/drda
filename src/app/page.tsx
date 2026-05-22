@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import Sidebar from '@/components/layout/Sidebar';
@@ -15,6 +16,8 @@ import AIDocGenerator from '@/components/ai/AIDocGenerator';
 import OCRScanner from '@/components/ocr/OCRScanner';
 import SettingsPanel from '@/components/settings/SettingsPanel';
 import SmartFixManager from '@/components/tools/SmartFixManager';
+
+const SpreadsheetEditor = dynamic(() => import('@/components/spreadsheet/SpreadsheetEditor'), { ssr: false });
 
 export default function Home() {
   const { sidebarPanel, sidebarCollapsed } = useUIStore();
@@ -37,6 +40,8 @@ export default function Home() {
             </div>
           </div>
         );
+      case 'spreadsheet':
+        return <SpreadsheetEditor />;
       case 'templates':
         return <TemplateGallery />;
       case 'ai-generator':

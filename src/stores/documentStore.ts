@@ -24,7 +24,7 @@ function getDeviceId() {
 const getDocsCollection = () => collection(db, 'users', getDeviceId(), 'documents');
 const getStateDoc = () => doc(db, 'users', getDeviceId(), 'state', 'current');
 
-async function saveToFirebase(pages: string[], currentDoc: Document | null) {
+async function actualSaveToFirebase(pages: string[], currentDoc: Document | null) {
   if (typeof window === 'undefined') return;
   try {
     // 1. Save current state (pages + active doc) so it reloads on refresh
@@ -49,6 +49,25 @@ async function saveToFirebase(pages: string[], currentDoc: Document | null) {
   } catch (err) {
     console.error('Failed to save to Firebase:', err);
   }
+}
+
+let saveTimeout: NodeJS.Timeout | null = null;
+let pendingSaveArgs: { pages: string[], currentDoc: Document | null } | null = null;
+
+async function saveToFirebase(pages: string[], currentDoc: Document | null): Promise<void> {
+  pendingSaveArgs = { pages, currentDoc };
+  if (saveTimeout) clearTimeout(saveTimeout);
+  
+  return new Promise((resolve) => {
+    saveTimeout = setTimeout(async () => {
+      if (pendingSaveArgs) {
+        const { pages: p, currentDoc: c } = pendingSaveArgs;
+        pendingSaveArgs = null;
+        await actualSaveToFirebase(p, c);
+      }
+      resolve();
+    }, 1500);
+  });
 }
 
 async function loadStateFromFirebase(): Promise<{ pages: string[]; currentDocument: Document | null } | null> {
@@ -118,6 +137,7 @@ interface DocumentState {
   setAutoSaving: (saving: boolean) => void;
   setSearchQuery: (query: string) => void;
   newDocument: () => void;
+  newSpreadsheet: () => void;
   hydrateFromStorage: () => Promise<void>;
   loadRecentDocument: (doc: Document) => void;
   deleteRecentDocument: (id: string) => void;
@@ -218,6 +238,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     saveToFirebase(s.pages, s.currentDocument).then(async () => {
       const newDoc: Document = {
         id: `doc_${Date.now()}`,
+        type: 'document',
         title: 'नया दस्तावेज़',
         content: '<p></p>',
         createdAt: new Date().toISOString(),
@@ -234,6 +255,33 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       });
 
       // Save the new blank state
+      await saveToFirebase(newPages, newDoc);
+      const recent = await loadRecentFromFirebase();
+      set({ recentDocuments: recent });
+    });
+  },
+
+  newSpreadsheet: () => {
+    const s = get();
+    saveToFirebase(s.pages, s.currentDocument).then(async () => {
+      const newDoc: Document = {
+        id: `sheet_${Date.now()}`,
+        type: 'spreadsheet',
+        title: 'नयी स्प्रेडशीट',
+        content: JSON.stringify([{ name: 'Sheet1', color: '', status: 1, celldata: [] }]),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isAutoSaved: false,
+      };
+      const newPages = [newDoc.content];
+      
+      set({
+        currentDocument: newDoc,
+        pages: newPages,
+        activePageIndex: 0,
+        isDirty: false,
+      });
+
       await saveToFirebase(newPages, newDoc);
       const recent = await loadRecentFromFirebase();
       set({ recentDocuments: recent });

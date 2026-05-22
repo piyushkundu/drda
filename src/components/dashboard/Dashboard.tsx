@@ -7,11 +7,12 @@ import { useAIStore } from '@/stores/aiStore';
 import { useEffect, useState } from 'react';
 import {
   FilePlus, FileText, Bot, Type, ScanLine, BookOpen,
-  Sparkles, TrendingUp, Clock, Zap, Trash2, X
+  Sparkles, TrendingUp, Clock, Zap, Trash2, X, TableProperties
 } from 'lucide-react';
 
 const quickActions = [
   { id: 'editor', label: 'नया दस्तावेज़', desc: 'New Document', icon: FilePlus, color: '#6c5ce7' },
+  { id: 'spreadsheet', label: 'नयी स्प्रेडशीट', desc: 'New Spreadsheet', icon: TableProperties, color: '#27ae60' },
   { id: 'templates', label: 'टेम्पलेट', desc: 'Templates', icon: FileText, color: '#00b894' },
   { id: 'ai-generator', label: 'AI ड्राफ्ट', desc: 'AI Draft', icon: Bot, color: '#e17055' },
   { id: 'font-converter', label: 'फ़ॉन्ट कनवर्टर', desc: 'Font Converter', icon: Type, color: '#0984e3' },
@@ -22,7 +23,7 @@ const quickActions = [
 export default function Dashboard() {
   const { setSidebarPanel } = useUIStore();
   const { setConnected } = useAIStore();
-  const { newDocument, recentDocuments, loadRecentDocument, deleteRecentDocument, hydrateFromStorage } = useDocumentStore();
+  const { newDocument, newSpreadsheet, recentDocuments, loadRecentDocument, deleteRecentDocument, hydrateFromStorage } = useDocumentStore();
 
   // Hydrate recent documents from localStorage
   useEffect(() => {
@@ -37,11 +38,15 @@ export default function Dashboard() {
       .catch(() => setConnected(false));
   }, [setConnected]);
 
-  const [showNewDocModal, setShowNewDocModal] = useState(false);
+  const [newModalType, setNewModalType] = useState<'document' | 'spreadsheet' | null>(null);
 
   const handleQuickAction = (id: string) => {
     if (id === 'editor') {
-      setShowNewDocModal(true);
+      setNewModalType('document');
+      return;
+    }
+    if (id === 'spreadsheet') {
+      setNewModalType('spreadsheet');
       return;
     }
     setSidebarPanel(id as Parameters<typeof setSidebarPanel>[0]);
@@ -49,11 +54,12 @@ export default function Dashboard() {
 
   const handleOpenRecent = (doc: typeof recentDocuments[0]) => {
     loadRecentDocument(doc);
-    setSidebarPanel('editor');
+    setSidebarPanel(doc.type === 'spreadsheet' ? 'spreadsheet' : 'editor');
   };
 
   // Extract preview text from HTML content
-  const getPreview = (content: string) => {
+  const getPreview = (content: string, type?: string) => {
+    if (type === 'spreadsheet') return 'स्प्रेडशीट डेटा (Spreadsheet Data)';
     const text = content.replace(/<[^>]*>/g, '').replace(/<!-- page-break -->/g, ' ').trim();
     return text.length > 100 ? text.slice(0, 100) + '…' : text || 'खाली दस्तावेज़';
   };
@@ -147,15 +153,15 @@ export default function Dashboard() {
                   onClick={() => handleOpenRecent(doc)}
                 >
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: '#6c5ce720', color: '#6c5ce7' }}>
-                    <FileText className="w-5 h-5" />
+                    style={{ background: doc.type === 'spreadsheet' ? '#27ae6020' : '#6c5ce720', color: doc.type === 'spreadsheet' ? '#27ae60' : '#6c5ce7' }}>
+                    {doc.type === 'spreadsheet' ? <TableProperties className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>
                       {doc.title || 'बिना शीर्षक दस्तावेज़'}
                     </h4>
                     <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                      {getPreview(doc.content)}
+                      {getPreview(doc.content, doc.type)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
@@ -221,7 +227,7 @@ export default function Dashboard() {
       </div>
 
       {/* New Document Modal (MS Word Style) */}
-      {showNewDocModal && (
+      {newModalType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
@@ -232,11 +238,15 @@ export default function Dashboard() {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
               <h2 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                <FilePlus className="w-7 h-7 text-blue-500" />
-                नया दस्तावेज़ (New Document)
+                {newModalType === 'spreadsheet' ? (
+                  <TableProperties className="w-7 h-7 text-green-500" />
+                ) : (
+                  <FilePlus className="w-7 h-7 text-blue-500" />
+                )}
+                {newModalType === 'spreadsheet' ? 'नयी स्प्रेडशीट (New Spreadsheet)' : 'नया दस्तावेज़ (New Document)'}
               </h2>
               <button
-                onClick={() => setShowNewDocModal(false)}
+                onClick={() => setNewModalType(null)}
                 className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
               >
                 <X className="w-6 h-6 text-gray-500" />
@@ -252,33 +262,46 @@ export default function Dashboard() {
                   {/* Blank Document Card */}
                   <button
                     onClick={() => {
-                      newDocument();
-                      setSidebarPanel('editor');
-                      setShowNewDocModal(false);
+                      if (newModalType === 'spreadsheet') {
+                        newSpreadsheet();
+                        setSidebarPanel('spreadsheet');
+                      } else {
+                        newDocument();
+                        setSidebarPanel('editor');
+                      }
+                      setNewModalType(null);
                     }}
                     className="flex flex-col items-center gap-3 group shrink-0"
                   >
-                    <div className="w-32 h-40 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-sm flex items-center justify-center group-hover:border-blue-500 group-hover:shadow-md transition-all relative overflow-hidden">
-                      <FilePlus className="w-10 h-10 text-blue-500 opacity-80 group-hover:scale-110 transition-transform" />
+                    <div className={`w-32 h-40 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-sm flex items-center justify-center group-hover:border-${newModalType === 'spreadsheet' ? 'green' : 'blue'}-500 group-hover:shadow-md transition-all relative overflow-hidden`}>
+                      {newModalType === 'spreadsheet' ? (
+                        <TableProperties className="w-10 h-10 text-green-500 opacity-80 group-hover:scale-110 transition-transform" />
+                      ) : (
+                        <FilePlus className="w-10 h-10 text-blue-500 opacity-80 group-hover:scale-110 transition-transform" />
+                      )}
                       {/* Fold corner effect */}
                       <div className="absolute top-0 right-0 w-8 h-8 bg-gray-100 dark:bg-gray-700 border-b border-l border-gray-300 dark:border-gray-600 shadow-sm" style={{ borderBottomLeftRadius: '4px' }}></div>
                     </div>
-                    <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>खाली दस्तावेज़ (Blank)</span>
+                    <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                      {newModalType === 'spreadsheet' ? 'खाली स्प्रेडशीट (Blank)' : 'खाली दस्तावेज़ (Blank)'}
+                    </span>
                   </button>
 
                   {/* Sample Templates just for visual similarity to Word */}
-                  <button 
-                    onClick={() => { setSidebarPanel('templates'); setShowNewDocModal(false); }}
-                    className="flex flex-col items-center gap-3 group shrink-0"
-                  >
-                    <div className="w-32 h-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-sm flex flex-col justify-center px-4 group-hover:border-blue-400 transition-all">
-                      <div className="w-full h-2 bg-blue-100 rounded mb-2"></div>
-                      <div className="w-3/4 h-2 bg-gray-100 rounded mb-2"></div>
-                      <div className="w-full h-2 bg-gray-100 rounded mb-2"></div>
-                      <div className="w-1/2 h-2 bg-gray-100 rounded"></div>
-                    </div>
-                    <span className="text-sm font-medium text-gray-500">टेम्पलेट चुनें...</span>
-                  </button>
+                  {newModalType !== 'spreadsheet' && (
+                    <button 
+                      onClick={() => { setSidebarPanel('templates'); setNewModalType(null); }}
+                      className="flex flex-col items-center gap-3 group shrink-0"
+                    >
+                      <div className="w-32 h-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-sm flex flex-col justify-center px-4 group-hover:border-blue-400 transition-all">
+                        <div className="w-full h-2 bg-blue-100 rounded mb-2"></div>
+                        <div className="w-3/4 h-2 bg-gray-100 rounded mb-2"></div>
+                        <div className="w-full h-2 bg-gray-100 rounded mb-2"></div>
+                        <div className="w-1/2 h-2 bg-gray-100 rounded"></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-500">टेम्पलेट चुनें...</span>
+                    </button>
+                  )}
 
                 </div>
               </div>
@@ -289,10 +312,10 @@ export default function Dashboard() {
                   हाल के दस्तावेज़ (Recent)
                 </h3>
                 
-                {recentDocuments.length === 0 ? (
+                {recentDocuments.filter(doc => newModalType === 'spreadsheet' ? doc.type === 'spreadsheet' : doc.type !== 'spreadsheet').length === 0 ? (
                   <div className="text-center py-10 text-gray-500">
                     <Clock className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                    <p>कोई हाल का दस्तावेज़ नहीं है</p>
+                    <p>कोई हाल की फ़ाइल नहीं है</p>
                   </div>
                 ) : (
                   <div className="flex flex-col">
@@ -304,23 +327,25 @@ export default function Dashboard() {
                     </div>
                     
                     {/* List Items */}
-                    {recentDocuments.map((doc) => (
+                    {recentDocuments
+                      .filter(doc => newModalType === 'spreadsheet' ? doc.type === 'spreadsheet' : doc.type !== 'spreadsheet')
+                      .map((doc) => (
                       <div 
                         key={doc.id}
                         className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-black/5 dark:hover:bg-white/5 border-b border-gray-50 dark:border-gray-800/50 transition-colors group cursor-pointer"
                         onClick={() => {
                           loadRecentDocument(doc);
-                          setSidebarPanel('editor');
-                          setShowNewDocModal(false);
+                          setSidebarPanel(newModalType === 'spreadsheet' ? 'spreadsheet' : 'editor');
+                          setNewModalType(null);
                         }}
                       >
                         <div className="col-span-8 md:col-span-6 flex items-center gap-3">
-                          <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                            <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${newModalType === 'spreadsheet' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
+                            {newModalType === 'spreadsheet' ? <TableProperties className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
                           </div>
                           <div className="truncate">
                             <div className="font-medium text-sm text-gray-800 dark:text-gray-200 truncate">{doc.title}</div>
-                            <div className="text-xs text-gray-500 truncate">{getPreview(doc.content)}</div>
+                            <div className="text-xs text-gray-500 truncate">{getPreview(doc.content, doc.type)}</div>
                           </div>
                         </div>
                         <div className="col-span-4 md:col-span-4 text-xs text-gray-500 text-right md:text-left flex items-center justify-end md:justify-start">

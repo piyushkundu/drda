@@ -707,22 +707,25 @@ export default function RibbonToolbar() {
         {ribbonTab === 'convert' && (<>
           <div className="flex flex-col justify-start h-full px-3 border-r border-[#e4e4e4] dark:border-gray-700 relative pb-4">
             <div className="flex items-center gap-2 h-full">
-              <button
-                onClick={() => convertContent('krutidev-to-mangal')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all whitespace-nowrap"
-                style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', boxShadow: '0 2px 8px rgba(168,85,247,0.3)' }}
-                title="Convert KrutiDev text to Mangal (Unicode)">
-                <Type className="w-4 h-4" />
-                KrutiDev → Mangal
-              </button>
-              <button
-                onClick={() => convertContent('mangal-to-krutidev')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all whitespace-nowrap"
-                style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)', boxShadow: '0 2px 8px rgba(249,115,22,0.3)' }}
-                title="Convert Mangal (Unicode) text to KrutiDev">
-                <Type className="w-4 h-4" />
-                Mangal → KrutiDev
-              </button>
+              {fontMode === 'krutidev' ? (
+                <button
+                  onClick={() => convertContent('krutidev-to-mangal')}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all whitespace-nowrap"
+                  style={{ background: 'linear-gradient(135deg,#a855f7,#7c3aed)', boxShadow: '0 2px 8px rgba(168,85,247,0.3)' }}
+                  title="Convert KrutiDev text to Mangal (Unicode)">
+                  <Type className="w-4 h-4" />
+                  KrutiDev → Mangal
+                </button>
+              ) : (
+                <button
+                  onClick={() => convertContent('mangal-to-krutidev')}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all whitespace-nowrap"
+                  style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)', boxShadow: '0 2px 8px rgba(249,115,22,0.3)' }}
+                  title="Convert Mangal (Unicode) text to KrutiDev">
+                  <Type className="w-4 h-4" />
+                  Mangal → KrutiDev
+                </button>
+              )}
             </div>
             <div className="text-[10px] text-gray-400 absolute bottom-0 w-full text-center left-0 pointer-events-none">Font Conversion</div>
           </div>

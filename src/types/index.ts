@@ -4,6 +4,7 @@
 
 export interface Document {
   id: string;
+  type?: 'document' | 'spreadsheet';
   title: string;
   content: string;
   plainText?: string;
@@ -82,6 +83,7 @@ export type Department =
 export type SidebarPanel =
   | 'dashboard'
   | 'editor'
+  | 'spreadsheet'
   | 'templates'
   | 'ai-generator'
   | 'font-converter'

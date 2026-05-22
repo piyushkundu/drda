@@ -5,12 +5,13 @@ import { useUIStore } from '@/stores/uiStore';
 import type { SidebarPanel } from '@/types';
 import {
   LayoutDashboard, FilePlus, FileText, Bot, Type, ScanLine,
-  BookOpen, FolderOpen, Settings, ChevronLeft, ChevronRight, Sparkles
+  BookOpen, FolderOpen, Settings, ChevronLeft, ChevronRight, Sparkles, TableProperties
 } from 'lucide-react';
 
 const menuItems: { id: SidebarPanel; label: string; labelHi: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard', labelHi: 'डैशबोर्ड', icon: LayoutDashboard },
   { id: 'editor', label: 'Editor', labelHi: 'संपादक', icon: FilePlus },
+  { id: 'spreadsheet', label: 'Spreadsheet', labelHi: 'स्प्रेडशीट', icon: TableProperties },
   { id: 'templates', label: 'Templates', labelHi: 'टेम्पलेट', icon: FileText },
   { id: 'ai-generator', label: 'AI Draft', labelHi: 'AI ड्राफ्ट', icon: Bot },
   { id: 'font-converter', label: 'Font Convert', labelHi: 'फ़ॉन्ट कनवर्टर', icon: Type },
