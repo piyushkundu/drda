@@ -93,7 +93,9 @@ function unicodeToKrutiDev(text) {
                 character_right_to_position_of_Z = modified_substring.charAt(right_to_position_of_Z);
             }
         }
-        var string_to_be_replaced = modified_substring.substring(position_of_half_R + 2, probable_position_of_Z);
+        // Original NIC uses: substr(position_of_half_R + 2, (probable_position_of_Z - position_of_half_R) - 1)
+        var len = (probable_position_of_Z - position_of_half_R) - 1;
+        var string_to_be_replaced = modified_substring.substring(position_of_half_R + 2, position_of_half_R + 2 + len);
         modified_substring = modified_substring.replace("र्" + string_to_be_replaced, string_to_be_replaced + "Z");
         position_of_half_R = modified_substring.indexOf("र्");
     }

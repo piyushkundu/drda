@@ -11,6 +11,7 @@ interface UIState {
   showExportDialog: boolean;
   showAIPanel: boolean;
   isMobile: boolean;
+  directCursorMode: boolean;
 
   toggleSidebar: () => void;
   setSidebarPanel: (panel: SidebarPanel) => void;
@@ -20,6 +21,7 @@ interface UIState {
   setShowExportDialog: (show: boolean) => void;
   setShowAIPanel: (show: boolean) => void;
   setIsMobile: (isMobile: boolean) => void;
+  toggleDirectCursorMode: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -30,6 +32,7 @@ export const useUIStore = create<UIState>((set) => ({
   showExportDialog: false,
   showAIPanel: false,
   isMobile: false,
+  directCursorMode: false,
 
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setSidebarPanel: (panel) => set({ sidebarPanel: panel }),
@@ -39,4 +42,5 @@ export const useUIStore = create<UIState>((set) => ({
   setShowExportDialog: (show) => set({ showExportDialog: show }),
   setShowAIPanel: (show) => set({ showAIPanel: show }),
   setIsMobile: (isMobile) => set({ isMobile }),
+  toggleDirectCursorMode: () => set((s) => ({ directCursorMode: !s.directCursorMode })),
 }));

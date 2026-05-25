@@ -8,6 +8,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import RibbonToolbar from '@/components/editor/RibbonToolbar';
 import StatusBar from '@/components/layout/StatusBar';
 import Editor from '@/components/editor/Editor';
+import SpecialCharPanel from '@/components/editor/SpecialCharPanel';
 import Dashboard from '@/components/dashboard/Dashboard';
 import FontConverterPanel from '@/components/tools/FontConverter';
 import GovDictionaryPanel from '@/components/tools/GovDictionary';
@@ -15,7 +16,7 @@ import TemplateGallery from '@/components/templates/TemplateGallery';
 import AIDocGenerator from '@/components/ai/AIDocGenerator';
 import OCRScanner from '@/components/ocr/OCRScanner';
 import SettingsPanel from '@/components/settings/SettingsPanel';
-import SmartFixManager from '@/components/tools/SmartFixManager';
+import ArchivedFiles from '@/components/dashboard/ArchivedFiles';
 
 const SpreadsheetEditor = dynamic(() => import('@/components/spreadsheet/SpreadsheetEditor'), { ssr: false });
 
@@ -35,8 +36,11 @@ export default function Home() {
         return (
           <div className="flex flex-col h-full">
             <RibbonToolbar />
-            <div className="flex-1 overflow-hidden">
-              <Editor />
+            <div className="flex-1 overflow-hidden flex">
+              <div className="flex-1 overflow-hidden">
+                <Editor />
+              </div>
+              <SpecialCharPanel />
             </div>
           </div>
         );
@@ -53,7 +57,7 @@ export default function Home() {
       case 'dictionary':
         return <GovDictionaryPanel />;
       case 'files':
-        return <SmartFixManager />;
+        return <ArchivedFiles />;
       case 'settings':
         return <SettingsPanel />;
       default:

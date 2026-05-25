@@ -102,7 +102,10 @@ export function unicodeToKrutiDev(text: string): string {
       }
     }
 
-    let string_to_be_replaced = modified_substring.substring(position_of_half_R + 2, probable_position_of_Z);
+    // Original NIC uses: substr(position_of_half_R + 2, (probable_position_of_Z - position_of_half_R) - 1)
+    // substr(start, length) → substring(start, start + length)
+    const len = (probable_position_of_Z - position_of_half_R) - 1;
+    let string_to_be_replaced = modified_substring.substring(position_of_half_R + 2, position_of_half_R + 2 + len);
     modified_substring = modified_substring.replace("र्" + string_to_be_replaced, string_to_be_replaced + "Z");
     position_of_half_R = modified_substring.indexOf("र्");
   }

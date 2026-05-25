@@ -12,6 +12,14 @@ export interface Document {
   createdAt: string;
   updatedAt: string;
   isAutoSaved: boolean;
+  // Auto-archive & protection fields
+  isArchived?: boolean;
+  isDeleted?: boolean;
+  deletedAt?: string;
+  archivedAt?: string;
+  autoName?: string;
+  wordCount?: number;
+  importance?: 'low' | 'medium' | 'high';
 }
 
 export interface Folder {

@@ -5,11 +5,13 @@ import { useDocumentStore } from '@/stores/documentStore';
 import { motion } from 'framer-motion';
 import { Workbook, WorkbookInstance } from '@fortune-sheet/react';
 import '@fortune-sheet/react/dist/index.css';
-import { Save, Download, FileSpreadsheet, Printer, Sparkles, Loader2, Type } from 'lucide-react';
+import { Save, Download, FileSpreadsheet, Printer, Sparkles, Loader2, Type, Wand2 } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { inscriptMap } from '@/lib/keyboardLayouts';
 import { convertFont } from '@/lib/fontConversion';
+import { useAIStore } from '@/stores/aiStore';
+import { getCompletions } from '@/lib/dictionaries';
 
 export default function SpreadsheetEditor() {
   const { currentDocument, updateTitle, isAutoSaving, isDirty } = useDocumentStore();
@@ -19,7 +21,13 @@ export default function SpreadsheetEditor() {
   const isFirstRender = useRef(true);
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [selectedFont, setSelectedFont] = useState('Arial');
+  const [isAutoSuggestEnabled, setIsAutoSuggestEnabled] = useState(false);
   
+  // Suggestion Refs
+  const ghostElementRef = useRef<HTMLSpanElement | null>(null);
+  const suggestionTextRef = useRef<string | null>(null);
+  const aiRequestTimeout = useRef<NodeJS.Timeout | null>(null);
+
   const fonts = [
     { label: 'Arial', value: 'Arial' },
     { label: 'Kruti Dev 010', value: 'Kruti Dev 010' },
@@ -27,6 +35,32 @@ export default function SpreadsheetEditor() {
     { label: 'Times New Roman', value: 'Times New Roman' },
     { label: 'Courier New', value: 'Courier New' }
   ];
+
+  const removeGhostText = useCallback(() => {
+    if (ghostElementRef.current && ghostElementRef.current.parentNode) {
+      ghostElementRef.current.parentNode.removeChild(ghostElementRef.current);
+      ghostElementRef.current = null;
+    }
+    suggestionTextRef.current = null;
+  }, []);
+
+  const showGhostText = useCallback((activeEl: HTMLElement, suggestion: string) => {
+    removeGhostText();
+    if (!suggestion) return;
+    
+    const span = document.createElement('span');
+    span.className = 'ss-ghost-text';
+    span.contentEditable = 'false';
+    span.style.color = '#b0b0b0';
+    span.style.opacity = '0.6';
+    span.style.pointerEvents = 'none';
+    span.innerText = suggestion;
+    
+    activeEl.appendChild(span);
+    ghostElementRef.current = span;
+    suggestionTextRef.current = suggestion;
+  }, [removeGhostText]);
+
   // Update local title when document changes externally
   useEffect(() => {
     if (currentDocument?.title) {
@@ -46,6 +80,22 @@ export default function SpreadsheetEditor() {
                             activeEl.id === 'luckysheet-input-box';
                             
       if (!isSheetEditor) return;
+
+      if (e.key === 'Tab' && suggestionTextRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const suggestion = suggestionTextRef.current;
+        removeGhostText();
+        
+        // Append the text using execCommand
+        document.execCommand('insertText', false, suggestion);
+        return;
+      }
+
+      if (e.key === 'Escape' || e.key === 'Backspace' || e.key === 'Delete') {
+        removeGhostText();
+      }
 
       // Apply the selected font visually to the editing box
       if (selectedFont) {
@@ -71,7 +121,113 @@ export default function SpreadsheetEditor() {
 
     document.addEventListener('keydown', handleGlobalKeyDown, true);
     return () => document.removeEventListener('keydown', handleGlobalKeyDown, true);
-  }, [selectedFont]);
+  }, [selectedFont, removeGhostText]);
+
+  useEffect(() => {
+    if (!isAutoSuggestEnabled) {
+      removeGhostText();
+      return;
+    }
+
+    const handleInput = async (e: Event) => {
+      const activeEl = document.activeElement as HTMLElement;
+      if (!activeEl) return;
+      
+      const isSheetEditor = activeEl.id === 'luckysheet-rich-text-editor' || 
+                            activeEl.classList.contains('luckysheet-rich-text-editor') ||
+                            activeEl.id === 'luckysheet-input-box';
+                            
+      if (!isSheetEditor) return;
+
+      removeGhostText();
+
+      const text = activeEl.innerText || '';
+      if (text.length < 1) return;
+      
+      const words = text.trim().split(/\s+/);
+      if (words.length === 0) return;
+      
+      // Local Dictionary Check
+      let bestRemaining: string | null = null;
+      const maxLookback = Math.min(words.length, 5);
+      for (let i = maxLookback; i >= 1; i--) {
+        const phrase = words.slice(-i).join(' ');
+        if (phrase.length === 0) continue;
+        const completions = getCompletions(phrase, 3);
+        if (completions.length > 0) {
+          const best = completions[0];
+          const remaining = best.slice(phrase.length);
+          if (remaining.length > 0) {
+            bestRemaining = remaining;
+            break;
+          }
+        }
+      }
+      
+      if (bestRemaining) {
+        showGhostText(activeEl, bestRemaining);
+        return;
+      }
+      
+      if (text.length < 10) return; // Don't call AI for very short phrases
+
+      // AI Check
+      if (aiRequestTimeout.current) clearTimeout(aiRequestTimeout.current);
+      aiRequestTimeout.current = setTimeout(async () => {
+        try {
+          const aiStore = useAIStore.getState();
+          const lastSentence = words.slice(-8).join(' ');
+          
+          const res = await fetch('/api/ai/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: text,
+              prompt: `Complete this Hindi sentence naturally. Only output the remaining text (not the given text). Keep it short (max 15 words). Text: "${lastSentence}"`,
+              model: aiStore.selectedModel
+            })
+          });
+          
+          if (!res.ok) return;
+          const reader = res.body?.getReader();
+          if (!reader) return;
+          const decoder = new TextDecoder();
+          let result = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            chunk.split('\n').filter(l => l.startsWith('data: ')).forEach(line => {
+              const data = line.slice(6);
+              if (data === '[DONE]') return;
+              try { result += JSON.parse(data).text; } catch {}
+            });
+          }
+          
+          if (result && result.trim()) {
+            let clean = result.trim();
+            if (clean.startsWith(lastSentence)) {
+              clean = clean.slice(lastSentence.length).trim();
+            }
+            clean = clean.split('\n')[0].trim();
+            if (clean.length > 80) clean = clean.slice(0, 80);
+            
+            if (clean && document.activeElement === activeEl) {
+              showGhostText(activeEl, clean);
+            }
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }, 800);
+    };
+
+    document.addEventListener('input', handleInput);
+    return () => {
+      document.removeEventListener('input', handleInput);
+      if (aiRequestTimeout.current) clearTimeout(aiRequestTimeout.current);
+    };
+  }, [isAutoSuggestEnabled, showGhostText, removeGhostText]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
@@ -88,26 +244,124 @@ export default function SpreadsheetEditor() {
       const data = sheetRef.current.getAllSheets();
       const workbook = new ExcelJS.Workbook();
       
+      // Helper to convert hex or rgb color to ARGB (ExcelJS format)
+      const toARGB = (color: any) => {
+        if (!color) return undefined;
+        
+        let hex = String(color).trim();
+        
+        // Basic named colors fallback
+        const named: Record<string, string> = { white: 'FFFFFFFF', black: 'FF000000', red: 'FFFF0000', green: 'FF008000', blue: 'FF0000FF', transparent: '00FFFFFF' };
+        if (named[hex.toLowerCase()]) return named[hex.toLowerCase()];
+        
+        // Handle rgb/rgba strings
+        if (hex.startsWith('rgb')) {
+          const rgba = hex.match(/\d+(\.\d+)?/g);
+          if (rgba && rgba.length >= 3) {
+            const r = parseInt(rgba[0]).toString(16).padStart(2, '0');
+            const g = parseInt(rgba[1]).toString(16).padStart(2, '0');
+            const b = parseInt(rgba[2]).toString(16).padStart(2, '0');
+            const a = rgba.length === 4 ? Math.round(parseFloat(rgba[3]) * 255).toString(16).padStart(2, '0') : 'FF';
+            return (a + r + g + b).toUpperCase();
+          }
+        }
+        
+        // Handle hex strings
+        if (hex.startsWith('#')) hex = hex.substring(1);
+        if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+        if (hex.length === 6) hex = 'FF' + hex;
+        
+        // Only return if it looks like a valid 8-char hex (ARGB)
+        if (/^[0-9A-Fa-f]{8}$/.test(hex)) {
+          return hex.toUpperCase();
+        }
+        
+        return undefined; // fallback
+      };
+      
       data.forEach((sheetData) => {
         const worksheet = workbook.addWorksheet(sheetData.name);
         
-        // This is a basic conversion. For a production app, we would parse styles, merged cells etc.
+        // 1. Column Widths
+        // Luckysheet default column width is 73px. Excel width is roughly pixels * 0.14
+        worksheet.properties.defaultColWidth = 73 * 0.14;
+        if (sheetData.config && sheetData.config.columnlen) {
+          for (const colIndex in sheetData.config.columnlen) {
+            worksheet.getColumn(parseInt(colIndex) + 1).width = sheetData.config.columnlen[colIndex] * 0.14;
+          }
+        }
+        
+        // 2. Row Heights
+        // Luckysheet default row height is 19px. Excel height is in points (pixels * 0.75)
+        worksheet.properties.defaultRowHeight = 19 * 0.75;
+        if (sheetData.config && sheetData.config.rowlen) {
+          for (const rowIndex in sheetData.config.rowlen) {
+            worksheet.getRow(parseInt(rowIndex) + 1).height = sheetData.config.rowlen[rowIndex] * 0.75;
+          }
+        }
+
+        // 3. Merged Cells
+        if (sheetData.config && sheetData.config.merge) {
+          for (const mergeKey in sheetData.config.merge) {
+            const merge = sheetData.config.merge[mergeKey];
+            worksheet.mergeCells(merge.r + 1, merge.c + 1, merge.r + merge.rs, merge.c + merge.cs);
+          }
+        }
+
+        const processCell = (cell: any, rIndex: number, cIndex: number) => {
+          if (!cell) return;
+          const excelCell = worksheet.getCell(rIndex + 1, cIndex + 1);
+          
+          if (cell.m !== undefined || cell.v !== undefined) {
+            excelCell.value = cell.m || cell.v;
+          }
+
+          // Styles
+          const font: any = {};
+          if (cell.bl == 1 || cell.bl === true || cell.bl === '1') font.bold = true;
+          if (cell.it == 1 || cell.it === true || cell.it === '1') font.italic = true;
+          if (cell.ff) font.name = cell.ff;
+          if (cell.fs) font.size = Number(cell.fs);
+          
+          if (cell.fc) {
+            const argb = toARGB(cell.fc);
+            if (argb) font.color = { argb };
+          }
+          if (Object.keys(font).length > 0) excelCell.font = font;
+
+          if (cell.bg) {
+            excelCell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: toARGB(cell.bg) }
+            };
+          }
+
+          const alignment: any = {};
+          if (cell.ht !== undefined) {
+            if (cell.ht === 1) alignment.horizontal = 'left';
+            else if (cell.ht === 0) alignment.horizontal = 'center';
+            else if (cell.ht === 2) alignment.horizontal = 'right';
+          }
+          if (cell.vt !== undefined) {
+            if (cell.vt === 1) alignment.vertical = 'top';
+            else if (cell.vt === 0) alignment.vertical = 'middle';
+            else if (cell.vt === 2) alignment.vertical = 'bottom';
+          }
+          if (Object.keys(alignment).length > 0) excelCell.alignment = alignment;
+        };
+
         if (sheetData.data) {
           sheetData.data.forEach((rowArr: any[], rIndex: number) => {
             if (rowArr) {
               rowArr.forEach((cell: any, cIndex: number) => {
-                if (cell && (cell.m !== undefined || cell.v !== undefined)) {
-                  worksheet.getCell(rIndex + 1, cIndex + 1).value = cell.m || cell.v;
-                }
+                processCell(cell, rIndex, cIndex);
               });
             }
           });
         } else if (sheetData.celldata) {
-          sheetData.celldata.forEach((cell: any) => {
-            const row = cell.r + 1;
-            const col = cell.c + 1;
-            const value = cell.v?.m || cell.v?.v || '';
-            worksheet.getCell(row, col).value = value;
+          sheetData.celldata.forEach((cellData: any) => {
+            processCell(cellData.v, cellData.r, cellData.c);
           });
         }
       });
@@ -286,6 +540,66 @@ export default function SpreadsheetEditor() {
     console.error('Failed to parse spreadsheet data', e);
   }
 
+  const getTextWidth = (text: string, font: string) => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.font = font;
+      return context.measureText(text).width;
+    }
+    return text.length * 8; // fallback
+  };
+
+  const afterUpdateCell = useCallback((row: number, column: number, oldValue: any, newValue: any) => {
+    if (!sheetRef.current) return;
+    if (newValue === null || newValue === undefined) return;
+
+    const isPlainValue = typeof newValue !== 'object';
+    const text = isPlainValue ? String(newValue) : String(newValue?.v || newValue?.m || '');
+    
+    if (text.trim().length === 0) return;
+
+    // 1. Auto column width logic
+    try {
+      const ff = (!isPlainValue && newValue?.ff) ? newValue.ff : 'Arial';
+      const fs = (!isPlainValue && newValue?.fs) ? newValue.fs : 12;
+      const font = `${fs}pt ${ff.includes('Kruti Dev') ? "'Kruti Dev 010'" : ff}`;
+      
+      const textWidth = getTextWidth(text, font);
+      const estimatedWidth = textWidth + 30; // 30px padding for safety
+      
+      const currentColWidths = sheetRef.current.getColumnWidth([column]);
+      const currentWidth = currentColWidths[column] || 73; // 73 is default width
+      
+      if (estimatedWidth > currentWidth) {
+        const newWidth = Math.min(estimatedWidth, 500); // max width 500px
+        sheetRef.current.setColumnWidth({ [column.toString()]: newWidth });
+      }
+    } catch (e) {
+      console.error('Error auto-sizing column', e);
+    }
+
+    // 2. Default Center Align
+    try {
+      let shouldUpdateFormat = false;
+      if (isPlainValue) {
+        shouldUpdateFormat = true;
+      } else {
+        if (newValue.ht !== 0) shouldUpdateFormat = true;
+        if (newValue.vt !== 0) shouldUpdateFormat = true;
+      }
+
+      if (shouldUpdateFormat) {
+        // Prevent infinite loop if setCellFormat triggers afterUpdateCell
+        // by making sure we only call it when it's not already 0
+        if (isPlainValue || newValue.ht !== 0) sheetRef.current.setCellFormat(row, column, 'ht', 0); // Center
+        if (isPlainValue || newValue.vt !== 0) sheetRef.current.setCellFormat(row, column, 'vt', 0); // Middle
+      }
+    } catch (e) {
+      console.error('Error setting default center alignment', e);
+    }
+  }, []);
+
   const onChange = (data: any) => {
     // Only save after initial render
     if (isFirstRender.current) {
@@ -368,6 +682,19 @@ export default function SpreadsheetEditor() {
               {isProcessingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               <span>AI Correct</span>
             </button>
+            
+            <button
+              onClick={() => setIsAutoSuggestEnabled(!isAutoSuggestEnabled)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded transition-colors text-sm font-medium ${
+                isAutoSuggestEnabled 
+                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' 
+                  : 'hover:bg-gray-200 text-gray-600 dark:hover:bg-gray-800 dark:text-gray-400'
+              }`}
+              title="टाइप करते समय AI सुझाव (Auto-Suggest)"
+            >
+              <Wand2 className="w-4 h-4" />
+              <span>AI Suggest: {isAutoSuggestEnabled ? 'ON' : 'OFF'}</span>
+            </button>
 
             <button
               onClick={printArea}
@@ -407,6 +734,7 @@ export default function SpreadsheetEditor() {
           data={initialData} 
           onChange={onChange}
           lang="en"
+          defaultFontSize={12}
           toolbarItems={[
             "undo", "redo", "format-painter", "clear-format", "|", 
             "currency-format", "percentage-format", "number-decrease", "number-increase", "format", "|", 
@@ -416,6 +744,9 @@ export default function SpreadsheetEditor() {
             "freeze", "conditionFormat", "filter", "link", "image", "comment", "quick-formula", 
             "dataVerification", "splitColumn", "locationCondition", "screenshot", "search"
           ]}
+          hooks={{
+            afterUpdateCell
+          }}
         />
       </div>
     </div>

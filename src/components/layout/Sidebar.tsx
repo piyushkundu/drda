@@ -5,7 +5,7 @@ import { useUIStore } from '@/stores/uiStore';
 import type { SidebarPanel } from '@/types';
 import {
   LayoutDashboard, FilePlus, FileText, Bot, Type, ScanLine,
-  BookOpen, FolderOpen, Settings, ChevronLeft, ChevronRight, Sparkles, TableProperties
+  BookOpen, Archive, Settings, ChevronLeft, ChevronRight, Sparkles, TableProperties
 } from 'lucide-react';
 
 const menuItems: { id: SidebarPanel; label: string; labelHi: string; icon: React.ElementType }[] = [
@@ -17,7 +17,7 @@ const menuItems: { id: SidebarPanel; label: string; labelHi: string; icon: React
   { id: 'font-converter', label: 'Font Convert', labelHi: 'फ़ॉन्ट कनवर्टर', icon: Type },
   { id: 'ocr', label: 'OCR Scanner', labelHi: 'OCR स्कैनर', icon: ScanLine },
   { id: 'dictionary', label: 'Dictionary', labelHi: 'शब्दकोश', icon: BookOpen },
-  { id: 'files', label: 'Smart Fix', labelHi: 'स्मार्ट फिक्स', icon: FolderOpen },
+  { id: 'files', label: 'Archive', labelHi: 'आर्काइव', icon: Archive },
   { id: 'settings', label: 'Settings', labelHi: 'सेटिंग्स', icon: Settings },
 ];
 

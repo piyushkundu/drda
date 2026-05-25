@@ -7,12 +7,13 @@ import { useAIStore } from '@/stores/aiStore';
 import { useEffect, useState } from 'react';
 import {
   FilePlus, FileText, Bot, Type, ScanLine, BookOpen,
-  Sparkles, TrendingUp, Clock, Zap, Trash2, X, TableProperties
+  Sparkles, TrendingUp, Clock, Zap, Trash2, X, TableProperties, Archive
 } from 'lucide-react';
 
 const quickActions = [
   { id: 'editor', label: 'नया दस्तावेज़', desc: 'New Document', icon: FilePlus, color: '#6c5ce7' },
   { id: 'spreadsheet', label: 'नयी स्प्रेडशीट', desc: 'New Spreadsheet', icon: TableProperties, color: '#27ae60' },
+  { id: 'files', label: 'आर्काइव', desc: 'Archive & Protect', icon: Archive, color: '#00cec9' },
   { id: 'templates', label: 'टेम्पलेट', desc: 'Templates', icon: FileText, color: '#00b894' },
   { id: 'ai-generator', label: 'AI ड्राफ्ट', desc: 'AI Draft', icon: Bot, color: '#e17055' },
   { id: 'font-converter', label: 'फ़ॉन्ट कनवर्टर', desc: 'Font Converter', icon: Type, color: '#0984e3' },
@@ -23,11 +24,12 @@ const quickActions = [
 export default function Dashboard() {
   const { setSidebarPanel } = useUIStore();
   const { setConnected } = useAIStore();
-  const { newDocument, newSpreadsheet, recentDocuments, loadRecentDocument, deleteRecentDocument, hydrateFromStorage } = useDocumentStore();
+  const { newDocument, newSpreadsheet, recentDocuments, archivedDocuments, loadRecentDocument, softDeleteDocument, hydrateFromStorage, loadArchive } = useDocumentStore();
 
   // Hydrate recent documents from localStorage
   useEffect(() => {
     hydrateFromStorage();
+    loadArchive();
   }, []); // eslint-disable-line
 
   // Check Ollama connection on mount
@@ -170,8 +172,8 @@ export default function Dashboard() {
                     </span>
                     <button
                       className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 dark:hover:bg-red-900/30 text-red-400 hover:text-red-600"
-                      onClick={(e) => { e.stopPropagation(); deleteRecentDocument(doc.id); }}
-                      title="हटाएं"
+                      onClick={(e) => { e.stopPropagation(); softDeleteDocument(doc.id); }}
+                      title="ट्रैश में भेजें"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -186,7 +188,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'दस्तावेज़', value: String(recentDocuments.length), icon: FileText, change: 'Documents' },
-            { label: 'AI सुधार', value: '0', icon: Bot, change: 'Corrections' },
+            { label: 'आर्काइव', value: String(archivedDocuments.length), icon: Archive, change: 'Auto-Archived' },
             { label: 'टेम्पलेट', value: '10', icon: TrendingUp, change: 'Templates' },
             { label: 'हाल के', value: String(recentDocuments.length), icon: Clock, change: 'Recent' },
           ].map((stat, i) => {
@@ -355,7 +357,7 @@ export default function Dashboard() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm('क्या आप इसे हटाना चाहते हैं?')) deleteRecentDocument(doc.id);
+                              softDeleteDocument(doc.id);
                             }}
                             className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded"
                             title="हटाएं"

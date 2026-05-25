@@ -9,7 +9,7 @@ import {
   FileDown, Printer, Bot, Sparkles, Palette, FilePlus, Type, FileText, LayoutTemplate,
   ClipboardPaste, Scissors, Copy, Paintbrush, Strikethrough, Subscript, Superscript, Eraser,
   IndentDecrease, IndentIncrease, Baseline, PaintBucket, Grid, WrapText, ArrowDownAZ,
-  Pilcrow, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Trash, Split
+  Pilcrow, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Trash, Split, MousePointerClick
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -118,7 +118,7 @@ declare global {
 
 export default function RibbonToolbar() {
   const { addPage } = useDocumentStore();
-  const { ribbonTab, setRibbonTab, setSidebarPanel } = useUIStore();
+  const { ribbonTab, setRibbonTab, setSidebarPanel, directCursorMode, toggleDirectCursorMode } = useUIStore();
   const { isAutoSuggestEnabled, setAutoSuggestEnabled } = useAIStore();
   const { aiModel } = useSettingsStore();
   const theme = useSettingsStore(s => s.theme);
@@ -470,6 +470,7 @@ export default function RibbonToolbar() {
                 <button className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/5 dark:hover:bg-white/10" title="Increase Indent"><IndentIncrease className="w-3.5 h-3.5" /></button>
                 <div className="w-[1px] h-4 bg-[#e4e4e4] dark:bg-gray-700 mx-1" />
                 <button className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/5 dark:hover:bg-white/10" title="Sort"><ArrowDownAZ className="w-3.5 h-3.5" /></button>
+                <button className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${directCursorMode ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' : 'hover:bg-black/5 dark:hover:bg-white/10'}`} onClick={toggleDirectCursorMode} title="Direct Cursor Mode (Click to Type)"><MousePointerClick className="w-3.5 h-3.5" /></button>
                 <button className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/5 dark:hover:bg-white/10" title="Show/Hide ¶"><Pilcrow className="w-3.5 h-3.5" /></button>
               </div>
               <div className="flex items-center gap-0.5">

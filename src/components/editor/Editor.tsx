@@ -16,6 +16,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import { useDocumentStore } from '@/stores/documentStore';
+import { useUIStore } from '@/stores/uiStore';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { inscriptMap } from '@/lib/keyboardLayouts';
 import { krutiDevToUnicode } from '@/lib/fontConversion';
@@ -62,6 +63,9 @@ const CustomTableCell = TableCell.extend({
 let globalFontMode: 'unicode' | 'mangal' | 'krutidev' = 'unicode';
 export function setGlobalFontMode(m: 'unicode' | 'mangal' | 'krutidev') {
   globalFontMode = m;
+}
+export function getGlobalFontMode() {
+  return globalFontMode;
 }
 
 interface PageEditorProps {
@@ -404,8 +408,110 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
     }
   }, [isActive, editor]);
 
+  const handleSheetClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    onFocus(pageIndex);
+    if (!useUIStore.getState().directCursorMode || !editor) return;
+
+    const tiptapEl = editor.view.dom;
+    if (!tiptapEl) return;
+
+    const rect = tiptapEl.getBoundingClientRect();
+    const clickY = e.clientY - rect.top;
+    
+    // Page padding is typically 80px (defined in Editor as PAGE_PADDING)
+    let targetX = e.clientX - rect.left - 80;
+    if (targetX < 0) targetX = 0;
+
+    const lastNode = tiptapEl.lastElementChild;
+    if (!lastNode) return;
+    const lastRect = lastNode.getBoundingClientRect();
+    const lastY = lastRect.bottom - rect.top;
+
+    // If clicked below the last paragraph
+    if (clickY > lastY + 10) {
+      const diff = clickY - lastY;
+      const linesToInsert = Math.ceil(diff / 25.2);
+      
+      if (linesToInsert > 0) {
+        // Premium instant insertion
+        editor.chain()
+          .focus('end')
+          .insertContent('<p></p>'.repeat(linesToInsert))
+          .setIndent({ paddingLeft: targetX, textIndent: 0, paddingRight: 0 })
+          .run();
+        return;
+      } else {
+        editor.chain().focus('end').setIndent({ paddingLeft: targetX, textIndent: 0, paddingRight: 0 }).run();
+        return;
+      }
+    }
+
+    // If clicked inside the text area, use exact coordinates to prevent ProseMirror from snapping to nearby text
+    const coords = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
+    if (coords) {
+      const resolved = editor.state.doc.resolve(coords.pos);
+      const isLineEmpty = resolved.parent.textContent.trim() === '';
+      
+      if (isLineEmpty) {
+        editor.chain()
+          .setTextSelection(coords.pos)
+          .setIndent({ paddingLeft: targetX, textIndent: 0, paddingRight: 0 })
+          .run();
+      } else {
+        // Line has text. Check if we clicked to the left or right of the text.
+        const currentPadding = parseInt(resolved.parent.attrs.paddingLeft) || 0;
+        
+        // Dynamically measure the exact width of a non-breaking space for accurate padding
+        const measureSpace = () => {
+          const span = document.createElement('span');
+          span.style.fontFamily = 'Noto Sans Devanagari, Mangal, serif';
+          span.style.fontSize = '14px';
+          span.style.visibility = 'hidden';
+          span.style.position = 'absolute';
+          span.style.whiteSpace = 'pre';
+          span.innerText = '\u00A0';
+          document.body.appendChild(span);
+          const width = span.getBoundingClientRect().width;
+          document.body.removeChild(span);
+          return width > 0 ? width : 4.0; // Fallback to 4px
+        };
+        const exactSpaceWidth = measureSpace();
+        
+        // If clicked to the left of the text
+        if (resolved.parentOffset === 0 && targetX < currentPadding - 10) {
+          e.preventDefault(); // Stop ProseMirror's default snap
+          const gap = currentPadding - targetX;
+          const numSpaces = Math.max(0, Math.round(gap / exactSpaceWidth));
+          
+          editor.chain()
+            .setIndent({ paddingLeft: targetX, textIndent: 0, paddingRight: 0 })
+            .insertContentAt(coords.pos, '\u00A0'.repeat(numSpaces))
+            .setTextSelection(coords.pos) // Move cursor to the actual click position
+            .run();
+        } 
+        // If clicked to the right of the text
+        else if (resolved.parentOffset === resolved.parent.content.size) {
+          const cursorPos = editor.view.coordsAtPos(coords.pos);
+          if (e.clientX > cursorPos.left + 15) {
+            e.preventDefault();
+            const gap = e.clientX - cursorPos.left;
+            const numSpaces = Math.max(0, Math.round(gap / exactSpaceWidth));
+            
+            editor.chain()
+              .insertContentAt(coords.pos, '\u00A0'.repeat(numSpaces))
+              .setTextSelection(coords.pos + numSpaces)
+              .run();
+          }
+        }
+      }
+    }
+  };
+
   return (
-    <div className={`page-sheet ${isActive ? 'page-sheet--active' : ''}`} onClick={() => onFocus(pageIndex)}>
+    <div className={`page-sheet ${isActive ? 'page-sheet--active' : ''} relative`} onClick={handleSheetClick}>
+      {/* Premium Margin Line */}
+      <div className="absolute top-[60px] bottom-[60px] left-[80px] w-[1px] bg-blue-400/20 dark:bg-blue-400/10 pointer-events-none mix-blend-multiply dark:mix-blend-screen" />
+      
       <div className="page-number">पृष्ठ {pageIndex + 1} / {totalPages}</div>
       {totalPages > 1 && (
         <button
