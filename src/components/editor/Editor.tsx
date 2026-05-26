@@ -23,6 +23,7 @@ import { krutiDevToUnicode } from '@/lib/fontConversion';
 import { Indent } from './extensions/Indent';
 import { GhostText } from './extensions/GhostText';
 import { LineHeight } from './extensions/LineHeight';
+import { FontSize } from './extensions/FontSize';
 import { DOMSerializer } from 'prosemirror-model';
 
 // Custom extensions to preserve styles
@@ -88,7 +89,7 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
       Underline,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Highlight.configure({ multicolor: true }),
-      TextStyle, Color, FontFamily,
+      TextStyle, Color, FontFamily, FontSize,
       CustomTable.configure({ resizable: true }), CustomTableRow, CustomTableHeader, CustomTableCell,
       Indent,
       GhostText,
@@ -114,6 +115,17 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
         const plainData = cd.getData('text/plain');
 
         if (!htmlData && !plainData) return false;
+
+        // Auto-detection helpers
+        const isDevanagari = (text: string): boolean => {
+          const devanagariChars = text.match(/[\u0900-\u097F]/g);
+          return !!devanagariChars && devanagariChars.length > text.length * 0.15;
+        };
+        const isAsciiKrutiDev = (text: string): boolean => {
+          // Check for typical KrutiDev English characters that form Hindi words
+          const asciiChars = text.match(/[a-zA-Z]/g);
+          return !!asciiChars && asciiChars.length > text.length * 0.15 && !isDevanagari(text);
+        };
 
         if (htmlData) {
           event.preventDefault();
@@ -158,7 +170,6 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
 
           // 5. Clean all elements — keep only TipTap-compatible styles
           const cleanEl = (el: Element) => {
-            // Remove all attributes except style, colspan, rowspan
             const keep = new Set(['style', 'colspan', 'rowspan']);
             const attrsToRemove: string[] = [];
             for (let i = 0; i < el.attributes.length; i++) {
@@ -168,7 +179,6 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
             }
             attrsToRemove.forEach(a => el.removeAttribute(a));
 
-            // Clean styles — keep only what TipTap understands
             const style = el.getAttribute('style');
             let hasFontFamily = '';
             let isKrutiDev = false;
@@ -184,23 +194,19 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
                 if (idx === -1) return;
                 const prop = s.substring(0, idx).trim().toLowerCase();
 
-                // Skip ALL mso-* and unwanted layout/spacing properties
                 if (prop.startsWith('mso-')) return;
                 if (/^(margin|padding|line-height|text-indent|tab-stops|font-size|page-break|widows|orphans|word-spacing|letter-spacing)/.test(prop)) return;
 
-                // Extract font-family to push it to spans later, or flag for KrutiDev conversion
                 if (prop === 'font-family') { 
                   hasFontFamily = rule.substring(idx + 1).trim();
                   if (/Kruti\s*Dev/i.test(hasFontFamily)) {
                     isKrutiDev = true;
-                    // DO NOT keep Kruti Dev font-family, we will convert text to Unicode!
                   } else {
                     if (!isBlock) kept.push(s); 
                   }
                   return; 
                 }
 
-                // Keep useful styling
                 if (prop === 'text-align' && isBlock) { kept.push(s); return; }
                 if (['font-weight', 'font-style', 'text-decoration'].includes(prop)) { kept.push(s); return; }
                 if (prop === 'color' || prop.includes('background')) { kept.push(s); return; }
@@ -213,14 +219,12 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
               }
             }
 
-            // Flag element if it contains Kruti Dev text
             if (isKrutiDev) {
               el.setAttribute('data-krutidev', 'true');
             }
 
             Array.from(el.children).forEach(child => cleanEl(child));
 
-            // If this was a block element with a non-KrutiDev font-family, wrap its contents.
             if (hasFontFamily && !isKrutiDev && /^(P|DIV|TD|TH|H[1-6]|LI|BLOCKQUOTE)$/i.test(el.tagName)) {
               if (el.innerHTML.trim()) {
                 const span = doc.createElement('span');
@@ -234,43 +238,59 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
           };
           Array.from(body.children).forEach(child => cleanEl(child));
 
-          // 6. Handle KrutiDev text - DO NOT convert to Unicode automatically!
-          // Ensure it has the KrutiDev font applied so it renders correctly as Hindi.
-          // The user will manually convert it later using the "KrutiDev → Mangal" button.
-          const handleKrutiDevElements = (node: Node, inKrutiDevContext: boolean = false) => {
+          // 6. Handle explicit KrutiDev elements AND Auto-detect missing fonts
+          const processTextNodes = (node: Node, inKrutiDevContext: boolean = false) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               const el = node as Element;
-              const isKrutiMarked = el.getAttribute('data-krutidev') === 'true';
+              let isKrutiMarked = el.getAttribute('data-krutidev') === 'true';
               
               if (isKrutiMarked) {
                 el.removeAttribute('data-krutidev');
-                
-                // Ensure this element has KrutiDev font applied
                 const currentStyle = el.getAttribute('style') || '';
                 if (!/kruti/i.test(currentStyle)) {
-                  el.setAttribute('style', `${currentStyle}${currentStyle.endsWith(';') ? '' : ';'} font-family: 'Kruti Dev 010', sans-serif;`);
+                  el.setAttribute('style', `${currentStyle}${currentStyle && !currentStyle.endsWith(';') ? ';' : ''} font-family: 'Kruti Dev 010', sans-serif;`);
                 }
               }
               
-              // Recurse into children
+              // If it has explicit font, don't override
+              const style = el.getAttribute('style') || '';
+              const hasExplicitFont = /font-family/i.test(style);
+              const thisIsKruti = isKrutiMarked || (/kruti/i.test(style));
+              
               Array.from(node.childNodes).forEach(child => 
-                handleKrutiDevElements(child, isKrutiMarked || inKrutiDevContext)
+                processTextNodes(child, inKrutiDevContext || thisIsKruti)
               );
             } else if (node.nodeType === Node.TEXT_NODE) {
-              // Only normalize smart quotes for NON-KrutiDev text
               let text = node.nodeValue || '';
-              if (text && !inKrutiDevContext) {
-                text = text
-                  .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
-                  .replace(/[\u201C\u201D\u201E\u201F]/g, '"');
-                node.nodeValue = text;
+              if (!text.trim()) return;
+
+              // If text is not inside an explicitly styled KrutiDev block, auto-detect it
+              if (!inKrutiDevContext) {
+                if (isAsciiKrutiDev(text)) {
+                  // Text looks like KrutiDev but isn't styled as such. Wrap it.
+                  const span = doc.createElement('span');
+                  span.style.fontFamily = "'Kruti Dev 010'";
+                  node.parentNode?.insertBefore(span, node);
+                  span.appendChild(node);
+                } else if (isDevanagari(text)) {
+                  // Text is Devanagari. Wrap it in Mangal.
+                  const span = doc.createElement('span');
+                  span.style.fontFamily = "Mangal";
+                  node.parentNode?.insertBefore(span, node);
+                  span.appendChild(node);
+                  
+                  // Also normalize quotes
+                  node.nodeValue = text.replace(/[\u2018\u2019\u201A\u201B]/g, "'").replace(/[\u201C\u201D\u201E\u201F]/g, '"');
+                } else {
+                  // Normal english text
+                  node.nodeValue = text.replace(/[\u2018\u2019\u201A\u201B]/g, "'").replace(/[\u201C\u201D\u201E\u201F]/g, '"');
+                }
               }
             }
           };
-          handleKrutiDevElements(body);
+          processTextNodes(body);
 
-
-          // 7. Remove empty paragraphs (whitespace/nbsp only)
+          // 7. Remove empty paragraphs
           body.querySelectorAll('p').forEach(p => {
             const text = (p.textContent || '').replace(/\u00a0/g, '').trim();
             if (!text && !p.querySelector('img, table')) {
@@ -278,18 +298,13 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
             }
           });
 
-          // 8. Get cleaned HTML and normalize KrutiDev font names
-          let html = body.innerHTML
-            .replace(/Kruti\s*Dev\s*(\d+)/gi, 'Kruti Dev $1');
-
-          html = html.trim();
+          let html = body.innerHTML.replace(/Kruti\s*Dev\s*(\d+)/gi, 'Kruti Dev $1').trim();
           
           if (editor && html) {
             editor.chain().focus().insertContent(html, {
               parseOptions: { preserveWhitespace: false }
             }).run();
           }
-          console.log('[PageHindi] Pasted DOM-parsed HTML with KrutiDev fixes');
           return true;
         }
 
@@ -302,7 +317,15 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
             .replace(/[\u2013\u2014]/g, "-");
             
           const lines = text.split(/\r?\n/).filter(l => l.trim());
-          const html = lines.map(l => `<p>${l}</p>`).join('');
+          const html = lines.map(l => {
+            if (isAsciiKrutiDev(l)) {
+              return `<p><span style="font-family: 'Kruti Dev 010'">${l}</span></p>`;
+            } else if (isDevanagari(l)) {
+              return `<p><span style="font-family: 'Mangal'">${l}</span></p>`;
+            }
+            return `<p>${l}</p>`;
+          }).join('');
+          
           if (editor && html) {
             editor.chain().focus().insertContent(html).run();
           }

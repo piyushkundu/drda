@@ -365,56 +365,6 @@ body {
   height: 0;
 }
 
-/* ── PRINT STYLES ───────────────────────────────────────────── */
-@media print {
-  body * { visibility: hidden !important; }
-
-  .pages-container,
-  .pages-container * { visibility: visible !important; }
-
-  body {
-    background: white !important;
-    overflow: visible !important;
-    height: auto !important;
-  }
-
-  .multi-page-editor {
-    position: fixed !important;
-    top: 0; left: 0;
-    width: 100%; height: auto;
-    overflow: visible !important;
-    background: white !important;
-  }
-
-  .pages-container {
-    gap: 0 !important;
-    padding: 0 !important;
-    align-items: stretch !important;
-  }
-
-  .page-sheet {
-    width: 100% !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    page-break-after: always;
-    break-after: page;
-  }
-
-  .page-sheet:last-child {
-    page-break-after: avoid;
-    break-after: avoid;
-  }
-
-  .page-number,
-  .page-delete-btn,
-  .ruler-wrapper { display: none !important; }
-
-  .page-content .tiptap {
-    padding: 15mm 20mm !important;
-    color: #000 !important;
-  }
-}
 
 
 /* Ribbon Toolbar */
@@ -659,6 +609,11 @@ body {
    PRINT STYLES — Only editor page prints, all UI is hidden
    ============================================================ */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 20mm; /* Standard default print margin */
+  }
+
   /* Hide everything */
   body * { visibility: hidden !important; }
 
@@ -666,34 +621,75 @@ body {
   .editor-page,
   .editor-page *,
   .tiptap-editor,
-  .tiptap-editor * { visibility: visible !important; }
+  .tiptap-editor *,
+  .pages-container,
+  .pages-container * { visibility: visible !important; }
 
   /* Reset body layout for print */
   body {
     background: white !important;
     overflow: visible !important;
     height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   /* Position the editor page to fill the print area */
   .editor-page {
-    position: fixed !important;
+    position: relative !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
     min-height: auto !important;
-    max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
-    border-radius: 0 !important;
   }
 
-  .tiptap-editor .tiptap {
-    padding: 15mm 20mm !important;
+  .pages-container {
+    padding: 0 !important;
+    gap: 0 !important;
+    align-items: flex-start !important;
+    background: white !important;
+  }
+
+  .page-sheet {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .page-sheet:last-child {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .page-number,
+  .page-delete-btn,
+  .ruler-wrapper { display: none !important; }
+
+  .tiptap-editor .tiptap,
+  .page-content .tiptap {
+    /* Rely on @page margin instead of padding */
+    padding: 0 !important;
     color: #000 !important;
     background: white !important;
+    line-height: 1.5 !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+  }
+
+  .tiptap-editor .tiptap p,
+  .page-content .tiptap p {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 
   /* Page break support */

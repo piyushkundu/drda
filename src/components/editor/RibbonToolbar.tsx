@@ -59,6 +59,11 @@ function convertEditorContent(html: string, converter: (t: string) => string, di
   const div = document.createElement('div');
   div.innerHTML = html;
   
+  // Target font family after conversion
+  const targetFont = direction === 'krutidev-to-mangal' ? 'Mangal' : "'Kruti Dev 010'";
+  const targetFontCheck = direction === 'krutidev-to-mangal' ? /mangal/i : /kruti/i;
+  const sourcePattern = direction === 'krutidev-to-mangal' ? /Kruti\s*Dev\s*\d*/i : /Mangal|Noto\s*Sans\s*Devanagari/i;
+  
   // Check if text is primarily Devanagari Unicode (already converted)
   const isDevanagari = (text: string): boolean => {
     const devanagariChars = text.match(/[\u0900-\u097F]/g);
@@ -70,26 +75,62 @@ function convertEditorContent(html: string, converter: (t: string) => string, di
     const asciiChars = text.match(/[a-zA-Z]/g);
     return !!asciiChars && asciiChars.length > text.length * 0.3;
   };
+
+  // Check if an element or any ancestor already has the target font
+  const hasTargetFont = (el: Node): boolean => {
+    let node: Node | null = el;
+    while (node && node !== div) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const style = (node as HTMLElement).style;
+        if (style && style.fontFamily && targetFontCheck.test(style.fontFamily)) {
+          return true;
+        }
+      }
+      node = node.parentNode;
+    }
+    return false;
+  };
   
   const walk = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE && node.textContent) {
       const text = node.textContent;
       if (!text.trim()) return; // skip whitespace-only
       
+      let shouldConvert = true;
       if (direction === 'krutidev-to-mangal') {
-        // Only convert if text looks like KrutiDev (ASCII), skip if already Unicode
-        if (isDevanagari(text)) return; // already Unicode, skip
+        if (isDevanagari(text)) shouldConvert = false;
       } else {
-        // mangal-to-krutidev: Only convert if text looks like Unicode Devanagari
-        if (isAsciiKrutiDev(text)) return; // already KrutiDev, skip
+        if (isAsciiKrutiDev(text)) shouldConvert = false;
       }
       
-      node.textContent = converter(text);
-    } else {
-      node.childNodes.forEach(walk);
+      if (shouldConvert) {
+        node.textContent = converter(text);
+      }
+      
+      // Ensure this text node's parent has the target font
+      // If not, wrap the text node in a span with the target font
+      if (!hasTargetFont(node)) {
+        const span = document.createElement('span');
+        span.style.fontFamily = targetFont;
+        node.parentNode?.insertBefore(span, node);
+        span.appendChild(node);
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      
+      // Update font-family in inline styles if present
+      if (el.style && el.style.fontFamily) {
+        if (sourcePattern.test(el.style.fontFamily)) {
+          el.style.fontFamily = targetFont;
+        }
+      }
+      
+      // Recurse into children (copy to array first since we may modify the DOM)
+      Array.from(el.childNodes).forEach(walk);
     }
   };
   walk(div);
+  
   return div.innerHTML;
 }
 
@@ -123,6 +164,7 @@ export default function RibbonToolbar() {
   const { aiModel } = useSettingsStore();
   const theme = useSettingsStore(s => s.theme);
   const [fontMode, setFontMode] = useState<FontMode>('unicode');
+  const [currentFontSize, setCurrentFontSize] = useState<string>('14');
   const [isExporting, setIsExporting] = useState(false);
   const [formatPainter, setFormatPainter] = useState<Record<string, any> | null>(null);
   const [tableRows, setTableRows] = useState(3);
@@ -149,7 +191,8 @@ export default function RibbonToolbar() {
       const editor = getEditor();
       if (editor) {
         editor.on('transaction', () => {
-          const fontFamily = editor.getAttributes('textStyle').fontFamily || '';
+          const textStyle = editor.getAttributes('textStyle');
+          const fontFamily = textStyle.fontFamily || '';
           
           let detectedMode: FontMode = 'unicode';
           if (/kruti/i.test(fontFamily)) detectedMode = 'krutidev';
@@ -163,6 +206,14 @@ export default function RibbonToolbar() {
             }
             return prev;
           });
+
+          // Sync font size
+          const fSize = textStyle.fontSize;
+          if (fSize) {
+            setCurrentFontSize(fSize.replace('px', ''));
+          } else {
+            setCurrentFontSize('14'); // default fallback
+          }
         });
         clearInterval(checkInterval);
       }
@@ -191,20 +242,32 @@ export default function RibbonToolbar() {
   }, []);
 
   // ── Convert existing content ──
+  // Only converts text encoding + updates font-family in existing spans.
+  // Does NOT use selectAll or change any paragraph-level formatting.
   const convertContent = useCallback((direction: 'krutidev-to-mangal' | 'mangal-to-krutidev') => {
     const editor = getEditor();
     if (!editor) return;
+    
+    // Save cursor position
+    const { from } = editor.state.selection;
+    
     const html = editor.getHTML();
     const converted = convertEditorContent(html, (t) => {
       try { return convertFont(t, direction); } catch { return t; }
     }, direction);
+    
+    // Set content back — preserves all paragraph/node attributes (indent, align, etc.)
     editor.commands.setContent(converted);
-    if (direction === 'krutidev-to-mangal') {
-      switchFontMode('mangal');
-    } else {
-      switchFontMode('krutidev');
-    }
-  }, [switchFontMode]);
+    
+    // Update font mode state WITHOUT calling selectAll().setFontFamily()
+    const newMode: FontMode = direction === 'krutidev-to-mangal' ? 'mangal' : 'krutidev';
+    setFontMode(newMode);
+    setGlobalFontMode(newMode);
+    
+    // Restore cursor position (clamped to document size)
+    const maxPos = editor.state.doc.content.size;
+    editor.commands.setTextSelection(Math.min(from, maxPos));
+  }, []);
 
   // ── New Page (adds new A4 page sheet) ───────────────────────────────
   const handleNewPage = useCallback(() => {
@@ -294,7 +357,7 @@ export default function RibbonToolbar() {
     const parsed = parseInt(currentSize);
     if (!isNaN(parsed)) {
       const newSize = Math.max(8, parsed + delta);
-      editor.chain().focus().setMark('textStyle', { fontSize: `${newSize}px` } as any).run();
+      editor.chain().focus().setFontSize(`${newSize}px`).run();
     }
   }, []);
 
@@ -334,7 +397,7 @@ export default function RibbonToolbar() {
         if (formatPainter.strike) chain.setStrike(); else chain.unsetStrike();
         if (formatPainter.subscript) chain.setSubscript(); else chain.unsetSubscript();
         if (formatPainter.superscript) chain.setSuperscript(); else chain.unsetSuperscript();
-        if (formatPainter.fontSize) chain.setMark('textStyle', { fontSize: formatPainter.fontSize } as any);
+        if (formatPainter.fontSize) chain.setFontSize(formatPainter.fontSize);
         if (formatPainter.fontFamily) chain.setFontFamily(formatPainter.fontFamily);
         if (formatPainter.color) chain.setColor(formatPainter.color);
         
@@ -419,8 +482,8 @@ export default function RibbonToolbar() {
                   {fontFamilies.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
                 </select>
                 <select className="select-field w-[50px] h-[24px] text-xs shrink-0"
-                  onChange={(e) => runCmd((ed) => ed.chain().focus().setMark('textStyle', { fontSize: `${e.target.value}px` } as unknown as Record<string, unknown>).run())}
-                  defaultValue="14">
+                  onChange={(e) => runCmd((ed) => ed.chain().focus().setFontSize(`${e.target.value}px`).run())}
+                  value={currentFontSize}>
                   {fontSizes.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
                 <button onClick={() => changeFontSize(2)} className="w-6 h-6 flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 rounded text-xs font-bold shrink-0" title="Increase Font Size">A^</button>
