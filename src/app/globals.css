@@ -611,7 +611,7 @@ body {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 20mm; /* Standard default print margin */
+    margin: 0 !important; /* Remove browser default margins to rely on editor padding */
   }
 
   /* Hide everything */
@@ -655,6 +655,7 @@ body {
   }
 
   .page-sheet {
+    /* Fill the physical paper perfectly without bleeding off the right edge */
     width: 100% !important;
     max-width: 100% !important;
     min-height: auto !important;
@@ -677,13 +678,14 @@ body {
 
   .tiptap-editor .tiptap,
   .page-content .tiptap {
-    /* Rely on @page margin instead of padding */
-    padding: 0 !important;
+    /* Use the EXACT same padding as the on-screen editor */
+    padding: 72px 80px !important;
     color: #000 !important;
     background: white !important;
     line-height: 1.5 !important;
     white-space: pre-wrap !important;
     word-wrap: break-word !important;
+    box-sizing: border-box !important;
   }
 
   .tiptap-editor .tiptap p,

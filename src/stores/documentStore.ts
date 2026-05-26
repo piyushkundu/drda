@@ -9,13 +9,10 @@ import { collection, doc, setDoc, getDocs, deleteDoc, getDoc, query, where, orde
 // Device ID helper (since there is no login yet)
 // ============================================
 function getDeviceId() {
-  if (typeof window === 'undefined') return 'server';
-  let deviceId = localStorage.getItem('page-hindi-device-id');
-  if (!deviceId) {
-    deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem('page-hindi-device-id', deviceId);
-  }
-  return deviceId;
+  // Always use a single global workspace ID instead of a random per-device ID.
+  // This ensures that ALL computers/systems accessing the app will see 
+  // and share the exact same recent documents and state.
+  return 'drda-global-workspace';
 }
 
 // ============================================
