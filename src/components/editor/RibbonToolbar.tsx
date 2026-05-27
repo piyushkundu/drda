@@ -9,13 +9,15 @@ import {
   FileDown, Printer, Bot, Sparkles, Palette, FilePlus, Type, FileText, LayoutTemplate,
   ClipboardPaste, Scissors, Copy, Paintbrush, Strikethrough, Subscript, Superscript, Eraser,
   IndentDecrease, IndentIncrease, Baseline, PaintBucket, Grid, WrapText, ArrowDownAZ,
-  Pilcrow, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Trash, Split, MousePointerClick
+  Pilcrow, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Trash, Split, MousePointerClick,
+  FolderOpen
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useDocumentStore } from '@/stores/documentStore';
 import { useAIStore } from '@/stores/aiStore';
 import { convertFont } from '@/lib/fontConversion';
+import { parseDocxToHtml } from '@/lib/docxParser';
 import { setGlobalFontMode } from '@/components/editor/Editor';
 
 function getEditor(): Editor | null {
@@ -150,6 +152,130 @@ const colors = [
 
 export type FontMode = 'unicode' | 'mangal' | 'krutidev';
 
+// ── Auto-pagination: Split HTML into page-sized chunks ──────────────
+// Mimics MS Word page flow: renders content offscreen with exact page
+// dimensions, measures each block, and splits at page boundaries.
+const PAGE_CONTENT_HEIGHT = 912; // 1056px page height - 72px top - 72px bottom padding
+
+function splitHtmlIntoPages(html: string): string[] {
+  // Create an offscreen container that matches the exact page content area
+  const container = document.createElement('div');
+  container.style.cssText = `
+    position: fixed; top: -99999px; left: -99999px;
+    width: 656px;
+    font-family: 'Noto Sans Devanagari', 'Mangal', serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #1a1a2e;
+    visibility: hidden;
+    overflow: visible;
+  `;
+  // Add table styles to match the editor
+  const styleTag = document.createElement('style');
+  styleTag.textContent = `
+    .pg-measure table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+    .pg-measure table td, .pg-measure table th { border: 1.5px solid #c0c0d0; padding: 8px 12px; vertical-align: top; }
+    .pg-measure table th { background: #f0f0f8; font-weight: 600; }
+    .pg-measure p { margin-top: 0; margin-bottom: 0; }
+    .pg-measure h1 { font-size: 1.8em; font-weight: 700; margin: 0.5em 0; }
+    .pg-measure h2 { font-size: 1.5em; font-weight: 600; margin: 0.5em 0; }
+    .pg-measure h3 { font-size: 1.3em; font-weight: 600; margin: 0.5em 0; }
+    .pg-measure ul { list-style-type: disc; padding-left: 1.5rem; margin: 0.5rem 0; }
+    .pg-measure ol { list-style-type: decimal; padding-left: 1.5rem; margin: 0.5rem 0; }
+    .pg-measure li { margin-bottom: 0.25rem; }
+  `;
+  document.head.appendChild(styleTag);
+  container.classList.add('pg-measure');
+  document.body.appendChild(container);
+
+  // Parse HTML and extract top-level block elements
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+
+  // Collect all top-level child nodes as blocks
+  const blocks: HTMLElement[] = [];
+  const childNodes = Array.from(tempDiv.childNodes);
+
+  for (const node of childNodes) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      blocks.push(node as HTMLElement);
+    } else if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
+      // Wrap orphan text nodes in <p>
+      const p = document.createElement('p');
+      p.textContent = node.textContent;
+      blocks.push(p);
+    }
+  }
+
+  // If no blocks found, return the whole HTML as one page
+  if (blocks.length === 0) {
+    document.body.removeChild(container);
+    document.head.removeChild(styleTag);
+    return [html || '<p></p>'];
+  }
+
+  // Measure each block's rendered height
+  const blockHeights: number[] = [];
+  for (const block of blocks) {
+    // Clear container and add only this block to measure
+    container.innerHTML = '';
+    container.appendChild(block.cloneNode(true));
+    // Force layout
+    const height = container.getBoundingClientRect().height;
+    blockHeights.push(height);
+  }
+
+  // Now split blocks across pages
+  const pages: string[] = [];
+  let currentPageBlocks: string[] = [];
+  let currentHeight = 0;
+
+  for (let i = 0; i < blocks.length; i++) {
+    const blockHeight = blockHeights[i];
+    const blockHtml = blocks[i].outerHTML;
+
+    // If this single block is taller than a page, it goes on its own page
+    if (blockHeight > PAGE_CONTENT_HEIGHT) {
+      // First, save any current accumulated blocks as a page
+      if (currentPageBlocks.length > 0) {
+        pages.push(currentPageBlocks.join(''));
+        currentPageBlocks = [];
+        currentHeight = 0;
+      }
+      // Put the oversized block on its own page
+      pages.push(blockHtml);
+      continue;
+    }
+
+    // Check if adding this block would overflow the current page
+    if (currentHeight + blockHeight > PAGE_CONTENT_HEIGHT && currentPageBlocks.length > 0) {
+      // Save current page
+      pages.push(currentPageBlocks.join(''));
+      currentPageBlocks = [];
+      currentHeight = 0;
+    }
+
+    currentPageBlocks.push(blockHtml);
+    currentHeight += blockHeight;
+  }
+
+  // Don't forget the last page
+  if (currentPageBlocks.length > 0) {
+    pages.push(currentPageBlocks.join(''));
+  }
+
+  // Cleanup
+  document.body.removeChild(container);
+  document.head.removeChild(styleTag);
+
+  // Ensure at least one page
+  if (pages.length === 0) {
+    pages.push('<p></p>');
+  }
+
+  return pages;
+}
+
 // Expose fontMode globally so Editor.tsx can read it
 declare global {
   interface Window {
@@ -158,7 +284,7 @@ declare global {
 }
 
 export default function RibbonToolbar() {
-  const { addPage } = useDocumentStore();
+
   const { ribbonTab, setRibbonTab, setSidebarPanel, directCursorMode, toggleDirectCursorMode } = useUIStore();
   const { isAutoSuggestEnabled, setAutoSuggestEnabled } = useAIStore();
   const { aiModel } = useSettingsStore();
@@ -166,6 +292,7 @@ export default function RibbonToolbar() {
   const [fontMode, setFontMode] = useState<FontMode>('unicode');
   const [currentFontSize, setCurrentFontSize] = useState<string>('14');
   const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [formatPainter, setFormatPainter] = useState<Record<string, any> | null>(null);
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
@@ -269,10 +396,109 @@ export default function RibbonToolbar() {
     editor.commands.setTextSelection(Math.min(from, maxPos));
   }, []);
 
-  // ── New Page (adds new A4 page sheet) ───────────────────────────────
+  // ── Manual Page Break ───────────────────────────────
   const handleNewPage = useCallback(() => {
-    const addPageFn = (window as unknown as Record<string, unknown>).__addPage as (() => void) | undefined;
-    if (addPageFn) addPageFn();
+    const editor = getEditor();
+    if (editor) {
+      editor.commands.insertContent('<hr class="page-break" />');
+    }
+  }, []);
+
+  // Reads .docx/.html/.htm and imports all content into the continuous editor,
+  // separating Word sections with visual page breaks if necessary.
+  const openLocalFile = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.docx,.doc,.html,.htm';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      document.body.removeChild(input);
+      if (!file) return;
+
+      setIsImporting(true);
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+      try {
+        let finalHtml = '';
+
+        // ── HTML / HTM — read raw HTML and inline CSS ──
+        if (ext === 'html' || ext === 'htm') {
+          const text = await file.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(text, 'text/html');
+
+          // Collect all <style> blocks and embed them as inline styles
+          const styleSheets = doc.querySelectorAll('style');
+          let combinedCSS = '';
+          styleSheets.forEach(s => { combinedCSS += s.textContent || ''; });
+
+          // Inline critical table/cell styles from stylesheets into elements
+          if (combinedCSS) {
+            try {
+              const tempStyle = document.createElement('style');
+              tempStyle.textContent = combinedCSS;
+              document.head.appendChild(tempStyle);
+              const sheet = tempStyle.sheet;
+              if (sheet) {
+                for (let i = 0; i < sheet.cssRules.length; i++) {
+                  const rule = sheet.cssRules[i] as CSSStyleRule;
+                  if (!rule.selectorText) continue;
+                  try {
+                    const targets = doc.body.querySelectorAll(rule.selectorText);
+                    targets.forEach(el => {
+                      const htmlEl = el as HTMLElement;
+                      for (let j = 0; j < rule.style.length; j++) {
+                        const prop = rule.style[j];
+                        if (!htmlEl.style.getPropertyValue(prop)) {
+                          htmlEl.style.setProperty(prop, rule.style.getPropertyValue(prop), rule.style.getPropertyPriority(prop));
+                        }
+                      }
+                    });
+                  } catch { /* selector may not be valid */ }
+                }
+              }
+              document.head.removeChild(tempStyle);
+            } catch { /* CSS parsing error, skip */ }
+          }
+
+          doc.body.querySelectorAll('script, style, meta, link').forEach(el => el.remove());
+          finalHtml = doc.body.innerHTML.trim();
+        }
+        // ── DOCX / DOC — use custom parser for exact styling ──
+        else if (ext === 'docx' || ext === 'doc') {
+          const arrayBuffer = await file.arrayBuffer();
+          finalHtml = await parseDocxToHtml(arrayBuffer);
+        }
+
+        // ── Auto-paginate the content across multiple pages ──
+        if (finalHtml) {
+          // Load the full continuous content into the store
+          useDocumentStore.getState().loadFileAsPages([finalHtml], file.name);
+          
+          // Auto-detect font for the whole document
+          setTimeout(() => {
+            const editor = getEditor();
+            if (editor) {
+              const text = editor.getText();
+              if (/[a-zA-Z]/.test(text) && !/[\u0900-\u097F]/.test(text)) {
+                setFontMode('krutidev');
+                setGlobalFontMode('krutidev');
+              }
+            }
+          }, 500);
+        }
+      } catch (err) {
+        console.error('Failed to open file:', err);
+        alert('फ़ाइल खोलने में त्रुटि। कृपया .docx या .html फ़ाइल चुनें।');
+      } finally {
+        setIsImporting(false);
+      }
+    });
+
+    input.click();
   }, []);
 
   // ── PDF Download ────────────────────────────────────────────────────
@@ -797,6 +1023,22 @@ export default function RibbonToolbar() {
 
         {/* ── EXPORT TAB ── */}
         {ribbonTab === 'export' && (<>
+          {/* Open File Group */}
+          <div className="flex flex-col justify-start h-full px-3 border-r border-[#e4e4e4] dark:border-gray-700 relative pb-4">
+            <div className="flex items-center gap-2 h-full">
+              <button
+                className={`flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-lg h-[56px] min-w-[60px] transition-all hover:shadow-md ${isImporting ? 'opacity-50 cursor-wait' : 'hover:bg-orange-50 dark:hover:bg-orange-900/20'}`}
+                onClick={openLocalFile}
+                disabled={isImporting}
+                title="लोकल फ़ाइल खोलें (DOCX / HTML)"
+              >
+                <FolderOpen className="w-5 h-5 text-orange-500" />
+                <span className="text-[10px] font-medium text-orange-600 dark:text-orange-400">Open File</span>
+              </button>
+            </div>
+            <div className="text-[10px] text-gray-400 absolute bottom-0 w-full text-center left-0 pointer-events-none">Open</div>
+          </div>
+          {/* Download Group */}
           <div className="flex flex-col justify-start h-full px-3 border-r border-[#e4e4e4] dark:border-gray-700 relative pb-4">
             <div className="flex items-center gap-2 h-full">
               <button className={`flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-lg h-[56px] min-w-[56px] transition-all hover:shadow-md ${isExporting ? 'opacity-50 cursor-wait' : 'hover:bg-red-50 dark:hover:bg-red-900/20'}`} onClick={downloadPdf} disabled={isExporting} title="Download PDF">
@@ -830,6 +1072,7 @@ export default function RibbonToolbar() {
             </div>
             <div className="text-[10px] text-gray-400 absolute bottom-0 w-full text-center left-0 pointer-events-none">Print</div>
           </div>
+          {isImporting && <span className="text-xs text-orange-500 ml-2 animate-pulse flex items-center gap-1">📂 फ़ाइल खोल रहे हैं...</span>}
           {isExporting && <span className="text-xs text-yellow-500 ml-2 animate-pulse flex items-center gap-1">⏳ Exporting...</span>}
         </>)}
 

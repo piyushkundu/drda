@@ -371,7 +371,7 @@ interface DocumentState {
   searchQuery: string;
   isHydrated: boolean;
 
-  // Multi-page support
+  // Legacy multi-page support (kept for store shape compatibility, but only index 0 is used)
   pages: string[];
   activePageIndex: number;
   zoom: number;
@@ -390,7 +390,7 @@ interface DocumentState {
   loadRecentDocument: (doc: Document) => void;
   deleteRecentDocument: (id: string) => void;
 
-  // NEW: Archive & Trash actions
+  // Archive & Trash actions
   softDeleteDocument: (id: string) => void;
   restoreDocument: (id: string) => void;
   permanentDeleteDocument: (id: string) => void;
@@ -399,13 +399,8 @@ interface DocumentState {
   deleteArchiveDocument: (id: string) => void;
   restoreFromArchive: (doc: Document) => void;
 
-  // Page actions
-  addPage: () => void;
-  insertPageAfter: (index: number, content: string) => void;
-  removePage: (index: number) => void;
-  updatePage: (index: number, content: string) => void;
-  setActivePageIndex: (index: number) => void;
   setZoom: (zoom: number) => void;
+  loadFileAsPages: (pages: string[], fileName: string) => void;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
@@ -428,12 +423,18 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const recent = await loadRecentFromFirebase();
     
     if (savedState) {
+      // Merge old multi-page arrays into a single string for the continuous editor
+      const mergedPages = savedState.pages && savedState.pages.length > 1 
+        ? [savedState.pages.join('<hr class="page-break" />')] 
+        : (savedState.pages || ['<p></p>']);
+
       set({
-        pages: savedState.pages,
+        pages: mergedPages,
         currentDocument: savedState.currentDocument,
         recentDocuments: recent,
         isHydrated: true,
         isDirty: false,
+        activePageIndex: 0,
       });
     } else {
       set({ recentDocuments: recent, isHydrated: true });
@@ -553,8 +554,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   loadRecentDocument: (doc: Document) => {
     const s = get();
     saveToFirebase(s.pages, s.currentDocument).then(async () => {
-      const pages = doc.content.split('<!-- page-break -->').filter(p => p.trim());
-      if (pages.length === 0) pages.push('<p></p>');
+      // Join old split pages into one continuous document
+      const content = doc.content.split('<!-- page-break -->').filter(p => p.trim()).join('<hr class="page-break" />');
+      const pages = content ? [content] : ['<p></p>'];
       
       set({
         currentDocument: doc,
@@ -619,9 +621,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   },
 
   restoreFromArchive: (doc: Document) => {
-    // Load the archived doc into the editor
-    const pages = doc.content.split('<!-- page-break -->').filter(p => p.trim());
-    if (pages.length === 0) pages.push('<p></p>');
+    // Load the archived doc into the continuous editor
+    const content = doc.content.split('<!-- page-break -->').filter(p => p.trim()).join('<hr class="page-break" />');
+    const pages = content ? [content] : ['<p></p>'];
     
     const restoredDoc = { ...doc };
     delete restoredDoc.isArchived;
@@ -640,45 +642,34 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     });
   },
 
-  // ============================================
-  // Page actions (unchanged)
-  // ============================================
-
-  addPage: () => {
-    const s = get();
-    const newPages = [...s.pages, '<p></p>'];
-    set({ pages: newPages, activePageIndex: newPages.length - 1, isDirty: true });
-    saveToFirebase(newPages, s.currentDocument);
-  },
-
-  insertPageAfter: (index, content) => {
-    const s = get();
-    const newPages = [...s.pages];
-    newPages.splice(index + 1, 0, content || '<p></p>');
-    set({ pages: newPages, activePageIndex: index + 1, isDirty: true });
-    saveToFirebase(newPages, s.currentDocument);
-  },
-
-  removePage: (index) => {
-    const s = get();
-    if (s.pages.length <= 1) return;
-    const newPages = s.pages.filter((_, i) => i !== index);
-    set({
-      pages: newPages,
-      activePageIndex: Math.min(s.activePageIndex, newPages.length - 1),
-    });
-    saveToFirebase(newPages, s.currentDocument);
-  },
-
-  updatePage: (index, content) => {
-    const s = get();
-    const newPages = [...s.pages];
-    newPages[index] = content;
-    set({ pages: newPages, isDirty: true });
-    saveToFirebase(newPages, s.currentDocument);
-  },
-
-  setActivePageIndex: (index) => set({ activePageIndex: index }),
-
   setZoom: (zoom) => set({ zoom: Math.max(10, Math.min(zoom, 500)) }),
+
+  loadFileAsPages: (pages: string[], fileName: string) => {
+    const s = get();
+    // Save the old document first
+    saveToFirebase(s.pages, s.currentDocument).then(async () => {
+      // Convert array of imported pages into a single continuous document
+      const fullContent = pages.join('<hr class="page-break" />');
+      const newDoc: Document = {
+        id: `doc_${Date.now()}`,
+        type: 'document',
+        title: fileName.replace(/\.(docx?|html?)$/i, '') || 'Imported Document',
+        content: fullContent,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isAutoSaved: true,
+      };
+
+      set({
+        currentDocument: newDoc,
+        pages: [fullContent],
+        activePageIndex: 0,
+        isDirty: true,
+      });
+
+      await saveToFirebase([fullContent], newDoc);
+      const recent = await loadRecentFromFirebase();
+      set({ recentDocuments: recent });
+    });
+  },
 }));

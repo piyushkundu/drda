@@ -69,19 +69,15 @@ export function getGlobalFontMode() {
   return globalFontMode;
 }
 
-interface PageEditorProps {
-  pageIndex: number;
+interface EditorComponentProps {
   content: string;
-  isActive: boolean;
-  totalPages: number;
-  onFocus: (i: number) => void;
-  onUpdate: (i: number, html: string) => void;
-  onRemove: (i: number) => void;
-  onSplitPage: (index: number, newContent: string) => void;
+  onUpdate: (html: string) => void;
 }
 
-function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdate, onRemove, onSplitPage }: PageEditorProps) {
+function ContinuousEditor({ content, onUpdate }: EditorComponentProps) {
   const isSettingContent = useRef(false);
+  const [numPages, setNumPages] = useState(1);
+  const paginationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -95,13 +91,12 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
       GhostText,
       LineHeight,
       Subscript, Superscript,
-      Placeholder.configure({ placeholder: `पृष्ठ ${pageIndex + 1} — यहाँ टाइप करें...` }),
+      Placeholder.configure({ placeholder: `यहाँ टाइप करें...` }),
     ],
     content,
     onUpdate: ({ editor }) => {
-      if (!isSettingContent.current) onUpdate(pageIndex, editor.getHTML());
+      if (!isSettingContent.current) onUpdate(editor.getHTML());
     },
-    onFocus: () => onFocus(pageIndex),
     editorProps: {
       attributes: { class: 'tiptap focus:outline-none', spellcheck: 'false' },
 
@@ -336,29 +331,17 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
       },
 
       handleKeyDown(view, event) {
-        // Page Break Shortcut (Ctrl + Enter)
+        // Page Break Shortcut (Ctrl + Enter) inserts manual break
         if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
           event.preventDefault();
-          
           const { state, dispatch } = view;
           const { from, to } = state.selection;
-          const endPos = state.doc.content.size;
           
-          // Slice the content after the cursor
-          const sliceAfter = state.doc.slice(to, endPos);
-          
-          // Serialize the sliced content to HTML
-          const tempDiv = document.createElement('div');
-          const fragment = DOMSerializer.fromSchema(state.schema).serializeFragment(sliceAfter.content);
-          tempDiv.appendChild(fragment);
-          const htmlAfter = tempDiv.innerHTML || '<p></p>';
-          
-          // Delete content after cursor on the current page
-          const tr = state.tr.delete(from, endPos);
-          dispatch(tr);
-          
-          // Insert the new page with the remaining content
-          onSplitPage(pageIndex, htmlAfter);
+          // Just insert an HR to visually represent a page break if needed, 
+          // or we can just ignore it since it's pageless. We'll insert a visual line.
+          const hr = document.createElement('hr');
+          hr.className = 'page-break';
+          editor.commands.insertContent('<hr class="page-break" />');
           return true;
         }
 
@@ -426,13 +409,12 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
   }, [content]); // eslint-disable-line
 
   useEffect(() => {
-    if (isActive && editor) {
+    if (editor) {
       (window as unknown as Record<string, unknown>).__tiptapEditor = editor;
     }
-  }, [isActive, editor]);
+  }, [editor]);
 
   const handleSheetClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    onFocus(pageIndex);
     if (!useUIStore.getState().directCursorMode || !editor) return;
 
     const tiptapEl = editor.view.dom;
@@ -530,20 +512,134 @@ function PageEditor({ pageIndex, content, isActive, totalPages, onFocus, onUpdat
     }
   };
 
-  return (
-    <div className={`page-sheet ${isActive ? 'page-sheet--active' : ''} relative`} onClick={handleSheetClick}>
-      {/* Premium Margin Line */}
-      <div className="absolute top-[60px] bottom-[60px] left-[80px] w-[1px] bg-blue-400/20 dark:bg-blue-400/10 pointer-events-none mix-blend-multiply dark:mix-blend-screen" />
+  const calculatePagination = useCallback(() => {
+    if (!editor) return;
+    const dom = editor.view.dom;
+    const children = Array.from(dom.children) as HTMLElement[];
+    
+    const pageHeight = 1056;
+    const gap = 40;
+    const cycle = pageHeight + gap; // 1096
+    const paddingTop = 72;
+    const paddingBottom = 72;
+    const safeHeight = pageHeight - paddingTop - paddingBottom; // 912
+
+    let styleEl = document.getElementById('pagination-styles');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'pagination-styles';
+      document.head.appendChild(styleEl);
+    }
+
+    // Temporarily clear styles to read natural positions accurately
+    styleEl.innerHTML = '';
+    
+    // Force a single reflow to get true unpaginated positions
+    const editorTop = dom.getBoundingClientRect().top;
+    
+    const newStyles = [];
+    let accumulatedShift = 0;
+    
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
+      let forceNextPage = false;
       
-      <div className="page-number">पृष्ठ {pageIndex + 1} / {totalPages}</div>
-      {totalPages > 1 && (
-        <button
-          className="page-delete-btn"
-          onClick={(e) => { e.stopPropagation(); onRemove(pageIndex); }}
-          title="यह पृष्ठ हटाएं"
-        >✕</button>
-      )}
-      <EditorContent editor={editor} className="tiptap-editor page-content" />
+      if (child.tagName === 'HR' && child.classList.contains('page-break')) {
+        forceNextPage = true;
+        newStyles.push(`.tiptap > *:nth-child(${i + 1}) { opacity: 0; margin: 0 !important; height: 0 !important; padding: 0 !important; border: 0 !important; }`);
+      }
+      
+      const rect = child.getBoundingClientRect();
+      const naturalTop = rect.top - editorTop;
+      const height = rect.height;
+      
+      // Calculate where this element falls considering all previous pushes
+      const top = naturalTop + accumulatedShift;
+      
+      const pageIndex = Math.floor(top / cycle);
+      const currentSafeTop = pageIndex * cycle + paddingTop;
+      const currentSafeBottom = pageIndex * cycle + pageHeight - paddingBottom;
+      
+      let pushAmount = 0;
+      
+      if (forceNextPage) {
+        const nextPageSafeTop = (pageIndex + 1) * cycle + paddingTop;
+        pushAmount = Math.max(0, nextPageSafeTop - top);
+      } else {
+        // Prevent elements from being stranded in the gap / top margin
+        if (top < currentSafeTop - 1) {
+          pushAmount = currentSafeTop - top;
+        }
+        
+        const effectiveTop = top + pushAmount;
+        const effectiveBottom = effectiveTop + height;
+        
+        // Push if element overflows the bottom boundary
+        if (effectiveBottom > currentSafeBottom + 1) {
+          if (height <= safeHeight) {
+            const nextPageSafeTop = (pageIndex + 1) * cycle + paddingTop;
+            pushAmount = nextPageSafeTop - top;
+          } else {
+            // Massive element: push only if it didn't start right at the top
+            if (effectiveTop > currentSafeTop + 20) {
+              const nextPageSafeTop = (pageIndex + 1) * cycle + paddingTop;
+              pushAmount = nextPageSafeTop - top;
+            }
+          }
+        }
+      }
+      
+      if (pushAmount > 0) {
+        // Injecting via CSS skips TipTap's DOM sanitization entirely
+        newStyles.push(`.tiptap > *:nth-child(${i + 1}) { padding-top: ${pushAmount}px !important; }`);
+        accumulatedShift += pushAmount;
+      }
+    }
+    
+    // Apply styles only for screen display so it doesn't break physical printing
+    styleEl.innerHTML = `@media screen {\n${newStyles.join('\n')}\n}`;
+    
+    // Calculate true total height using the unpaginated DOM height + total injected shifts
+    const totalHeight = dom.getBoundingClientRect().height + accumulatedShift;
+    const calculatedPages = Math.max(1, Math.ceil((totalHeight + 40) / cycle));
+    setNumPages(calculatedPages);
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const handleUpdate = () => {
+      if (paginationTimeoutRef.current) clearTimeout(paginationTimeoutRef.current);
+      paginationTimeoutRef.current = setTimeout(calculatePagination, 100);
+    };
+    editor.on('update', handleUpdate);
+    window.addEventListener('resize', handleUpdate);
+    setTimeout(calculatePagination, 100);
+    return () => {
+      editor.off('update', handleUpdate);
+      window.removeEventListener('resize', handleUpdate);
+      if (paginationTimeoutRef.current) clearTimeout(paginationTimeoutRef.current);
+    };
+  }, [editor, calculatePagination]);
+
+  return (
+    <div className="relative w-full flex justify-center" onClick={handleSheetClick}>
+      {/* Visual A4 Pages Layer */}
+      <div className="absolute top-0 flex flex-col items-center pointer-events-none z-0" style={{ gap: '40px', paddingTop: '40px', paddingBottom: '40px' }}>
+        {Array.from({ length: numPages }).map((_, i) => (
+          <div key={i} className="relative bg-white shadow-md flex-shrink-0" style={{ width: '816px', height: '1056px' }}>
+            <div className="absolute bottom-[-25px] left-1/2 -translate-x-1/2 text-[11px] text-gray-500 font-sans tracking-wide">
+              पृष्ठ {i + 1} / {numPages}
+            </div>
+            {/* Premium Margin Line */}
+            <div className="absolute top-[60px] bottom-[60px] left-[80px] w-[1px] bg-blue-400/20 dark:bg-blue-400/10 mix-blend-multiply dark:mix-blend-screen" />
+          </div>
+        ))}
+      </div>
+      
+      {/* Text Editor Layer */}
+      <div className="relative z-10 w-[816px] py-[40px]">
+        <EditorContent editor={editor} className="tiptap-editor page-content" />
+      </div>
     </div>
   );
 }
@@ -823,7 +919,7 @@ function InteractiveRuler() {
 }
 
 export default function Editor() {
-  const { pages, activePageIndex, addPage, insertPageAfter, removePage, updatePage, setActivePageIndex, newDocument, zoom, hydrateFromStorage, isHydrated } = useDocumentStore();
+  const { pages, updateContent, newDocument, zoom, hydrateFromStorage, isHydrated } = useDocumentStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Hydrate from localStorage on mount (client-side only)
@@ -835,44 +931,20 @@ export default function Editor() {
     if (isHydrated && (!pages || pages.length === 0)) newDocument();
   }, [isHydrated]); // eslint-disable-line
 
-  const handleFocus  = useCallback((i: number) => setActivePageIndex(i), [setActivePageIndex]);
-  const handleUpdate = useCallback((i: number, html: string) => updatePage(i, html), [updatePage]);
-  const handleRemove = useCallback((i: number) => removePage(i), [removePage]);
-  const handleSplitPage = useCallback((i: number, html: string) => insertPageAfter(i, html), [insertPageAfter]);
-
-  useEffect(() => {
-    (window as unknown as Record<string, unknown>).__addPage = addPage;
-    return () => { delete (window as unknown as Record<string, unknown>).__addPage; };
-  }, [addPage]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const el = container.querySelectorAll('.page-sheet')[activePageIndex] as HTMLElement;
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [activePageIndex]);
+  const handleUpdate = useCallback((html: string) => updateContent(html), [updateContent]);
 
   // Use scale for zooming. Transform origin top center so it scales out equally.
   const scale = zoom / 100;
 
   return (
     <div ref={containerRef} className="multi-page-editor h-full overflow-auto" style={{ background: 'var(--bg-primary)' }}>
-      <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minHeight: '100%', paddingBottom: '100px' }}>
+      <div className="zoom-container" style={{ transform: `scale(${scale})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minHeight: '100%', paddingBottom: '100px' }}>
         <InteractiveRuler />
         <div className="pages-container">
-          {(pages || ['<p></p>']).map((pc, i) => (
-            <PageEditor
-              key={i}
-              pageIndex={i}
-              content={pc}
-              isActive={i === activePageIndex}
-              totalPages={pages.length}
-              onFocus={handleFocus}
-              onUpdate={handleUpdate}
-              onRemove={handleRemove}
-              onSplitPage={handleSplitPage}
-            />
-          ))}
+          <ContinuousEditor
+            content={pages[0] || '<p></p>'}
+            onUpdate={handleUpdate}
+          />
         </div>
       </div>
     </div>

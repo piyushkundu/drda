@@ -3,7 +3,7 @@ import { Extension } from '@tiptap/core';
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     indent: {
-      setIndent: (attributes: { textIndent?: number; paddingLeft?: number; paddingRight?: number }) => ReturnType;
+      setIndent: (attributes: { textIndent?: number; paddingLeft?: number; paddingRight?: number; marginTop?: number; marginBottom?: number }) => ReturnType;
     };
   }
 }
@@ -47,6 +47,28 @@ export const Indent = Extension.create({
             renderHTML: (attributes: Record<string, unknown>) => {
               if (!attributes.paddingRight) return {};
               return { style: `padding-right: ${attributes.paddingRight}px` };
+            },
+          },
+          marginTop: {
+            default: null,
+            parseHTML: (element: HTMLElement) => {
+              const v = element.style.marginTop;
+              return v ? parseInt(v) : null;
+            },
+            renderHTML: (attributes: Record<string, unknown>) => {
+              if (!attributes.marginTop && attributes.marginTop !== 0) return {};
+              return { style: `margin-top: ${attributes.marginTop}px` };
+            },
+          },
+          marginBottom: {
+            default: null,
+            parseHTML: (element: HTMLElement) => {
+              const v = element.style.marginBottom;
+              return v ? parseInt(v) : null;
+            },
+            renderHTML: (attributes: Record<string, unknown>) => {
+              if (!attributes.marginBottom && attributes.marginBottom !== 0) return {};
+              return { style: `margin-bottom: ${attributes.marginBottom}px` };
             },
           },
         },

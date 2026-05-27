@@ -221,79 +221,12 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px 24px;
-  gap: 32px;
   min-height: 100%;
-}
-
-/* Each A4 page sheet */
-.page-sheet {
-  position: relative;
-  width: 816px;
-  min-height: 1056px;
-  background: #ffffff;
-  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.35);
-  border-radius: 2px;
-  border: 2px solid transparent;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  flex-shrink: 0;
-}
-
-.page-sheet--active {
-  border-color: var(--accent-primary);
-  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.35), 0 0 0 2px rgba(108, 92, 231, 0.25);
-}
-
-[data-theme="light"] .page-sheet {
-  background: #ffffff;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-}
-
-/* Page number badge */
-.page-number {
-  position: absolute;
-  bottom: -28px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  pointer-events: none;
-  font-family: 'Inter', sans-serif;
-}
-
-/* Delete page button */
-.page-delete-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(225, 112, 85, 0.15);
-  color: var(--danger);
-  border: 1px solid rgba(225, 112, 85, 0.3);
-  font-size: 11px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: 10;
-}
-
-.page-sheet:hover .page-delete-btn {
-  opacity: 1;
-}
-
-.page-delete-btn:hover {
-  background: rgba(225, 112, 85, 0.3);
 }
 
 /* Editor content inside a page */
 .page-content {
-  height: 100%;
+  height: auto;
   min-height: 1056px;
   background: transparent !important;
   border-radius: 0 !important;
@@ -312,6 +245,26 @@ body {
 [data-theme="dark"] .page-content .tiptap,
 .page-content .tiptap {
   color: #1a1a2e; /* Always dark text on white page */
+}
+
+.page-content .tiptap hr.page-break {
+  border: none;
+  border-top: 2px dashed #9ca3af;
+  margin: 60px -40px;
+  page-break-after: always;
+  position: relative;
+}
+.page-content .tiptap hr.page-break::after {
+  content: 'Page Break';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 0 10px;
+  font-size: 10px;
+  color: #9ca3af;
+  font-family: 'Inter', sans-serif;
 }
 
 .page-content .tiptap p {
@@ -785,7 +738,49 @@ body {
   border-color: var(--accent-primary);
 }
 
-/* Hide panel in print */
+/* Print Optimization */
 @media print {
-  .special-char-panel { display: none !important; }
+  /* Aggressive reset for ALL elements to prevent truncation */
+  * {
+    overflow: visible !important;
+  }
+  
+  /* Reset scroll bounds so browser can paginate */
+  body, html, main, .multi-page-editor, .pages-container, .zoom-container, [data-radix-scroll-area-viewport] {
+    height: auto !important;
+    max-height: none !important;
+    position: static !important;
+  }
+  
+  /* Disable scaling in print! This is crucial for multi-page printing */
+  .zoom-container {
+    transform: none !important;
+    padding-bottom: 0 !important;
+  }
+  
+  /* Hide UI elements */
+  header, footer, .sidebar, .ribbon-toolbar, .special-char-panel, .interactive-ruler {
+    display: none !important;
+  }
+
+  /* Hide the visual artificial pages since the browser handles physical pages */
+  .page-bg {
+    display: none !important;
+  }
+  
+  /* Reset editor padding */
+  .tiptap-editor, .tiptap {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: auto !important;
+    min-height: 0 !important;
+  }
+
+  /* Force physical page break for manual page break lines */
+  hr.page-break {
+    page-break-after: always !important;
+    break-after: page !important;
+    opacity: 0;
+  }
 }
+
