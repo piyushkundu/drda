@@ -611,7 +611,7 @@ body {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 0 !important; /* Remove browser default margins to rely on editor padding */
+    /* We don't override margin here so the user's browser (Default Margin) handles it perfectly */
   }
 
   /* Hide everything */
@@ -652,6 +652,7 @@ body {
     gap: 0 !important;
     align-items: flex-start !important;
     background: white !important;
+    display: block !important; /* Remove flexbox centering issues */
   }
 
   .page-sheet {
@@ -678,8 +679,9 @@ body {
 
   .tiptap-editor .tiptap,
   .page-content .tiptap {
-    /* Use the EXACT same padding as the on-screen editor */
-    padding: 72px 80px !important;
+    /* REMOVE artificial padding! Let the browser's print dialog margins handle it. */
+    /* This prevents the massive "double margin" on the left side. */
+    padding: 0 !important;
     color: #000 !important;
     background: white !important;
     line-height: 1.5 !important;
