@@ -1,7 +1,7 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from 'prosemirror-state';
 import { Decoration, DecorationSet } from 'prosemirror-view';
-import { getCompletions } from '@/lib/dictionaries';
+import { getContextSuggestions } from '@/lib/contextPairs';
 import { useAIStore } from '@/stores/aiStore';
 
 export const ghostTextPluginKey = new PluginKey('ghostText');
@@ -11,11 +11,60 @@ let aiSuggestionCache: { context: string; suggestion: string; timestamp: number 
 let aiRequestTimeout: ReturnType<typeof setTimeout> | null = null;
 let lastAIRequestContext = '';
 
-// Debounced AI suggestion fetcher
+// Dictionary context suggestion cache
+let dictSuggestionCache: { prefix: string; suggestion: string; timestamp: number } | null = null;
+let dictRequestTimeout: ReturnType<typeof setTimeout> | null = null;
+let lastDictPrefix = '';
+
+// ── Optimized AI Prompt for Hindi Government Context ──
+const AI_AUTOCOMPLETE_PROMPT = `तुम एक Hindi government document auto-complete engine हो।
+तुम्हारा काम है अगले 1-8 शब्द predict करना जो naturally आएंगे।
+Context: सरकारी पत्र, DRDA, Social Audit, IGRS शिकायत, Panchayat
+Rules:
+1. सिर्फ predicted words output करो, कुछ और नहीं
+2. formal/शासकीय Hindi use करो
+3. पूरे sentence का context देखो
+4. Short रखो (max 8 words)`;
+
+// Debounced Dictionary fetcher
+function fetchDictAutocomplete(prefix: string) {
+  if (dictRequestTimeout) clearTimeout(dictRequestTimeout);
+  if (prefix.length < 1) return;
+  if (lastDictPrefix === prefix) return;
+
+  dictRequestTimeout = setTimeout(async () => {
+    lastDictPrefix = prefix;
+    try {
+      const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(prefix)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        const best = data.results[0];
+        const remaining = best.slice(prefix.length);
+        if (remaining) {
+          dictSuggestionCache = {
+            prefix,
+            suggestion: remaining,
+            timestamp: Date.now()
+          };
+          // Force editor to re-evaluate GhostText
+          const editor = (window as any).__tiptapEditor;
+          if (editor && editor.view) {
+            editor.view.dispatch(editor.view.state.tr.setMeta('dictSuggestion', true));
+          }
+        }
+      }
+    } catch {
+      // Silently fail
+    }
+  }, 150); // fast debounce
+}
+
+// Debounced AI suggestion fetcher — improved with better prompt
 function fetchAISuggestion(fullText: string, lastSentence: string) {
   if (aiRequestTimeout) clearTimeout(aiRequestTimeout);
-  if (lastSentence.length < 10) return; // Too short for AI
-  if (lastAIRequestContext === lastSentence) return; // Already requested
+  if (lastSentence.length < 1) return;
+  if (lastAIRequestContext === lastSentence) return;
 
   aiRequestTimeout = setTimeout(async () => {
     lastAIRequestContext = lastSentence;
@@ -26,7 +75,7 @@ function fetchAISuggestion(fullText: string, lastSentence: string) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: fullText,
-          prompt: `Complete this Hindi sentence naturally. Only output the remaining text (not the given text). Keep it short (max 15 words). Text: "${lastSentence}"`,
+          prompt: `Complete this Hindi text naturally. Output ONLY the next 1-8 words. Context: "${lastSentence}"`,
           model: aiStore.selectedModel
         })
       });
@@ -46,7 +95,6 @@ function fetchAISuggestion(fullText: string, lastSentence: string) {
         });
       }
       if (result && result.trim()) {
-        // Clean up the AI response - take only the first sentence/clause
         let clean = result.trim();
         // Remove if it repeats the input
         if (clean.startsWith(lastSentence)) {
@@ -54,6 +102,8 @@ function fetchAISuggestion(fullText: string, lastSentence: string) {
         }
         // Take only first line
         clean = clean.split('\n')[0].trim();
+        // Remove quotes, markdown
+        clean = clean.replace(/^["'`]+|["'`]+$/g, '').trim();
         // Limit length
         if (clean.length > 80) clean = clean.slice(0, 80);
 
@@ -63,12 +113,17 @@ function fetchAISuggestion(fullText: string, lastSentence: string) {
             suggestion: clean,
             timestamp: Date.now()
           };
+          // Force editor to re-evaluate GhostText
+          const editor = (window as any).__tiptapEditor;
+          if (editor && editor.view) {
+            editor.view.dispatch(editor.view.state.tr.setMeta('aiSuggestion', true));
+          }
         }
       }
     } catch {
       // Silently fail
     }
-  }, 800); // 800ms debounce
+  }, 400); // Reduced from 800ms to 400ms for faster response
 }
 
 export const GhostText = Extension.create({
@@ -106,34 +161,66 @@ export const GhostText = Extension.create({
               return { decorationSet: DecorationSet.empty, suggestionText: null };
             }
 
-            // ── Dictionary-based suggestions (priority 1) ──
             let bestRemaining: string | null = null;
-            const maxLookback = Math.min(words.length, 5);
-            for (let i = maxLookback; i >= 1; i--) {
-              const phrase = words.slice(-i).join(' ');
-              if (phrase.length === 0) continue;
-              const completions = getCompletions(phrase, 3);
-              if (completions.length > 0) {
-                const best = completions[0];
-                const remaining = best.slice(phrase.length);
-                if (remaining.length > 0) {
-                  bestRemaining = remaining;
-                  break;
+
+            // ── Priority 1: Context Pair suggestions (bigram/trigram) ──
+            // Check for multi-word context matches
+            const contextSuggestions = getContextSuggestions(textBefore);
+            if (contextSuggestions.length > 0) {
+              // If the last word looks like a partial match of the suggestion, complete it
+              const lastWord = words[words.length - 1];
+              const textForContext = words.slice(0, -1).join(' ');
+              const contextForPrefix = getContextSuggestions(textForContext);
+              
+              if (contextForPrefix.length > 0) {
+                // Check if lastWord is a prefix of any context suggestion
+                for (const sugg of contextForPrefix) {
+                  if (sugg.startsWith(lastWord) && sugg !== lastWord) {
+                    bestRemaining = sugg.slice(lastWord.length);
+                    break;
+                  }
+                }
+              }
+              
+              // If no partial match, suggest the full next word after a space
+              if (!bestRemaining) {
+                // Check if user just finished a word (textBefore ends with space)
+                if (textBefore.endsWith(' ') || textBefore.endsWith('\u00A0')) {
+                  bestRemaining = contextSuggestions[0];
                 }
               }
             }
 
-            // ── AI context-based suggestions (priority 2 - if no dictionary match) ──
-            if (!bestRemaining && textBefore.length > 15) {
+            // ── Priority 2: Dictionary API Prefix Search ──
+            if (!bestRemaining) {
+              const lastWord = words[words.length - 1];
+              // Only trigger if we are inside a word (no trailing space)
+              if (lastWord && !textBefore.endsWith(' ') && !textBefore.endsWith('\u00A0')) {
+                // Check if we have a cached dict suggestion
+                if (dictSuggestionCache && 
+                    dictSuggestionCache.prefix === lastWord &&
+                    (Date.now() - dictSuggestionCache.timestamp) < 5000) {
+                  bestRemaining = dictSuggestionCache.suggestion;
+                } else {
+                  // Request new dictionary suggestion
+                  fetchDictAutocomplete(lastWord);
+                }
+              }
+            }
+
+            // ── Priority 3: AI context-based suggestions ──
+            // Removed threshold to allow AI suggestions from the very first character
+            if (!bestRemaining && textBefore.length > 0) {
               // Check if we have a cached AI suggestion that matches
+              const cleanTextBefore = textBefore.trimEnd();
               if (aiSuggestionCache && 
-                  textBefore.endsWith(aiSuggestionCache.context) &&
+                  cleanTextBefore.endsWith(aiSuggestionCache.context) &&
                   (Date.now() - aiSuggestionCache.timestamp) < 30000) {
                 bestRemaining = aiSuggestionCache.suggestion;
               } else {
                 // Request new AI suggestion in background
                 const fullDocText = newEditorState.doc.textContent;
-                const lastSentence = words.slice(-8).join(' ');
+                const lastSentence = words.slice(-10).join(' ');
                 fetchAISuggestion(fullDocText, lastSentence);
               }
             }
@@ -170,16 +257,21 @@ export const GhostText = Extension.create({
               if (pluginState && pluginState.suggestionText) {
                 event.preventDefault();
                 event.stopPropagation();
-                const tr = view.state.tr.insertText(pluginState.suggestionText);
+                const textToInsert = pluginState.suggestionText.endsWith(' ') 
+                  ? pluginState.suggestionText 
+                  : pluginState.suggestionText + ' ';
+                const tr = view.state.tr.insertText(textToInsert);
                 view.dispatch(tr);
-                // Clear AI cache after accepting
+                // Clear caches after accepting
                 aiSuggestionCache = null;
+                dictSuggestionCache = null;
                 return true;
               }
             }
             // Escape to dismiss suggestion
             if (event.key === 'Escape') {
               aiSuggestionCache = null;
+              dictSuggestionCache = null;
             }
             return false;
           }

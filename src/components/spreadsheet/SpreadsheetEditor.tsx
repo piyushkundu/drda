@@ -11,7 +11,9 @@ import { saveAs } from 'file-saver';
 import { inscriptMap } from '@/lib/keyboardLayouts';
 import { convertFont } from '@/lib/fontConversion';
 import { useAIStore } from '@/stores/aiStore';
-import { getCompletions } from '@/lib/dictionaries';
+
+import { getContextSuggestions, getWordFrequency } from '@/lib/contextPairs';
+
 
 export default function SpreadsheetEditor() {
   const { currentDocument, updateTitle, isAutoSaving, isDirty } = useDocumentStore();
@@ -147,29 +149,37 @@ export default function SpreadsheetEditor() {
       const words = text.trim().split(/\s+/);
       if (words.length === 0) return;
       
-      // Local Dictionary Check
+      // ── Priority 1: Context Pair suggestions (bigram/trigram) ──
       let bestRemaining: string | null = null;
-      const maxLookback = Math.min(words.length, 5);
-      for (let i = maxLookback; i >= 1; i--) {
-        const phrase = words.slice(-i).join(' ');
-        if (phrase.length === 0) continue;
-        const completions = getCompletions(phrase, 3);
-        if (completions.length > 0) {
-          const best = completions[0];
-          const remaining = best.slice(phrase.length);
-          if (remaining.length > 0) {
-            bestRemaining = remaining;
-            break;
+      const contextSuggestions = getContextSuggestions(text.trim());
+      if (contextSuggestions.length > 0) {
+        // Check if text ends with space (user finished a word)
+        if (text.endsWith(' ') || text.endsWith('\u00A0')) {
+          bestRemaining = contextSuggestions[0];
+        } else {
+          // Check if last word is a prefix of a suggestion
+          const textForContext = words.slice(0, -1).join(' ');
+          const contextForPrefix = getContextSuggestions(textForContext);
+          const lastWord = words[words.length - 1];
+          if (contextForPrefix.length > 0) {
+            for (const sugg of contextForPrefix) {
+              if (sugg.startsWith(lastWord) && sugg !== lastWord) {
+                bestRemaining = sugg.slice(lastWord.length);
+                break;
+              }
+            }
           }
         }
       }
+      
+
       
       if (bestRemaining) {
         showGhostText(activeEl, bestRemaining);
         return;
       }
       
-      if (text.length < 10) return; // Don't call AI for very short phrases
+      if (text.length < 5) return; // Lowered threshold from 10 to 5
 
       // AI Check
       if (aiRequestTimeout.current) clearTimeout(aiRequestTimeout.current);
@@ -183,7 +193,7 @@ export default function SpreadsheetEditor() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               text: text,
-              prompt: `Complete this Hindi sentence naturally. Only output the remaining text (not the given text). Keep it short (max 15 words). Text: "${lastSentence}"`,
+              prompt: `Complete this Hindi text naturally. Output ONLY the next 1-8 words. Context: "${lastSentence}"`,
               model: aiStore.selectedModel
             })
           });
@@ -533,7 +543,7 @@ export default function SpreadsheetEditor() {
   // We need to pass the data safely
   let initialData = [{ name: 'Sheet1', celldata: [] }];
   try {
-    if (currentDocument?.content) {
+    if (currentDocument?.content && currentDocument?.type === 'spreadsheet') {
       initialData = JSON.parse(currentDocument.content);
     }
   } catch (e) {

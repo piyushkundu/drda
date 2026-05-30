@@ -22,6 +22,7 @@ import { inscriptMap } from '@/lib/keyboardLayouts';
 import { krutiDevToUnicode } from '@/lib/fontConversion';
 import { Indent } from './extensions/Indent';
 import { GhostText } from './extensions/GhostText';
+import { HindiSpellCheck } from './extensions/SpellCheck';
 import { LineHeight } from './extensions/LineHeight';
 import { FontSize } from './extensions/FontSize';
 import { DOMSerializer } from 'prosemirror-model';
@@ -89,6 +90,7 @@ function ContinuousEditor({ content, onUpdate }: EditorComponentProps) {
       CustomTable.configure({ resizable: true }), CustomTableRow, CustomTableHeader, CustomTableCell,
       Indent,
       GhostText,
+      HindiSpellCheck,
       LineHeight,
       Subscript, Superscript,
       Placeholder.configure({ placeholder: `यहाँ टाइप करें...` }),
@@ -96,6 +98,9 @@ function ContinuousEditor({ content, onUpdate }: EditorComponentProps) {
     content,
     onUpdate: ({ editor }) => {
       if (!isSettingContent.current) onUpdate(editor.getHTML());
+    },
+    onCreate: ({ editor }) => {
+      (window as any).__tiptapEditor = editor;
     },
     editorProps: {
       attributes: { class: 'tiptap focus:outline-none', spellcheck: 'false' },
@@ -624,7 +629,7 @@ function ContinuousEditor({ content, onUpdate }: EditorComponentProps) {
   return (
     <div className="relative w-full flex justify-center" onClick={handleSheetClick}>
       {/* Visual A4 Pages Layer */}
-      <div className="absolute top-0 flex flex-col items-center pointer-events-none z-0" style={{ gap: '40px', paddingTop: '40px', paddingBottom: '40px' }}>
+      <div className="absolute top-0 flex flex-col items-center pointer-events-none z-0 print:hidden" style={{ gap: '40px', paddingTop: '40px', paddingBottom: '40px' }}>
         {Array.from({ length: numPages }).map((_, i) => (
           <div key={i} className="relative bg-white shadow-md flex-shrink-0" style={{ width: '816px', height: '1056px' }}>
             <div className="absolute bottom-[-25px] left-1/2 -translate-x-1/2 text-[11px] text-gray-500 font-sans tracking-wide">
@@ -657,11 +662,13 @@ function InteractiveRuler() {
   useEffect(() => {
     const interval = setInterval(() => {
       const editor = (window as any).__tiptapEditor;
-      if (editor && !dragging) {
+      if (editor && !dragging && typeof editor.getAttributes === 'function') {
         const attrs = editor.getAttributes('paragraph');
-        setTextIndent(parseInt(attrs.textIndent) || 0);
-        setPaddingLeft(parseInt(attrs.paddingLeft) || 0);
-        setPaddingRight(parseInt(attrs.paddingRight) || 0);
+        if (attrs) {
+          setTextIndent(parseInt(attrs.textIndent) || 0);
+          setPaddingLeft(parseInt(attrs.paddingLeft) || 0);
+          setPaddingRight(parseInt(attrs.paddingRight) || 0);
+        }
       }
     }, 150);
     return () => clearInterval(interval);
@@ -669,7 +676,7 @@ function InteractiveRuler() {
 
   const applyIndent = useCallback((ti: number, pl: number, pr: number) => {
     const editor = (window as any).__tiptapEditor;
-    if (editor) {
+    if (editor && typeof editor.commands?.setIndent === 'function') {
       editor.commands.setIndent({
         textIndent: ti || null,
         paddingLeft: pl || null,

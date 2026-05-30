@@ -784,3 +784,74 @@ body {
   }
 }
 
+/* ── Hindi Spell Check — Red Wavy Underline ───────────────── */
+.spell-error {
+  text-decoration: underline wavy #e74c3c;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  cursor: default;
+  position: relative;
+  border-radius: 1px;
+}
+
+/* Subtle background highlight on hover */
+.spell-error:hover {
+  background: rgba(231, 76, 60, 0.08);
+  border-radius: 2px;
+}
+
+/* Light theme */
+[data-theme="light"] .spell-error {
+  text-decoration-color: #e74c3c;
+}
+
+[data-theme="light"] .spell-error:hover {
+  background: rgba(231, 76, 60, 0.06);
+}
+
+/* Context menu animation */
+@keyframes spellMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Light theme context menu override */
+[data-theme="light"] .spell-context-menu {
+  background: #ffffff !important;
+  border-color: rgba(91, 76, 219, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 0 10px rgba(91, 76, 219, 0.08) !important;
+}
+
+[data-theme="light"] .spell-context-menu .spell-menu-item {
+  color: #1a1a2e !important;
+}
+
+[data-theme="light"] .spell-context-menu .spell-menu-item:hover {
+  background: rgba(91, 76, 219, 0.08) !important;
+}
+
+/* Spreadsheet spell check highlight */
+.ss-spell-error {
+  border-bottom: 2px wavy #e74c3c !important;
+  position: relative;
+}
+
+
+/* -- Hindi Spell Checker Styles -- */
+.spell-error {
+  text-decoration: underline wavy #ff0000;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  background-color: rgba(255, 0, 0, 0.05);
+}
+
+.dark .spell-error {
+  text-decoration: underline wavy #ff6b6b;
+  background-color: rgba(255, 107, 107, 0.1);
+}
