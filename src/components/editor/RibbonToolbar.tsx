@@ -155,7 +155,7 @@ export type FontMode = 'unicode' | 'mangal' | 'krutidev';
 // ── Auto-pagination: Split HTML into page-sized chunks ──────────────
 // Mimics MS Word page flow: renders content offscreen with exact page
 // dimensions, measures each block, and splits at page boundaries.
-const PAGE_CONTENT_HEIGHT = 912; // 1056px page height - 72px top - 72px bottom padding
+const PAGE_CONTENT_HEIGHT = 931; // 1123px page height - 96px top - 96px bottom padding
 
 function splitHtmlIntoPages(html: string): string[] {
   // Create an offscreen container that matches the exact page content area

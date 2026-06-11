@@ -227,14 +227,14 @@ body {
 /* Editor content inside a page */
 .page-content {
   height: auto;
-  min-height: 1056px;
+  min-height: 1123px;
   background: transparent !important;
   border-radius: 0 !important;
 }
 
 .page-content .tiptap {
-  padding: 72px 80px;
-  min-height: 1056px;
+  padding: 96px;
+  min-height: 1123px;
   outline: none;
   font-family: 'Noto Sans Devanagari', 'Mangal', serif;
   font-size: 14px;
@@ -558,100 +558,183 @@ body {
 .badge-danger { background: rgba(225,112,85,0.15); color: var(--danger); }
 .badge-info { background: rgba(116,185,255,0.15); color: var(--info); }
 
-/* ============================================================
-   PRINT STYLES — Only editor page prints, all UI is hidden
-   ============================================================ */
 @media print {
   @page {
     size: A4 portrait;
-    /* We don't override margin here so the user's browser (Default Margin) handles it perfectly */
+    margin: 15mm 15mm 15mm 15mm;
   }
 
-  /* Hide everything */
-  body * { visibility: hidden !important; }
+  /* ── Step 1: Hide all UI chrome with display:none ── */
+  .sidebar,
+  .ribbon-toolbar,
+  .special-char-panel,
+  .ruler-wrapper,
+  .interactive-ruler,
+  .status-bar,
+  .page-number,
+  .page-delete-btn,
+  .absolute.print\:hidden,
+  [class*="print:hidden"] { display: none !important; }
 
-  /* Show only the editor page and its content */
-  .editor-page,
-  .editor-page *,
-  .tiptap-editor,
-  .tiptap-editor *,
-  .pages-container,
-  .pages-container * { visibility: visible !important; }
-
-  /* Reset body layout for print */
+  /* ── Step 2: Reset body & all layout wrappers ── */
   body {
     background: white !important;
     overflow: visible !important;
     height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
+    color: #000 !important;
   }
 
-  /* Position the editor page to fill the print area */
-  .editor-page {
-    position: relative !important;
-    top: 0 !important;
-    left: 0 !important;
+  /* Every element: no overflow clipping, no height constraints */
+  * {
+    overflow: visible !important;
+    max-height: none !important;
+    min-height: 0 !important;
+  }
+
+  /* The main page wrapper */
+  html,
+  body > div,
+  .h-screen,
+  .w-screen,
+  main,
+  .panel-content,
+  .flex-1,
+  .overflow-hidden {
+    display: block !important;
+    height: auto !important;
     width: 100% !important;
-    min-height: auto !important;
+    overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
+    flex: none !important;
   }
 
-  .pages-container {
-    padding: 0 !important;
-    gap: 0 !important;
-    align-items: flex-start !important;
+  /* Sidebar: fully remove from flow */
+  .sidebar { display: none !important; }
+
+  /* ── Step 3: Remove zoom transform ── */
+  .multi-page-editor {
+    height: auto !important;
+    overflow: visible !important;
     background: white !important;
-    display: block !important; /* Remove flexbox centering issues */
   }
 
-  .page-sheet {
-    /* Fill the physical paper perfectly without bleeding off the right edge */
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: auto !important;
+  .zoom-container {
+    transform: none !important;
+    -webkit-transform: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
     margin: 0 !important;
-    box-shadow: none !important;
+    width: 100% !important;
+    /* Override sidebar inline marginLeft */
+    margin-left: 0 !important;
+  }
+
+  /* Explicitly reset inline marginLeft from sidebar */
+  body > div > div {
+    margin-left: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  /* ── Step 4: Reset pages container ── */
+  .pages-container {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+  }
+
+  /* ALL divs inside pages-container */
+  .pages-container > div {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+  }
+
+  /* ── Step 5: Editor container ── */
+  .tiptap-editor,
+  .page-content {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: white !important;
     border: none !important;
+    box-shadow: none !important;
     border-radius: 0 !important;
-    page-break-after: always;
-    break-after: page;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  .page-sheet:last-child {
-    page-break-after: avoid;
-    break-after: avoid;
-  }
-
-  .page-number,
-  .page-delete-btn,
-  .ruler-wrapper { display: none !important; }
-
+  /* ── Step 6: The actual content — preserve screen formatting ── */
   .tiptap-editor .tiptap,
   .page-content .tiptap {
-    /* REMOVE artificial padding! Let the browser's print dialog margins handle it. */
-    /* This prevents the massive "double margin" on the left side. */
     padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
     color: #000 !important;
     background: white !important;
-    line-height: 1.5 !important;
-    white-space: pre-wrap !important;
+    font-size: 14px !important;
+    line-height: 1.8 !important;
+    font-family: 'Noto Sans Devanagari', 'Mangal', serif !important;
     word-wrap: break-word !important;
     box-sizing: border-box !important;
+  }
+
+  .tiptap-editor .tiptap *,
+  .page-content .tiptap * {
+    color: #000 !important;
   }
 
   .tiptap-editor .tiptap p,
   .page-content .tiptap p {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+    color: #000 !important;
   }
 
-  /* Page break support */
-  .page-break { page-break-before: always; }
+  /* Tables */
+  .tiptap-editor .tiptap table,
+  .page-content .tiptap table {
+    width: 100% !important;
+    margin: 0 !important;
+    border-collapse: collapse !important;
+  }
+
+  /* Page break */
+  hr.page-break {
+    page-break-after: always !important;
+    break-after: page !important;
+    border: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+  }
+
+  .tiptap-editor .tiptap hr,
+  .page-content .tiptap hr {
+    page-break-after: always !important;
+    border: none !important;
+    margin: 0 !important;
+  }
+
+  .tiptap-editor .tiptap hr::after,
+  .page-content .tiptap hr::after {
+    display: none !important;
+  }
 }
+
+
 
 /* ── Special Character Panel ─────────────────────────────────── */
 .special-char-panel {
@@ -738,51 +821,7 @@ body {
   border-color: var(--accent-primary);
 }
 
-/* Print Optimization */
-@media print {
-  /* Aggressive reset for ALL elements to prevent truncation */
-  * {
-    overflow: visible !important;
-  }
-  
-  /* Reset scroll bounds so browser can paginate */
-  body, html, main, .multi-page-editor, .pages-container, .zoom-container, [data-radix-scroll-area-viewport] {
-    height: auto !important;
-    max-height: none !important;
-    position: static !important;
-  }
-  
-  /* Disable scaling in print! This is crucial for multi-page printing */
-  .zoom-container {
-    transform: none !important;
-    padding-bottom: 0 !important;
-  }
-  
-  /* Hide UI elements */
-  header, footer, .sidebar, .ribbon-toolbar, .special-char-panel, .interactive-ruler {
-    display: none !important;
-  }
-
-  /* Hide the visual artificial pages since the browser handles physical pages */
-  .page-bg {
-    display: none !important;
-  }
-  
-  /* Reset editor padding */
-  .tiptap-editor, .tiptap {
-    padding: 0 !important;
-    margin: 0 !important;
-    width: auto !important;
-    min-height: 0 !important;
-  }
-
-  /* Force physical page break for manual page break lines */
-  hr.page-break {
-    page-break-after: always !important;
-    break-after: page !important;
-    opacity: 0;
-  }
-}
+/* Print Optimization — duplicate block removed; all print rules are consolidated above */
 
 /* ── Hindi Spell Check — Red Wavy Underline ───────────────── */
 .spell-error {

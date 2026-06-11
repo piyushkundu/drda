@@ -522,12 +522,12 @@ function ContinuousEditor({ content, onUpdate }: EditorComponentProps) {
     const dom = editor.view.dom;
     const children = Array.from(dom.children) as HTMLElement[];
     
-    const pageHeight = 1056;
+    const pageHeight = 1123;
     const gap = 40;
-    const cycle = pageHeight + gap; // 1096
-    const paddingTop = 72;
-    const paddingBottom = 72;
-    const safeHeight = pageHeight - paddingTop - paddingBottom; // 912
+    const cycle = pageHeight + gap; 
+    const paddingTop = 96;
+    const paddingBottom = 96;
+    const safeHeight = pageHeight - paddingTop - paddingBottom;
 
     let styleEl = document.getElementById('pagination-styles');
     if (!styleEl) {
@@ -627,22 +627,22 @@ function ContinuousEditor({ content, onUpdate }: EditorComponentProps) {
   }, [editor, calculatePagination]);
 
   return (
-    <div className="relative w-full flex justify-center" onClick={handleSheetClick}>
+    <div className="relative w-full flex justify-center print:block" onClick={handleSheetClick}>
       {/* Visual A4 Pages Layer */}
       <div className="absolute top-0 flex flex-col items-center pointer-events-none z-0 print:hidden" style={{ gap: '40px', paddingTop: '40px', paddingBottom: '40px' }}>
         {Array.from({ length: numPages }).map((_, i) => (
-          <div key={i} className="relative bg-white shadow-md flex-shrink-0" style={{ width: '816px', height: '1056px' }}>
+          <div key={i} className="relative bg-white shadow-md flex-shrink-0" style={{ width: '794px', height: '1123px' }}>
             <div className="absolute bottom-[-25px] left-1/2 -translate-x-1/2 text-[11px] text-gray-500 font-sans tracking-wide">
               पृष्ठ {i + 1} / {numPages}
             </div>
             {/* Premium Margin Line */}
-            <div className="absolute top-[60px] bottom-[60px] left-[80px] w-[1px] bg-blue-400/20 dark:bg-blue-400/10 mix-blend-multiply dark:mix-blend-screen" />
+            <div className="absolute top-[60px] bottom-[60px] left-[96px] w-[1px] bg-blue-400/20 dark:bg-blue-400/10 mix-blend-multiply dark:mix-blend-screen" />
           </div>
         ))}
       </div>
       
       {/* Text Editor Layer */}
-      <div className="relative z-10 w-[816px] py-[40px]">
+      <div className="relative z-10 w-[794px] print:w-full py-[40px] print:py-0">
         <EditorContent editor={editor} className="tiptap-editor page-content" />
       </div>
     </div>
@@ -704,9 +704,9 @@ function InteractiveRuler() {
       const rulerRect = rulerRef.current.getBoundingClientRect();
       const x = e.clientX - rulerRect.left;
 
-      // Margin area is 80px on each side of 816px page
-      const PAGE_PADDING = 80;
-      const PAGE_WIDTH = 816;
+      // Margin area is 96px on each side of 794px page (A4)
+      const PAGE_PADDING = 96;
+      const PAGE_WIDTH = 794;
 
       if (dragging === 'firstLine') {
         const value = Math.max(-200, Math.min(x - PAGE_PADDING - paddingLeft, 400));
@@ -742,11 +742,11 @@ function InteractiveRuler() {
     };
   }, [dragging, textIndent, paddingLeft, paddingRight, applyIndent]);
 
-  // Page width is 816px. Base padding is 80px left/right.
-  const PAGE_PADDING = 80;
+  // Page width is 794px. Base padding is 96px left/right.
+  const PAGE_PADDING = 96;
   const firstLinePos = PAGE_PADDING + paddingLeft + textIndent;
   const leftIndentPos = PAGE_PADDING + paddingLeft;
-  const rightIndentPos = 816 - PAGE_PADDING - paddingRight;
+  const rightIndentPos = 794 - PAGE_PADDING - paddingRight;
 
   return (
     <div className="ruler-wrapper" style={{
@@ -759,7 +759,7 @@ function InteractiveRuler() {
       justifyContent: 'center',
     }}>
       <div ref={rulerRef} style={{
-        width: '816px',
+        width: '794px',
         height: '28px',
         position: 'relative',
         userSelect: 'none',
@@ -783,7 +783,6 @@ function InteractiveRuler() {
           <div style={{ width: `${PAGE_PADDING}px`, background: '#d4d4d8', height: '100%' }} />
         </div>
 
-        {/* Tick marks */}
         <div style={{
           position: 'absolute',
           top: 0,
@@ -794,7 +793,7 @@ function InteractiveRuler() {
           alignItems: 'flex-end',
         }}>
           {Array.from({ length: 33 }).map((_, i) => {
-            // Each inch ≈ 96px at 100%. Page content = 816 - 160 = 656px ≈ ~6.8 inches
+            // Each inch ≈ 96px at 100%. Page content = 794 - 192 = 602px ≈ ~6.27 inches
             // We use equal divisions across the full width
             const isMajor = i % 4 === 0;
             const isMid = i % 2 === 0 && !isMajor;
@@ -945,7 +944,7 @@ export default function Editor() {
 
   return (
     <div ref={containerRef} className="multi-page-editor h-full overflow-auto" style={{ background: 'var(--bg-primary)' }}>
-      <div className="zoom-container" style={{ transform: `scale(${scale})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minHeight: '100%', paddingBottom: '100px' }}>
+      <div className="zoom-container" style={{ transform: `scale(${scale})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minHeight: '100%', paddingBottom: '100px' } as React.CSSProperties}>
         <InteractiveRuler />
         <div className="pages-container">
           <ContinuousEditor

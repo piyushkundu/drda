@@ -69,7 +69,7 @@ export default function Home() {
     <div className="flex h-screen w-screen overflow-hidden">
       <Sidebar />
       <div
-        className="flex flex-col flex-1 h-full overflow-hidden transition-all duration-300"
+        className="flex flex-col flex-1 h-full overflow-hidden transition-all duration-300 print:ml-0 print:w-full"
         style={{ marginLeft: sidebarCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)' }}
       >
         <main className="flex-1 overflow-hidden">
