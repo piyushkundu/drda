@@ -301,9 +301,48 @@ function ContinuousEditor({ content, onUpdate }: EditorComponentProps) {
           let html = body.innerHTML.replace(/Kruti\s*Dev\s*(\d+)/gi, 'Kruti Dev $1').trim();
           
           if (editor && html) {
-            editor.chain().focus().insertContent(html, {
-              parseOptions: { preserveWhitespace: false }
-            }).run();
+            // Check if cursor is in the middle of a paragraph — if so, unwrap
+            // single-paragraph pastes so content merges inline instead of splitting
+            // the line.
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const topLevelBlocks = Array.from(tempDiv.children).filter(
+              el => /^(P|DIV|H[1-6]|BLOCKQUOTE|LI|UL|OL)$/i.test(el.tagName)
+            );
+            const hasTable = tempDiv.querySelector('table');
+
+            // Single paragraph, no table → insert inline
+            if (topLevelBlocks.length === 1 && !hasTable && /^P$/i.test(topLevelBlocks[0].tagName)) {
+              const inlineHtml = topLevelBlocks[0].innerHTML;
+              editor.chain().focus().insertContent(inlineHtml, {
+                parseOptions: { preserveWhitespace: false }
+              }).run();
+            }
+            // Multiple paragraphs → first one inline, rest as paragraphs
+            else if (topLevelBlocks.length > 1 && !hasTable) {
+              const firstBlock = topLevelBlocks[0];
+              // Insert first block's content inline at cursor
+              if (/^P$/i.test(firstBlock.tagName)) {
+                editor.chain().focus().insertContent(firstBlock.innerHTML, {
+                  parseOptions: { preserveWhitespace: false }
+                }).run();
+              } else {
+                editor.chain().focus().insertContent(firstBlock.outerHTML, {
+                  parseOptions: { preserveWhitespace: false }
+                }).run();
+              }
+              // Insert remaining blocks as new paragraphs
+              const remainingHtml = topLevelBlocks.slice(1).map(el => el.outerHTML).join('');
+              editor.chain().focus().insertContent(remainingHtml, {
+                parseOptions: { preserveWhitespace: false }
+              }).run();
+            }
+            // Tables or other complex content — insert as-is
+            else {
+              editor.chain().focus().insertContent(html, {
+                parseOptions: { preserveWhitespace: false }
+              }).run();
+            }
           }
           return true;
         }
@@ -317,17 +356,34 @@ function ContinuousEditor({ content, onUpdate }: EditorComponentProps) {
             .replace(/[\u2013\u2014]/g, "-");
             
           const lines = text.split(/\r?\n/).filter(l => l.trim());
-          const html = lines.map(l => {
+
+          // Helper to wrap a line in appropriate font span
+          const wrapLine = (l: string): string => {
             if (isAsciiKrutiDev(l)) {
-              return `<p><span style="font-family: 'Kruti Dev 010'">${l}</span></p>`;
+              return `<span style="font-family: 'Kruti Dev 010'">${l}</span>`;
             } else if (isDevanagari(l)) {
-              return `<p><span style="font-family: 'Mangal'">${l}</span></p>`;
+              return `<span style="font-family: 'Mangal'">${l}</span>`;
             }
-            return `<p>${l}</p>`;
-          }).join('');
-          
-          if (editor && html) {
-            editor.chain().focus().insertContent(html).run();
+            return l;
+          };
+
+          if (lines.length === 0) return true;
+
+          if (lines.length === 1) {
+            // Single line → insert inline (no <p> wrapper)
+            const inlineHtml = wrapLine(lines[0]);
+            if (editor && inlineHtml) {
+              editor.chain().focus().insertContent(inlineHtml).run();
+            }
+          } else {
+            // Multiple lines → first line inline, rest as paragraphs
+            const firstLineHtml = wrapLine(lines[0]);
+            editor.chain().focus().insertContent(firstLineHtml).run();
+
+            const remainingHtml = lines.slice(1).map(l => `<p>${wrapLine(l)}</p>`).join('');
+            if (editor && remainingHtml) {
+              editor.chain().focus().insertContent(remainingHtml).run();
+            }
           }
           return true;
         }
@@ -750,9 +806,6 @@ function InteractiveRuler() {
 
   return (
     <div className="ruler-wrapper" style={{
-      position: 'sticky',
-      top: 0,
-      zIndex: 50,
       background: 'var(--bg-primary)',
       padding: '8px 0 0 0',
       display: 'flex',
@@ -944,8 +997,24 @@ export default function Editor() {
 
   return (
     <div ref={containerRef} className="multi-page-editor h-full overflow-auto" style={{ background: 'var(--bg-primary)' }}>
+      {/* Ruler sits outside the zoom-container so position:sticky works
+          (CSS transform on a parent breaks sticky positioning). We scale it
+          independently to match the page zoom level. */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        background: 'var(--bg-primary)',
+      }}>
+        <div style={{
+          transform: `scale(${scale})`,
+          transformOrigin: 'top center',
+          height: `${36 * scale}px`,   /* 28px ruler + 8px top padding */
+        }}>
+          <InteractiveRuler />
+        </div>
+      </div>
       <div className="zoom-container" style={{ transform: `scale(${scale})`, transformOrigin: 'top center', transition: 'transform 0.2s ease', minHeight: '100%', paddingBottom: '100px' } as React.CSSProperties}>
-        <InteractiveRuler />
         <div className="pages-container">
           <ContinuousEditor
             content={pages[0] || '<p></p>'}

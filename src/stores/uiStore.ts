@@ -7,6 +7,7 @@ interface UIState {
   sidebarCollapsed: boolean;
   sidebarPanel: SidebarPanel;
   ribbonTab: RibbonTab;
+  ribbonCollapsed: boolean;
   theme: 'dark' | 'light';
   showExportDialog: boolean;
   showAIPanel: boolean;
@@ -16,6 +17,7 @@ interface UIState {
   toggleSidebar: () => void;
   setSidebarPanel: (panel: SidebarPanel) => void;
   setRibbonTab: (tab: RibbonTab) => void;
+  toggleRibbon: () => void;
   setTheme: (theme: 'dark' | 'light') => void;
   toggleTheme: () => void;
   setShowExportDialog: (show: boolean) => void;
@@ -28,6 +30,7 @@ export const useUIStore = create<UIState>((set) => ({
   sidebarCollapsed: true,
   sidebarPanel: 'dashboard',
   ribbonTab: 'home',
+  ribbonCollapsed: false,
   theme: 'light',
   showExportDialog: false,
   showAIPanel: false,
@@ -36,7 +39,8 @@ export const useUIStore = create<UIState>((set) => ({
 
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setSidebarPanel: (panel) => set({ sidebarPanel: panel }),
-  setRibbonTab: (tab) => set({ ribbonTab: tab }),
+  setRibbonTab: (tab) => set({ ribbonTab: tab, ribbonCollapsed: false }),
+  toggleRibbon: () => set((s) => ({ ribbonCollapsed: !s.ribbonCollapsed })),
   setTheme: (theme) => set({ theme }),
   toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
   setShowExportDialog: (show) => set({ showExportDialog: show }),

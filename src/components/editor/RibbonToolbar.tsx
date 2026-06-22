@@ -10,7 +10,7 @@ import {
   ClipboardPaste, Scissors, Copy, Paintbrush, Strikethrough, Subscript, Superscript, Eraser,
   IndentDecrease, IndentIncrease, Baseline, PaintBucket, Grid, WrapText, ArrowDownAZ,
   Pilcrow, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Trash, Split, MousePointerClick,
-  FolderOpen
+  FolderOpen, ChevronUp
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -285,7 +285,7 @@ declare global {
 
 export default function RibbonToolbar() {
 
-  const { ribbonTab, setRibbonTab, setSidebarPanel, directCursorMode, toggleDirectCursorMode } = useUIStore();
+  const { ribbonTab, setRibbonTab, setSidebarPanel, directCursorMode, toggleDirectCursorMode, ribbonCollapsed, toggleRibbon } = useUIStore();
   const { isAutoSuggestEnabled, setAutoSuggestEnabled } = useAIStore();
   const { aiModel } = useSettingsStore();
   const theme = useSettingsStore(s => s.theme);
@@ -641,7 +641,7 @@ export default function RibbonToolbar() {
   return (
     <div className="ribbon-toolbar shrink-0 relative z-[100]">
       {/* Tabs */}
-      <div className="flex items-center gap-0 border-b border-white/5 px-3">
+      <div className="flex items-center gap-0 border-b border-white/5 px-3" onDoubleClick={toggleRibbon}>
         {(['home', 'insert', 'convert', 'export', 'ai'] as const).map((tab) => (
           <button key={tab} onClick={() => setRibbonTab(tab)}
             className={`px-4 py-2 text-xs font-medium capitalize transition-colors relative ${
@@ -651,9 +651,22 @@ export default function RibbonToolbar() {
             {ribbonTab === tab && <span className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full" style={{ background: 'var(--accent-gradient)' }} />}
           </button>
         ))}
+        {/* Collapse / Expand Ribbon Button */}
+        <button
+          onClick={toggleRibbon}
+          className="ml-auto p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+          title={ribbonCollapsed ? 'रिबन दिखाएँ (Show Ribbon)' : 'रिबन छुपाएँ (Hide Ribbon)'}
+        >
+          <ChevronUp className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${ribbonCollapsed ? 'rotate-180' : ''}`} />
+        </button>
       </div>
 
-      {/* Ribbon Content */}
+      {/* Ribbon Content — collapsible */}
+      <div style={{
+        maxHeight: ribbonCollapsed ? '0px' : '120px',
+        overflow: 'hidden',
+        transition: 'max-height 0.25s ease',
+      }}>
       <div className="flex items-stretch gap-1 px-2 py-1.5 flex-wrap md:flex-nowrap relative z-50 min-h-[90px]">
 
         {/* ── NEW PAGE (always visible) ── */}
@@ -1166,6 +1179,7 @@ export default function RibbonToolbar() {
             <div className="text-[10px] text-gray-400 absolute bottom-0 w-full text-center left-0 pointer-events-none">AI Tools</div>
           </div>
         </>)}
+      </div>
       </div>
     </div>
   );
