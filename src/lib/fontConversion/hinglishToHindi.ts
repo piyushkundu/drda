@@ -21,15 +21,17 @@ const vowelMap: Record<string, string> = {
   'aa': 'ा', 'ee': 'ी', 'oo': 'ू', 'ai': 'ै',
   'ei': 'ै', 'au': 'ौ', 'ou': 'ौ',
   'a': 'ा', 'i': 'ि', 'u': 'ु', 'e': 'े', 'o': 'ो',
+  'R': 'ृ',
 };
 
 const independentVowelMap: Record<string, string> = {
   'aa': 'आ', 'ee': 'ई', 'oo': 'ऊ', 'ai': 'ऐ',
   'ei': 'ऐ', 'au': 'औ', 'ou': 'औ',
   'a': 'अ', 'i': 'इ', 'u': 'उ', 'e': 'ए', 'o': 'ओ',
+  'R': 'ऋ',
 };
 
-const vowelKeys = ['aa', 'ee', 'oo', 'ai', 'ei', 'au', 'ou', 'a', 'i', 'u', 'e', 'o'];
+const vowelKeys = ['aa', 'ee', 'oo', 'ai', 'ei', 'au', 'ou', 'a', 'i', 'u', 'e', 'o', 'R'];
 const consonantKeys = [
   'ksh', 'gya', 'gny', 'shh', 'shr', 'shr',
   'kh', 'gh', 'chh', 'ch', 'jh', 'th', 'dh', 'ph', 'bh', 'sh', 'ng',
@@ -45,7 +47,28 @@ export function hinglishToHindi(text: string): string {
     if (/^\s+$/.test(word) || /^[,.;:!?।\-\(\)\[\]{}'"]+$/.test(word)) {
       return word;
     }
-    return transliterateWord(word.toLowerCase());
+    
+    let lowerWord = word.toLowerCase();
+    
+    // Pre-process specific consonant+ri combinations to use the 'R' vowel mapping for 'ृ'
+    lowerWord = lowerWord.replace(/vri/g, "vR");
+    lowerWord = lowerWord.replace(/kri/g, "kR");
+    lowerWord = lowerWord.replace(/mri/g, "mR");
+    lowerWord = lowerWord.replace(/sri/g, "sR");
+    lowerWord = lowerWord.replace(/shri/g, "shR");
+    lowerWord = lowerWord.replace(/pri/g, "pR");
+    lowerWord = lowerWord.replace(/gri/g, "gR");
+    lowerWord = lowerWord.replace(/dri/g, "dR");
+    lowerWord = lowerWord.replace(/dhri/g, "dhR");
+    lowerWord = lowerWord.replace(/tri/g, "tR");
+    lowerWord = lowerWord.replace(/nri/g, "nR");
+    lowerWord = lowerWord.replace(/bhri/g, "bhR");
+    lowerWord = lowerWord.replace(/hri/g, "hR");
+
+    // Common misspellings
+    if (lowerWord === "mukhay") lowerWord = "mukhya";
+
+    return transliterateWord(lowerWord);
   }).join('');
 }
 

@@ -89,6 +89,7 @@ export type Department =
   | 'General';
 
 export type SidebarPanel =
+  | 'social-audit'
   | 'dashboard'
   | 'editor'
   | 'spreadsheet'

@@ -17,6 +17,7 @@ import AIDocGenerator from '@/components/ai/AIDocGenerator';
 import OCRScanner from '@/components/ocr/OCRScanner';
 import SettingsPanel from '@/components/settings/SettingsPanel';
 import ArchivedFiles from '@/components/dashboard/ArchivedFiles';
+import SocialAuditDashboard from '@/components/socialAudit/SocialAuditDashboard';
 
 const SpreadsheetEditor = dynamic(() => import('@/components/spreadsheet/SpreadsheetEditor'), { ssr: false });
 
@@ -30,6 +31,8 @@ export default function Home() {
 
   const renderPanel = () => {
     switch (sidebarPanel) {
+      case 'social-audit':
+        return <SocialAuditDashboard />;
       case 'dashboard':
         return <Dashboard />;
       case 'editor':
@@ -61,9 +64,20 @@ export default function Home() {
       case 'settings':
         return <SettingsPanel />;
       default:
-        return <Dashboard />;
+        return <SocialAuditDashboard />;
     }
   };
+
+  const isSocialAudit = sidebarPanel === 'social-audit';
+
+  // If in Social Audit mode, show full-screen Social Audit portal without Page Hindi sidebar and status bar
+  if (isSocialAudit) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-slate-950">
+        <SocialAuditDashboard />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">

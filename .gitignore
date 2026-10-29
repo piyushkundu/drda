@@ -43,3 +43,9 @@ next-env.d.ts
 # legacy folder
 /social audit-20260506T153610Z-3-001/
 
+# scratch and build artifacts
+scratch/
+scratch_ocr.py
+dist/
+
+

@@ -5,11 +5,12 @@ import { useUIStore } from '@/stores/uiStore';
 import type { SidebarPanel } from '@/types';
 import {
   LayoutDashboard, FilePlus, FileText, Bot, Type, ScanLine,
-  BookOpen, Archive, Settings, ChevronLeft, ChevronRight, Sparkles, TableProperties
+  BookOpen, Archive, Settings, ChevronLeft, ChevronRight, Sparkles, TableProperties, Landmark
 } from 'lucide-react';
 
 const menuItems: { id: SidebarPanel; label: string; labelHi: string; icon: React.ElementType }[] = [
-  { id: 'dashboard', label: 'Dashboard', labelHi: 'डैशबोर्ड', icon: LayoutDashboard },
+  { id: 'social-audit', label: 'Social Audit', labelHi: 'सोशल ऑडिट बागपत', icon: Landmark },
+  { id: 'dashboard', label: 'Page Hindi Suite', labelHi: 'पेज हिंदी सुइट', icon: LayoutDashboard },
   { id: 'editor', label: 'Editor', labelHi: 'संपादक', icon: FilePlus },
   { id: 'spreadsheet', label: 'Spreadsheet', labelHi: 'स्प्रेडशीट', icon: TableProperties },
   { id: 'templates', label: 'Templates', labelHi: 'टेम्पलेट', icon: FileText },
@@ -66,9 +67,14 @@ export default function Sidebar() {
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="truncate"
+                  className="truncate flex items-center justify-between flex-1"
                 >
-                  {item.label}
+                  <span>{item.id === 'social-audit' ? item.labelHi : item.label}</span>
+                  {item.id === 'social-audit' && (
+                    <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.2 rounded-full font-bold ml-1">
+                      पोर्टल
+                    </span>
+                  )}
                 </motion.span>
               )}
             </button>

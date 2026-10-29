@@ -1,0 +1,732 @@
+'use client';
+
+import React, { useMemo, useState } from 'react';
+import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { SocialAuditRecord } from '@/types/socialAudit';
+import { 
+  Calendar, Clock, MapPin, Phone, Users, Shield, 
+  AlertCircle, CheckCircle2, ChevronRight, Sparkles,
+  Layers, Check, AlertTriangle, Search, Filter, 
+  ChevronDown, BarChart3, ArrowRight
+} from 'lucide-react';
+
+export default function UpcomingSabhasTab() {
+  const { 
+    records, 
+    asOfDate, 
+    fontViewMode, 
+    openEditModal, 
+    markCompleted,
+    setActiveTab,
+    setSelectedBlock 
+  } = useSocialAuditStore();
+
+  const [filterBlock, setFilterBlock] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
+  const [filterScheme, setFilterScheme] = useState<'all' | 'nsap' | 'mgnrega'>('all');
+  const [filterOnlyAmended, setFilterOnlyAmended] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Helper to format date in Hindi DD/MM/YYYY
+  const formatDateHi = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const [y, m, d] = dateStr.split('-');
+      return `${d}/${m}/${y}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // Helper to calculate days diff from asOfDate
+  const getDaysDiff = (targetDate: string) => {
+    const d1 = new Date(asOfDate).getTime();
+    const d2 = new Date(targetDate).getTime();
+    const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  // All upcoming meetings (meetingDate >= asOfDate and not completed)
+  const allUpcoming = useMemo(() => {
+    return records
+      .filter((r) => r.meetingDate >= asOfDate && r.status !== 'completed')
+      .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
+  }, [records, asOfDate]);
+
+  // Counts
+  const upcomingCountTotal = allUpcoming.length;
+  const upcomingBaghpatCount = allUpcoming.filter(r => r.block === 'Baghpat').length;
+  const upcomingBarautCount = allUpcoming.filter(r => r.block === 'Baraut').length;
+  const upcomingAmendedCount = allUpcoming.filter(r => r.isAmended).length;
+
+  // Filtered upcoming list
+  const filteredUpcoming = useMemo(() => {
+    return allUpcoming.filter(r => {
+      // Block filter
+      if (filterBlock !== 'all' && r.block !== filterBlock) return false;
+      // Scheme filter
+      if (filterScheme === 'nsap' && !r.hasNSAP) return false;
+      if (filterScheme === 'mgnrega' && !r.hasMGNREGA) return false;
+      // Only amended
+      if (filterOnlyAmended && !r.isAmended) return false;
+      // Search
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchGp = r.gpNameUnicode.toLowerCase().includes(q) || r.gpNameRaw.toLowerCase().includes(q);
+        const matchBrp = (r.brpName || '').toLowerCase().includes(q) || r.brpPhone.includes(q);
+        const matchOfficer = (r.supervisorOfficerUnicode || '').toLowerCase().includes(q);
+        if (!matchGp && !matchBrp && !matchOfficer) return false;
+      }
+      return true;
+    });
+  }, [allUpcoming, filterBlock, filterScheme, filterOnlyAmended, searchQuery]);
+
+  // Meetings scheduled today (asOfDate) that are not yet marked completed
+  const todayMeetings = useMemo(() => {
+    return records
+      .filter((r) => r.meetingDate === asOfDate && r.status !== 'completed')
+      .sort((a, b) => a.block.localeCompare(b.block));
+  }, [records, asOfDate]);
+
+  // Primary batch to feature at top:
+  // If today has meetings, use todayMeetings.
+  // Else, use the earliest upcoming date meetings.
+  const { primaryMeetings, isTodayBatch, targetDate } = useMemo(() => {
+    if (todayMeetings.length > 0) {
+      return {
+        primaryMeetings: todayMeetings,
+        isTodayBatch: true,
+        targetDate: asOfDate
+      };
+    }
+
+    if (allUpcoming.length > 0) {
+      const earliestDate = allUpcoming[0].meetingDate;
+      const earliestBatch = allUpcoming.filter(r => r.meetingDate === earliestDate);
+      return {
+        primaryMeetings: earliestBatch,
+        isTodayBatch: earliestDate === asOfDate,
+        targetDate: earliestDate
+      };
+    }
+
+    return {
+      primaryMeetings: [] as SocialAuditRecord[],
+      isTodayBatch: false,
+      targetDate: ''
+    };
+  }, [todayMeetings, allUpcoming, asOfDate]);
+
+  // All subsequent meetings excluding the primaryMeetings
+  const subsequentMeetings = useMemo(() => {
+    const primaryIds = new Set(primaryMeetings.map(r => r.id));
+    return filteredUpcoming.filter(m => !primaryIds.has(m.id));
+  }, [filteredUpcoming, primaryMeetings]);
+
+  // Render text helper respecting fontViewMode
+  const renderText = (unicodeText: string, krutiText: string) => {
+    if (fontViewMode === 'krutidev') {
+      return <span style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>{krutiText}</span>;
+    }
+    if (fontViewMode === 'dual') {
+      return (
+        <span className="flex flex-col">
+          <span>{unicodeText}</span>
+          <span className="text-[11px] text-amber-300 font-mono" style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>
+            {krutiText}
+          </span>
+        </span>
+      );
+    }
+    return <span>{unicodeText}</span>;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* ========================================================================= */}
+      {/* 1. UPCOMING HEADER WITH STATS PILLS & QUICK DASHBOARD LINK */}
+      {/* ========================================================================= */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-gradient-to-r from-blue-950/40 via-slate-900 to-indigo-950/40 p-4 rounded-2xl border border-blue-500/20 backdrop-blur-md">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="p-2 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30">
+              <Clock className="w-5 h-5" />
+            </span>
+            <div>
+              <h1 className="text-xl md:text-2xl font-black text-white flex items-center gap-2">
+                <span>आगामी सोशल ऑडिट सभाएं</span>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  {upcomingCountTotal} शेष
+                </span>
+              </h1>
+              <p className="text-xs text-slate-400 mt-0.5">
+                कट-ऑफ तिथि <strong className="text-slate-200">{formatDateHi(asOfDate)}</strong> से आगामी तिथियों में निर्धारित ग्राम सभाओं की लाइव समय-सारणी
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Nav & Counters */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+            <span className="text-slate-400">बागपत:</span>
+            <strong className="text-blue-400">{upcomingBaghpatCount}</strong>
+            <span className="text-slate-600 mx-1">|</span>
+            <span className="text-slate-400">बड़ौत:</span>
+            <strong className="text-indigo-400">{upcomingBarautCount}</strong>
+            <span className="text-slate-600 mx-1">|</span>
+            <span className="text-slate-400">संशोधित:</span>
+            <strong className="text-amber-400">{upcomingAmendedCount}</strong>
+          </div>
+
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md transition-all active:scale-95"
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>डैशबोर्ड एवं तुलनात्मक मैट्रिक्स</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. TODAY'S / NEXT UPCOMING MEETINGS SECTION */}
+      {/* ========================================================================= */}
+      {primaryMeetings.length === 1 ? (
+        // CASE A: ONLY 1 MEETING TODAY -> SHOW LARGE HERO CARD (EXACTLY AS BEFORE)
+        (() => {
+          const nextSabha = primaryMeetings[0];
+          const diff = getDaysDiff(nextSabha.meetingDate);
+          return (
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950/90 via-slate-900 to-blue-950/80 border-2 border-indigo-500/30 p-6 md:p-8 shadow-2xl backdrop-blur-xl">
+              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                {/* Left: Meeting Details */}
+                <div className="space-y-4 max-w-2xl">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse">
+                      <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                      {diff === 0 ? 'आज होने वाली ग्राम सभा (TODAY)' : 'अगली होने वाली ग्राम सभा (NEXT UPCOMING)'}
+                    </span>
+
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      {nextSabha.blockHindi}
+                    </span>
+
+                    {nextSabha.isAmended && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        संशोधित रोस्टर
+                      </span>
+                    )}
+
+                    {nextSabha.hasNSAP && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        NSAP पेंशन ऑडिट
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Village Name & Meeting Date */}
+                  <div>
+                    <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider">ग्राम पंचायत</div>
+                    <h2 className="text-3xl md:text-4xl font-black text-white mt-0.5 tracking-tight flex items-center gap-3">
+                      {renderText(nextSabha.gpNameUnicode, nextSabha.gpNameKrutiDev)}
+                    </h2>
+                    {nextSabha.isAmended && nextSabha.originalMeetingDate && (
+                      <div className="mt-1 text-xs text-amber-300 flex items-center gap-2">
+                        <span className="line-through text-slate-400">मूल तिथि: {formatDateHi(nextSabha.originalMeetingDate)}</span>
+                        <span className="font-bold">→ नई संशोधित तिथि: {formatDateHi(nextSabha.meetingDate)}</span>
+                        <span className="text-[11px] bg-amber-950/80 px-2 py-0.5 rounded border border-amber-600/40">
+                          BRP कार्यमुक्त/परिवर्तन के कारण
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Key Meta Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                    {/* Date & Time */}
+                    <div className="flex items-start gap-2.5 bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                      <Calendar className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-[10px] text-slate-400 uppercase font-semibold">बैठक दिनांक एवं समय</div>
+                        <div className="text-sm font-bold text-white mt-0.5">
+                          {formatDateHi(nextSabha.meetingDate)} ({renderText(nextSabha.timeUnicode, nextSabha.timeKrutiDev)})
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          प्रारम्भ: {formatDateHi(nextSabha.startDate)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Venue */}
+                    <div className="flex items-start gap-2.5 bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                      <MapPin className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-[10px] text-slate-400 uppercase font-semibold">बैठक का स्थान</div>
+                        <div className="text-sm font-bold text-white mt-0.5">
+                          {renderText(nextSabha.venueUnicode, nextSabha.venueKrutiDev)}
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          ग्राम पंचायत {nextSabha.gpNameUnicode}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* BRP with Phone */}
+                    <div className="flex items-start gap-2.5 bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                      <Phone className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+                      <div className="flex-1">
+                        <div className="text-[10px] text-slate-400 uppercase font-semibold">आवंटित बी०आर०पी०</div>
+                        <div className="text-sm font-bold text-amber-300 mt-0.5">
+                          {renderText(nextSabha.brpName || nextSabha.brpUnicode, nextSabha.brpKrutiDev)}
+                        </div>
+                        {nextSabha.brpPhone && (
+                          <a 
+                            href={`tel:${nextSabha.brpPhone}`}
+                            className="inline-flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 mt-0.5 font-mono font-bold"
+                          >
+                            📞 {nextSabha.brpPhone}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Supervisory Officer */}
+                    <div className="flex items-start gap-2.5 bg-slate-900/60 p-3 rounded-xl border border-white/5">
+                      <Shield className="w-4 h-4 text-purple-400 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-[10px] text-slate-400 uppercase font-semibold">जनपद स्तरीय पर्यवेक्षक अधिकारी</div>
+                        <div className="text-xs font-semibold text-slate-200 mt-0.5 leading-snug">
+                          {renderText(nextSabha.supervisorOfficerUnicode, nextSabha.supervisorOfficerKrutiDev)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Team Members List */}
+                  <div className="bg-slate-900/80 p-3 rounded-xl border border-white/10 text-xs">
+                    <div className="flex items-center gap-2 text-indigo-300 font-semibold mb-1">
+                      <Users className="w-3.5 h-3.5" />
+                      <span>सोशल ऑडिट टीम सदस्य (VRPs/सदस्य):</span>
+                    </div>
+                    <div className="text-slate-300 leading-relaxed font-medium">
+                      {renderText(nextSabha.teamMembersUnicode, nextSabha.teamMembersKrutiDev)}
+                    </div>
+                  </div>
+
+                  {/* Schemes */}
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-slate-400 font-semibold">ऑडिट योजनाएं:</span>
+                    <span className="text-slate-200 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
+                      {renderText(nextSabha.schemeUnicode, nextSabha.schemeKrutiDev)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right: Countdown & Quick Action Box */}
+                <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-gradient-to-b from-blue-950/80 to-slate-900 border border-blue-500/30 text-center w-full lg:w-72 shrink-0 shadow-xl">
+                  <Clock className="w-8 h-8 text-blue-400 mb-2 animate-bounce" />
+                  <div className="text-xs text-blue-300 font-semibold uppercase tracking-wider">बैठक स्थिति</div>
+                  
+                  <div className="my-2">
+                    {diff === 0 ? (
+                      <>
+                        <span className="text-3xl font-black text-rose-400 animate-pulse">आज है!</span>
+                        <p className="text-xs text-slate-300 mt-1">1:00 बजे बैठक प्रारम्भ होगी</p>
+                      </>
+                    ) : diff === 1 ? (
+                      <>
+                        <span className="text-3xl font-black text-amber-400">कल होगी!</span>
+                        <p className="text-xs text-slate-300 mt-1">तैयारी पूर्ण करें</p>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-black text-blue-300">{diff}</span>
+                        <span className="text-sm font-bold text-slate-300 block">दिन शेष</span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-slate-400 mb-4">
+                    दिनांक: <span className="font-bold text-white">{formatDateHi(nextSabha.meetingDate)}</span>
+                  </div>
+
+                  <div className="flex flex-col gap-2 w-full">
+                    <button
+                      onClick={() => openEditModal(nextSabha)}
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md transition-all active:scale-95"
+                    >
+                      संशोधित / संपादित करें
+                    </button>
+
+                    <button
+                      onClick={() => markCompleted(nextSabha.id, nextSabha.status !== 'completed')}
+                      className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-2 px-4 rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>सम्पन्न मार्क करें</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()
+      ) : primaryMeetings.length > 1 ? (
+        // CASE B: MORE THAN 1 MEETING TODAY -> SHOW COMPACT CARDS GRID SO ALL ARE VISIBLE SIDE-BY-SIDE
+        <div className="rounded-3xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-blue-950/80 border-2 border-indigo-500/30 p-5 md:p-6 shadow-2xl backdrop-blur-xl space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center animate-pulse shadow-lg shadow-rose-500/20">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base md:text-lg font-black text-white flex items-center gap-2">
+                  <span>
+                    {isTodayBatch ? 'आज होने वाली ग्राम सभाएं (TODAY\'S MEETINGS)' : `अगली होने वाली ग्राम सभाएं (${formatDateHi(targetDate)})`}
+                  </span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    {primaryMeetings.length} ग्राम पंचायतें {isTodayBatch ? 'आज निर्धारित' : 'निर्धारित'}
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400">
+                  दिनांक <strong className="text-white">{formatDateHi(targetDate)}</strong> को आयोजित होने वाली समस्त बैठकें
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs">
+              <span className="bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 text-slate-300">
+                बागपत: <strong className="text-blue-400">{primaryMeetings.filter(r => r.block === 'Baghpat').length}</strong> | बड़ौत: <strong className="text-indigo-400">{primaryMeetings.filter(r => r.block === 'Baraut').length}</strong>
+              </span>
+            </div>
+          </div>
+
+          {/* Grid of Compact Cards for Today's Meetings */}
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${primaryMeetings.length >= 3 ? 'lg:grid-cols-3 xl:grid-cols-4' : 'lg:grid-cols-2'} gap-4`}>
+            {primaryMeetings.map((sabha) => {
+              const diff = getDaysDiff(sabha.meetingDate);
+              return (
+                <div
+                  key={sabha.id}
+                  className="rounded-2xl bg-slate-900/90 border-2 border-indigo-500/30 p-4 shadow-xl hover:border-indigo-500/60 transition-all flex flex-col justify-between space-y-3"
+                >
+                  <div className="space-y-2">
+                    {/* Top Status & Block Row */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                        sabha.block === 'Baghpat' 
+                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' 
+                          : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                      }`}>
+                        {sabha.blockHindi}
+                      </span>
+
+                      <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{diff === 0 ? 'आज है!' : diff === 1 ? 'कल है!' : `${diff} दिन शेष`}</span>
+                      </span>
+                    </div>
+
+                    {/* Gram Panchayat Name */}
+                    <div>
+                      <div className="text-[10px] text-slate-400 uppercase font-semibold">ग्राम पंचायत</div>
+                      <h3 className="text-xl font-black text-white mt-0.5">
+                        {renderText(sabha.gpNameUnicode, sabha.gpNameKrutiDev)}
+                      </h3>
+                    </div>
+
+                    {/* Badges: Amended & Schemes */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {sabha.isAmended && (
+                        <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          <span>संशोधित (मूल: {formatDateHi(sabha.originalMeetingDate || '')})</span>
+                        </span>
+                      )}
+                      {sabha.hasNSAP && (
+                        <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg">
+                          NSAP पेंशन
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Meeting Meta */}
+                    <div className="space-y-1.5 pt-2 border-t border-white/5 text-xs">
+                      <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
+                        <Calendar className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                        <span>{formatDateHi(sabha.meetingDate)} ({renderText(sabha.timeUnicode, sabha.timeKrutiDev)})</span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span className="truncate">{renderText(sabha.venueUnicode, sabha.venueKrutiDev)}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] pt-1">
+                        <span className="text-slate-400">BRP: <strong className="text-amber-300">{renderText(sabha.brpName || sabha.brpUnicode, sabha.brpKrutiDev)}</strong></span>
+                        {sabha.brpPhone && (
+                          <a 
+                            href={`tel:${sabha.brpPhone}`}
+                            className="text-blue-400 hover:text-blue-300 font-mono font-bold"
+                          >
+                            📞 {sabha.brpPhone}
+                          </a>
+                        )}
+                      </div>
+
+                      <div className="text-[10px] text-slate-400 truncate" title={sabha.supervisorOfficerUnicode}>
+                        पर्यवेक्षक: {sabha.supervisorOfficerUnicode}
+                      </div>
+
+                      <div className="text-[10px] text-slate-400 truncate" title={sabha.teamMembersUnicode}>
+                        टीम: {sabha.teamMembersUnicode}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+                    <button
+                      onClick={() => openEditModal(sabha)}
+                      className="flex-1 bg-blue-600/80 hover:bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded-xl transition-all text-center"
+                    >
+                      संशोधित करें
+                    </button>
+                    <button
+                      onClick={() => markCompleted(sabha.id, true)}
+                      className="bg-emerald-600/80 hover:bg-emerald-600 text-white text-xs font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>सम्पन्न</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center text-slate-400">
+          चयनित संदर्भ तिथि {formatDateHi(asOfDate)} के पश्चात कोई आगामी बैठकें शेष नहीं हैं।
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. FILTER TOOLBAR FOR SUBSEQUENT UPCOMING SABHAS */}
+      {/* ========================================================================= */}
+      <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-blue-400" />
+            <h3 className="text-sm font-bold text-white">
+              आगामी ग्राम सभाओं की सूची ({filteredUpcoming.length} बैठकें)
+            </h3>
+          </div>
+
+          {/* Search box */}
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ग्राम पंचायत, BRP या अधिकारी खोजें..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Filter Pills */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800/60">
+          {/* Block Filter */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+            <button
+              onClick={() => setFilterBlock('all')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
+                filterBlock === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              समस्त ब्लॉक ({allUpcoming.length})
+            </button>
+            <button
+              onClick={() => setFilterBlock('Baghpat')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
+                filterBlock === 'Baghpat' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              बागपत ({upcomingBaghpatCount})
+            </button>
+            <button
+              onClick={() => setFilterBlock('Baraut')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
+                filterBlock === 'Baraut' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              बड़ौत ({upcomingBarautCount})
+            </button>
+          </div>
+
+          {/* Scheme Filter */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+            <button
+              onClick={() => setFilterScheme('all')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
+                filterScheme === 'all' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              सभी योजनाएं
+            </button>
+            <button
+              onClick={() => setFilterScheme('nsap')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
+                filterScheme === 'nsap' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              NSAP पेंशन
+            </button>
+            <button
+              onClick={() => setFilterScheme('mgnrega')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${
+                filterScheme === 'mgnrega' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              मनरेगा
+            </button>
+          </div>
+
+          {/* Only Amended Toggle */}
+          <button
+            onClick={() => setFilterOnlyAmended(!filterOnlyAmended)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+              filterOnlyAmended
+                ? 'bg-amber-500/30 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/20'
+                : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <span>केवल संशोधित ({upcomingAmendedCount})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 4. UPCOMING SCHEDULE GRID */}
+      {/* ========================================================================= */}
+      {subsequentMeetings.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {subsequentMeetings.map((sabha) => {
+            const diff = getDaysDiff(sabha.meetingDate);
+            return (
+              <div
+                key={sabha.id}
+                className={`p-4 rounded-2xl border transition-all hover:scale-[1.01] flex flex-col justify-between ${
+                  sabha.isAmended
+                    ? 'bg-gradient-to-br from-amber-950/30 via-slate-900 to-slate-950 border-amber-500/30'
+                    : 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span className="text-[11px] font-semibold text-blue-400 bg-blue-950/80 px-2 py-0.5 rounded border border-blue-800/40">
+                      {sabha.blockHindi}
+                    </span>
+
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      diff === 0 
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse'
+                        : diff === 1
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : 'bg-slate-800 text-slate-300'
+                    }`}>
+                      {diff === 0 ? 'आज' : diff === 1 ? 'कल' : `${diff} दिन शेष`}
+                    </span>
+                  </div>
+
+                  <div className="text-base font-bold text-white">
+                    {renderText(sabha.gpNameUnicode, sabha.gpNameKrutiDev)}
+                  </div>
+
+                  <div className="text-xs font-semibold text-slate-300 mt-1 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                    <span>बैठक: {formatDateHi(sabha.meetingDate)} ({renderText(sabha.timeUnicode, sabha.timeKrutiDev)})</span>
+                  </div>
+
+                  {sabha.isAmended && (
+                    <div className="text-[10px] text-amber-300 bg-amber-950/50 p-1.5 rounded-lg border border-amber-500/20 mt-2 flex items-center gap-1 font-medium">
+                      <AlertCircle className="w-3 h-3 text-amber-400 shrink-0" />
+                      <span>संशोधित (मूल: {formatDateHi(sabha.originalMeetingDate || '')})</span>
+                    </div>
+                  )}
+
+                  <div className="mt-2.5 pt-2 border-t border-white/5 text-[11px] space-y-1">
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span className="text-slate-400">BRP:</span>
+                      <span className="font-semibold text-amber-300">
+                        {renderText(sabha.brpName || sabha.brpUnicode, sabha.brpKrutiDev)}
+                      </span>
+                    </div>
+                    {sabha.brpPhone && (
+                      <div className="text-[10px] text-blue-400 font-mono">
+                        📞 {sabha.brpPhone}
+                      </div>
+                    )}
+                    <div className="text-slate-400 truncate" title={sabha.teamMembersUnicode}>
+                      टीम: {sabha.teamMembersUnicode}
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate">
+                      पर्यवेक्षक: {sabha.supervisorOfficerUnicode}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => openEditModal(sabha)}
+                      className="text-xs text-blue-400 hover:text-blue-300 font-bold bg-blue-950/60 hover:bg-blue-900/60 px-2.5 py-1 rounded-lg border border-blue-800/40 transition-colors"
+                    >
+                      संशोधित करें
+                    </button>
+                    <button
+                      onClick={() => markCompleted(sabha.id, true)}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 font-bold bg-emerald-950/60 hover:bg-emerald-900/60 px-2.5 py-1 rounded-lg border border-emerald-800/40 transition-colors flex items-center gap-1"
+                    >
+                      <Check className="w-3 h-3" />
+                      <span>सम्पन्न</span>
+                    </button>
+                  </div>
+
+                  {sabha.hasNSAP && (
+                    <span className="text-[10px] bg-emerald-950/80 text-emerald-300 border border-emerald-700/40 px-2 py-0.5 rounded font-bold">
+                      NSAP
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center text-slate-400 space-y-2">
+          <p>कोई आगामी बैठक इस फ़िल्टर में नहीं मिली।</p>
+          <button
+            onClick={() => {
+              setFilterBlock('all');
+              setFilterScheme('all');
+              setFilterOnlyAmended(false);
+              setSearchQuery('');
+            }}
+            className="text-xs text-blue-400 hover:underline"
+          >
+            फ़िल्टर रीसेट करें
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

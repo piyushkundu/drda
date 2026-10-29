@@ -127,6 +127,16 @@ export function unicodeToKrutiDev(text: string): string {
   modified_substring = modified_substring.replace(/Zk/g, "kZ");
   modified_substring = modified_substring.replace(/Zh/g, "Ê");
 
+  // Fix visual rendering of short-i matra (f) on wide ligatures
+  modified_substring = modified_substring.replace(/fê/g, "fV~V"); // ट्टि
+  modified_substring = modified_substring.replace(/fë/g, "fV~B"); // ट्ठि
+  modified_substring = modified_substring.replace(/fì/g, "fM~M"); // ड्डि
+  modified_substring = modified_substring.replace(/fï/g, "fM~<"); // ड्ढि
+  modified_substring = modified_substring.replace(/f\)/g, "fn~èk"); // द्धि
+  modified_substring = modified_substring.replace(/fí/g, "fn~n"); // द्दि
+  modified_substring = modified_substring.replace(/f\}/g, "fn~o"); // द्वि
+  modified_substring = modified_substring.replace(/f\|/g, "fn~;"); // द्यि
+
   return modified_substring;
 }
 
