@@ -405,8 +405,38 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               }
               return r;
             });
+
+            // Sync MIS Feeding baseline status from official R 9.1.3 report (42 fed: 25 Baghpat, 17 Baraut)
+            const baghpatFedSet = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 26, 27, 30]);
+            const barautFedSet = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18]);
+
+            const finalRecords = updatedRecords.map(r => {
+              const isBaghpatFed = r.block === 'Baghpat' && baghpatFedSet.has(r.sno);
+              const isBarautFed = r.block === 'Baraut' && barautFedSet.has(r.sno);
+              const isFedOfficial = isBaghpatFed || isBarautFed;
+
+              if (isFedOfficial && r.misStatus !== 'fed') {
+                hasChanges = true;
+                return {
+                  ...r,
+                  misStatus: 'fed' as MisAuditStatus,
+                  misAuditedCount: 1,
+                  misFedDate: r.misFedDate || r.meetingDate
+                };
+              }
+              if (!isFedOfficial && (!r.misStatus || r.misStatus === 'not_fed')) {
+                hasChanges = true;
+                return {
+                  ...r,
+                  misStatus: 'pending' as MisAuditStatus,
+                  misAuditedCount: 0
+                };
+              }
+              return r;
+            });
+
             if (hasChanges) {
-              state.records = updatedRecords;
+              state.records = finalRecords;
             }
           }
         }

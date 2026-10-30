@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { MisAuditStatus, SocialAuditRecord } from '@/types/socialAudit';
 import { 
@@ -27,11 +27,12 @@ export default function MisFeedingTab() {
   } = useSocialAuditStore();
 
   const [selectedBlockFilter, setSelectedBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'fed' | 'due_pending' | 'upcoming'>('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'fed' | 'all_pending' | 'due_pending' | 'upcoming'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [justUpdatedId, setJustUpdatedId] = useState<string | null>(null);
 
   // Dedicated Pending Box local filter & toggle for viewing upcoming schedule
+  const [pendingViewScope, setPendingViewScope] = useState<'due' | 'all'>('due');
   const [pendingBlockFilter, setPendingBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
   const [showUpcomingList, setShowUpcomingList] = useState(false);
 
@@ -43,7 +44,14 @@ export default function MisFeedingTab() {
   const [syncToastMessage, setSyncToastMessage] = useState<string | null>(null);
   const [lastSyncTimestamp, setLastSyncTimestamp] = useState<string | null>(null);
 
-  // Ref for bookmarklet - no anchor needed, copy-only approach avoids React javascript: URL block
+  // Ref for bookmarklet anchor tag (sets href imperatively to prevent React javascript: URL security error)
+  const bookmarkletAnchorRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    if (bookmarkletAnchorRef.current) {
+      bookmarkletAnchorRef.current.setAttribute('href', getMisBookmarkletHref());
+    }
+  }, []);
 
   // Helper to format date
   const formatDateHi = (dateStr?: string) => {
@@ -128,6 +136,11 @@ export default function MisFeedingTab() {
     const fedBaghpat = records.filter(r => r.block === 'Baghpat' && r.misStatus === 'fed');
     const fedBaraut = records.filter(r => r.block === 'Baraut' && r.misStatus === 'fed');
 
+    // All Pending (Everything not yet fed on MIS: 46 total = 19 Baghpat + 27 Baraut)
+    const allPendingTotal = records.filter(r => (r.misStatus || 'pending') !== 'fed');
+    const allPendingBaghpat = records.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed');
+    const allPendingBaraut = records.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed');
+
     // Due Pending: Meeting date has arrived (meetingDate <= asOfDate) and status is pending (not yet fed on MIS)
     const duePendingTotal = records.filter(r => (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
     const duePendingBaghpat = records.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
@@ -142,9 +155,12 @@ export default function MisFeedingTab() {
       totalGps,
       baghpatTotal,
       barautTotal,
-      fedTotalCount: fedTotal.length, // Baseline 42
-      fedBaghpatCount: fedBaghpat.length, // Baseline 25 (56.82%)
-      fedBarautCount: fedBaraut.length, // Baseline 17 (38.64%)
+      fedTotalCount: fedTotal.length, // Baseline 42 (Screenshot: 25 Baghpat + 17 Baraut)
+      fedBaghpatCount: fedBaghpat.length, // 25 (56.82%)
+      fedBarautCount: fedBaraut.length, // 17 (38.64%)
+      allPendingTotalCount: allPendingTotal.length, // Baseline 46 (19 in Baghpat + 27 in Baraut)
+      allPendingBaghpatCount: allPendingBaghpat.length, // 19
+      allPendingBarautCount: allPendingBaraut.length, // 27
       duePendingTotalCount: duePendingTotal.length, // Baseline 6 (4 in Baghpat + 2 in Baraut)
       duePendingBaghpatCount: duePendingBaghpat.length, // 4
       duePendingBarautCount: duePendingBaraut.length, // 2
@@ -157,18 +173,18 @@ export default function MisFeedingTab() {
     };
   }, [records, asOfDate]);
 
-  // Due Pending Records for the dedicated Pending Box
-  const duePendingRecords = useMemo(() => {
+  // Pending Records for the dedicated Pending Box (Due only vs All pending)
+  const pendingBoxRecords = useMemo(() => {
     return records
       .filter(r => {
         const isPending = (r.misStatus || 'pending') !== 'fed';
-        const isPastOrToday = r.meetingDate <= asOfDate;
-        if (!isPending || !isPastOrToday) return false;
+        if (!isPending) return false;
+        if (pendingViewScope === 'due' && r.meetingDate > asOfDate) return false;
         if (pendingBlockFilter === 'all') return true;
         return r.block === pendingBlockFilter;
       })
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
-  }, [records, asOfDate, pendingBlockFilter]);
+  }, [records, asOfDate, pendingBlockFilter, pendingViewScope]);
 
   // Upcoming scheduled records awaiting meeting day
   const upcomingScheduledRecords = useMemo(() => {
@@ -192,6 +208,8 @@ export default function MisFeedingTab() {
       // 2. Status Filter
       if (selectedStatusFilter === 'fed') {
         if (r.misStatus !== 'fed') return false;
+      } else if (selectedStatusFilter === 'all_pending') {
+        if (r.misStatus === 'fed') return false;
       } else if (selectedStatusFilter === 'due_pending') {
         if (r.misStatus === 'fed' || r.meetingDate > asOfDate) return false;
       } else if (selectedStatusFilter === 'upcoming') {
@@ -399,16 +417,29 @@ export default function MisFeedingTab() {
           </div>
         </div>
 
-        {/* Bookmarklet Badge + Copy-Only (no anchor tag - prevents React javascript: URL block) */}
+        {/* The Actionable Draggable Bookmarklet Link */}
         <div className="p-4 rounded-2xl bg-slate-950/80 border border-blue-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-slate-400">बुकमार्क कॉपी करें:</span>
-            <div
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-xs shadow-xl shadow-blue-600/30 border border-blue-300 flex items-center gap-2 select-none"
+            <span className="text-xs font-bold text-slate-400">बुकमार्क बार पर ड्रैग करें:</span>
+            {/* Draggable Anchor Tag without javascript: in JSX */}
+            <a
+              ref={bookmarkletAnchorRef}
+              draggable="true"
+              onDragStart={(e) => {
+                const href = getMisBookmarkletHref();
+                e.dataTransfer.setData('text/uri-list', href);
+                e.dataTransfer.setData('text/plain', href);
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                alert('कृपया इस नीले बटन को माउस से दबाकर (Drag) अपने ब्राउज़र के बुकमार्क बार (Bookmarks Bar) पर खींचकर छोड़ें!');
+              }}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-xl shadow-blue-600/30 border border-blue-300 flex items-center gap-2 cursor-grab active:cursor-grabbing hover:scale-105 transition-all select-none"
+              title="इस बटन को खींचकर (Drag & Drop) अपने ब्राउज़र के बुकमार्क बार पर छोड़ें"
             >
               <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
               <span>⚡ MIS सिंक (R 9.1.3)</span>
-            </div>
+            </a>
           </div>
 
           <div className="flex items-center gap-2">
@@ -546,43 +577,43 @@ export default function MisFeedingTab() {
           </div>
         </div>
 
-        {/* Card 3: आज तक लंबित (Due Pending) */}
-        <div className={`rounded-2xl border p-5 shadow-lg space-y-2 transition-all ${
-          metrics.duePendingTotalCount > 0 
-            ? 'bg-gradient-to-br from-amber-950/60 to-slate-900 border-amber-500/50 shadow-amber-500/10' 
-            : 'bg-slate-900/90 border-slate-800'
-        }`}>
+        {/* Card 3: समस्त लंबित (All Pending) */}
+        <div className="rounded-2xl bg-gradient-to-br from-amber-950/60 to-slate-900 border border-amber-500/40 p-5 shadow-lg space-y-2">
           <div className="flex items-center justify-between text-amber-400">
-            <span className="text-xs font-bold uppercase tracking-wider">आज तक लंबित (Due Pending)</span>
-            <AlertTriangle className="w-4 h-4 text-amber-400 animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider">समस्त लंबित (All Pending)</span>
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-3xl font-black text-amber-400 tracking-tight">
-            {metrics.duePendingTotalCount} <span className="text-sm font-normal text-slate-400">पंचायतें</span>
+            {metrics.allPendingTotalCount} <span className="text-sm font-semibold text-slate-400">/ {metrics.totalGps}</span>
           </div>
           <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-amber-900/40">
-            <span>बागपत: <strong className="text-amber-300">{metrics.duePendingBaghpatCount}</strong></span>
-            <span>बड़ौत: <strong className="text-amber-300">{metrics.duePendingBarautCount}</strong></span>
+            <span>बागपत: <strong className="text-amber-300">{metrics.allPendingBaghpatCount}</strong></span>
+            <span>बड़ौत: <strong className="text-amber-300">{metrics.allPendingBarautCount}</strong></span>
           </div>
         </div>
 
-        {/* Card 4: आगामी प्रस्तावित बैठकें */}
-        <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-5 shadow-lg space-y-2">
-          <div className="flex items-center justify-between text-indigo-400">
-            <span className="text-xs font-bold uppercase tracking-wider">आगामी प्रस्तावित बैठकें</span>
-            <Clock className="w-4 h-4 text-indigo-400" />
+        {/* Card 4: आज तक लंबित (Due Pending) */}
+        <div className={`rounded-2xl border p-5 shadow-lg space-y-2 transition-all ${
+          metrics.duePendingTotalCount > 0 
+            ? 'bg-gradient-to-br from-rose-950/60 to-slate-900 border-rose-500/50 shadow-rose-500/10' 
+            : 'bg-slate-900/90 border-slate-800'
+        }`}>
+          <div className="flex items-center justify-between text-rose-400">
+            <span className="text-xs font-bold uppercase tracking-wider">आज तक लंबित (Due)</span>
+            <Clock className="w-4 h-4 text-rose-400 animate-pulse" />
           </div>
-          <div className="text-3xl font-black text-indigo-300 tracking-tight">
-            {metrics.upcomingTotalCount} <span className="text-sm font-normal text-slate-400">पंचायतें</span>
+          <div className="text-3xl font-black text-rose-400 tracking-tight">
+            {metrics.duePendingTotalCount} <span className="text-sm font-normal text-slate-400">पंचायतें</span>
           </div>
-          <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800">
-            <span>बागपत: <strong className="text-indigo-300">{metrics.upcomingBaghpatCount}</strong></span>
-            <span>बड़ौत: <strong className="text-indigo-300">{metrics.upcomingBarautCount}</strong></span>
+          <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-rose-900/40">
+            <span>बागपत: <strong className="text-rose-300">{metrics.duePendingBaghpatCount}</strong></span>
+            <span>बड़ौत: <strong className="text-rose-300">{metrics.duePendingBarautCount}</strong></span>
           </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 5. DEDICATED "आज तक लंबित पुष्टि बॉक्स" (PENDING ACTION BOX) */}
+      {/* 5. DEDICATED "लंबित पुष्टि बॉक्स" (PENDING ACTION BOX) */}
       {/* ========================================================================= */}
       <div className="rounded-3xl bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-950 border-2 border-amber-500/50 p-6 shadow-2xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-amber-500/30 pb-4">
@@ -595,44 +626,68 @@ export default function MisFeedingTab() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg md:text-xl font-black text-white">
-                  आज की तिथि तक लंबित पुष्टि बॉक्स (MIS Feeding Action)
+                  लंबित पुष्टि बॉक्स (MIS Feeding Action)
                 </h3>
                 <span className="text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full">
-                  {duePendingRecords.length} लंबित
+                  {pendingBoxRecords.length} प्रदर्शित
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-1">
-                कट-ऑफ तिथि (<strong className="text-white">{formatDateHi(asOfDate)}</strong>) तक जिन ग्राम पंचायतों की बैठक संपन्न हो चुकी है, परंतु पोर्टल पर ऑडिट फीड नहीं हुआ—वे यहाँ सूचीबद्ध हैं। आप इन्हें 1-क्लिक में पुष्टि कर सकते हैं।
+                {pendingViewScope === 'due' 
+                  ? `कट-ऑफ तिथि (${formatDateHi(asOfDate)}) तक जिन ग्राम पंचायतों की बैठक संपन्न हो चुकी है परंतु पोर्टल पर फीड नहीं हुई—वे यहाँ सूचीबद्ध हैं।`
+                  : 'समस्त ग्राम पंचायतें जिनका ऑडिट अभी पोर्टल पर फीड होना शेष है।'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Scope Filter: Due (6) vs All Pending (46) */}
+            <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs">
+              <button
+                onClick={() => setPendingViewScope('due')}
+                className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                  pendingViewScope === 'due' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+                title="केवल वे जिनकी बैठक आज तक संपन्न हो चुकी है"
+              >
+                आज तक लंबित ({metrics.duePendingTotalCount})
+              </button>
+              <button
+                onClick={() => setPendingViewScope('all')}
+                className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                  pendingViewScope === 'all' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+                title="समस्त लंबित ग्राम पंचायतें"
+              >
+                समस्त लंबित ({metrics.allPendingTotalCount})
+              </button>
+            </div>
+
             {/* Block Filter in Pending Box */}
             <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs">
               <button
                 onClick={() => setPendingBlockFilter('all')}
-                className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                  pendingBlockFilter === 'all' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                  pendingBlockFilter === 'all' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                सभी ({metrics.duePendingTotalCount})
+                सभी ({pendingViewScope === 'due' ? metrics.duePendingTotalCount : metrics.allPendingTotalCount})
               </button>
               <button
                 onClick={() => setPendingBlockFilter('Baghpat')}
-                className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                  pendingBlockFilter === 'Baghpat' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                  pendingBlockFilter === 'Baghpat' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                बागपत ({metrics.duePendingBaghpatCount})
+                बागपत ({pendingViewScope === 'due' ? metrics.duePendingBaghpatCount : metrics.allPendingBaghpatCount})
               </button>
               <button
                 onClick={() => setPendingBlockFilter('Baraut')}
-                className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                  pendingBlockFilter === 'Baraut' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                  pendingBlockFilter === 'Baraut' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                बड़ौत ({metrics.duePendingBarautCount})
+                बड़ौत ({pendingViewScope === 'due' ? metrics.duePendingBarautCount : metrics.allPendingBarautCount})
               </button>
             </div>
 
@@ -642,18 +697,22 @@ export default function MisFeedingTab() {
               className="text-xs text-indigo-300 hover:text-white bg-indigo-950/60 hover:bg-indigo-900/60 px-3 py-1.5 rounded-xl border border-indigo-800/40 flex items-center gap-1.5 font-bold transition-all"
             >
               <Clock className="w-3.5 h-3.5" />
-              <span>{showUpcomingList ? 'आगामी सूची छुपाएं' : `आगामी देखें (${metrics.upcomingTotalCount})`}</span>
+              <span>{showUpcomingList ? 'आगामी सूची छुपाएं' : `आगामी (${metrics.upcomingTotalCount})`}</span>
             </button>
           </div>
         </div>
 
-        {/* List of Due Pending GPs */}
-        {duePendingRecords.length > 0 ? (
+        {/* List of Pending Box GPs */}
+        {pendingBoxRecords.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {duePendingRecords.map((r) => (
+            {pendingBoxRecords.map((r) => {
+              const isPastMeeting = r.meetingDate <= asOfDate;
+              return (
               <div
                 key={r.id}
-                className="p-4 rounded-2xl bg-slate-950/90 border border-amber-500/30 hover:border-amber-400 transition-all space-y-3 shadow-lg group"
+                className={`p-4 rounded-2xl bg-slate-950/90 border transition-all space-y-3 shadow-lg group ${
+                  isPastMeeting ? 'border-amber-500/40 hover:border-amber-400' : 'border-indigo-500/30 hover:border-indigo-400'
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1">
@@ -670,15 +729,19 @@ export default function MisFeedingTab() {
                     </div>
                   </div>
 
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-950/80 px-2 py-1 rounded-xl border border-amber-700/50">
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-xl border ${
+                    isPastMeeting 
+                      ? 'text-amber-400 bg-amber-950/80 border-amber-700/50' 
+                      : 'text-indigo-300 bg-indigo-950/80 border-indigo-700/50'
+                  }`}>
                     <Clock className="w-3 h-3 animate-spin" />
-                    <span>लंबित</span>
+                    <span>{isPastMeeting ? 'आज तक लंबित' : 'आगामी लंबित'}</span>
                   </span>
                 </div>
 
                 <div className="text-xs text-slate-400 space-y-1 pt-1 border-t border-slate-800">
                   <div className="flex items-center justify-between">
-                    <span>बैठक संपन्न तिथि:</span>
+                    <span>{isPastMeeting ? 'बैठक संपन्न तिथि:' : 'प्रस्तावित बैठक तिथि:'}</span>
                     <strong className="text-white font-mono">{formatDateHi(r.meetingDate)}</strong>
                   </div>
                   <div className="flex items-center justify-between">
@@ -705,16 +768,16 @@ export default function MisFeedingTab() {
                   </button>
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         ) : (
           <div className="p-8 rounded-2xl bg-slate-950/60 border border-slate-800 text-center space-y-2">
             <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
             <h4 className="text-base font-bold text-white">
-              शाबाश! आज की तिथि ({formatDateHi(asOfDate)}) तक कोई भी संपन्न बैठक लंबित नहीं है।
+              शाबाश! इस फ़िल्टर में कोई भी लंबित ग्राम पंचायत नहीं है।
             </h4>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
-              विगत बैठकों का पूरा डेटा MIS पर अपडेट है। आगामी बैठकें अपने नियत बैठक दिवस पर स्वतः यहाँ पुष्टि हेतु प्रदर्शित होंगी।
+              सभी लक्षित बैठकें MIS पर अपडेट हैं।
             </p>
           </div>
         )}
@@ -801,9 +864,10 @@ export default function MisFeedingTab() {
               onChange={(e) => setSelectedStatusFilter(e.target.value as any)}
               className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-semibold focus:outline-none focus:border-blue-500"
             >
-              <option value="all">सभी स्थितियां (88)</option>
+              <option value="all">सभी स्थितियां ({metrics.totalGps})</option>
               <option value="fed">✅ MIS पर फीडेड ({metrics.fedTotalCount})</option>
-              <option value="due_pending">⏳ आज तक लंबित ({metrics.duePendingTotalCount})</option>
+              <option value="all_pending">⏳ समस्त लंबित ({metrics.allPendingTotalCount})</option>
+              <option value="due_pending">⚠️ आज तक लंबित - संपन्न ({metrics.duePendingTotalCount})</option>
               <option value="upcoming">📅 आगामी बैठकें ({metrics.upcomingTotalCount})</option>
             </select>
 
