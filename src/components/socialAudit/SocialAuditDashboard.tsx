@@ -8,6 +8,7 @@ import ExecutiveDashboardTab from './ExecutiveDashboardTab';
 import CalendarTableTab from './CalendarTableTab';
 import NSAPReportTab from './NSAPReportTab';
 import TeamRosterTab from './TeamRosterTab';
+import PanchayatNirnayTab from './PanchayatNirnayTab';
 import EditRecordModal from './EditRecordModal';
 import AddRecordModal from './AddRecordModal';
 
@@ -38,6 +39,13 @@ export default function SocialAuditDashboard() {
         {activeTab === 'calendar' && (
           <div className="max-w-7xl mx-auto space-y-6">
             <CalendarTableTab />
+          </div>
+        )}
+
+        {/* 4. पंचायत निर्णय ऐप (R 9.6.2) */}
+        {activeTab === 'nirnay' && (
+          <div className="max-w-7xl mx-auto space-y-6">
+            <PanchayatNirnayTab />
           </div>
         )}
 

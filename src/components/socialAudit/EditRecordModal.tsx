@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
-import { SocialAuditRecord, AuditStatus } from '@/types/socialAudit';
+import { SocialAuditRecord, AuditStatus, PanchayatNirnayStatus } from '@/types/socialAudit';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
-import { X, Save, Trash2, AlertCircle, Calendar, Phone, Users, Shield, MapPin, Clock } from 'lucide-react';
+import { X, Save, Trash2, AlertCircle, Calendar, Phone, Users, Shield, MapPin, Clock, Smartphone, CheckCircle2, XCircle } from 'lucide-react';
 
 export default function EditRecordModal() {
   const { selectedRecordForEdit, closeEditModal, updateRecord, deleteRecord } = useSocialAuditStore();
@@ -23,6 +23,8 @@ export default function EditRecordModal() {
   const [hasPMAYG, setHasPMAYG] = useState(false);
   const [status, setStatus] = useState<AuditStatus>('scheduled');
   const [amendmentReason, setAmendmentReason] = useState('');
+  const [nirnayStatus, setNirnayStatus] = useState<PanchayatNirnayStatus>('pending');
+  const [nirnayCapturedDate, setNirnayCapturedDate] = useState('');
 
   useEffect(() => {
     if (selectedRecordForEdit) {
@@ -40,6 +42,8 @@ export default function EditRecordModal() {
       setHasPMAYG(selectedRecordForEdit.hasPMAYG);
       setStatus(selectedRecordForEdit.status);
       setAmendmentReason(selectedRecordForEdit.amendmentDetails?.reason || '');
+      setNirnayStatus(selectedRecordForEdit.panchayatNirnayStatus || 'pending');
+      setNirnayCapturedDate(selectedRecordForEdit.panchayatNirnayCapturedDate || '');
     }
   }, [selectedRecordForEdit]);
 
@@ -92,7 +96,9 @@ export default function EditRecordModal() {
         originalDate: selectedRecordForEdit.originalMeetingDate || selectedRecordForEdit.meetingDate,
         modifiedDate: meetingDate,
         reason: amendmentReason || 'बी०आर०पी० परिवर्तन / संशोधित रोस्टर'
-      } : undefined
+      } : undefined,
+      panchayatNirnayStatus: nirnayStatus,
+      panchayatNirnayCapturedDate: nirnayStatus === 'captured' ? (nirnayCapturedDate || meetingDate) : undefined
     };
 
     updateRecord(selectedRecordForEdit.id, updates);
@@ -324,6 +330,69 @@ export default function EditRecordModal() {
               />
               <span>प्र० आ० ग्रा० (PMAY-G)</span>
             </label>
+          </div>
+
+          {/* Panchayat Nirnay App Status (R 9.6.2) */}
+          <div className="p-3.5 bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-slate-900 rounded-xl border border-purple-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-purple-400" />
+                <span className="text-sm font-bold text-purple-200">पंचायत निर्णय ऐप (R 9.6.2) स्थिति</span>
+              </div>
+              <span className="text-xs text-purple-300/70 font-mono">पोर्टल सत्यापन</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setNirnayStatus('captured')}
+                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all border ${
+                  nirnayStatus === 'captured'
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400/30'
+                    : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-emerald-500/50 hover:bg-emerald-950/20'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                <span>अपलोड (Captured)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setNirnayStatus('pending')}
+                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all border ${
+                  nirnayStatus === 'pending'
+                    ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30 ring-2 ring-amber-400/30'
+                    : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-500/50 hover:bg-amber-950/20'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-300" />
+                <span>लंबित (Pending)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setNirnayStatus('not_captured')}
+                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all border ${
+                  nirnayStatus === 'not_captured'
+                    ? 'bg-rose-700 text-white border-rose-400 shadow-md shadow-rose-700/30 ring-2 ring-rose-400/30'
+                    : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-rose-500/50 hover:bg-rose-950/20'
+                }`}
+              >
+                <XCircle className="w-3.5 h-3.5 text-rose-300" />
+                <span>नहीं हुआ (No)</span>
+              </button>
+            </div>
+
+            {nirnayStatus === 'captured' && (
+              <div className="mt-2.5 pt-2.5 border-t border-purple-500/20 flex items-center gap-2">
+                <span className="text-xs text-slate-400">अपलोड/सत्यापन तिथि:</span>
+                <input
+                  type="date"
+                  value={nirnayCapturedDate || meetingDate}
+                  onChange={(e) => setNirnayCapturedDate(e.target.value)}
+                  className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-purple-400"
+                />
+              </div>
+            )}
           </div>
 
           {/* Amendment Reason */}

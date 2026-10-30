@@ -8,7 +8,7 @@ import {
   AlertCircle, CheckCircle2, ChevronRight, Sparkles,
   Layers, ArrowUpRight, Check, AlertTriangle, TrendingUp,
   BarChart3, Landmark, Eye, Table2, ChevronDown, ChevronUp,
-  ArrowRight
+  ArrowRight, Smartphone, ShieldCheck
 } from 'lucide-react';
 
 export default function ExecutiveDashboardTab() {
@@ -67,6 +67,11 @@ export default function ExecutiveDashboardTab() {
       const mgnregaCompleted = mgnregaAll.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
       const mgnregaRemaining = mgnregaAll.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
 
+      // Panchayat Nirnay App (R 9.6.2) stats
+      const nirnayCaptured = all.filter((r) => r.panchayatNirnayStatus === 'captured');
+      const nirnayPending = all.filter((r) => r.panchayatNirnayStatus === 'pending');
+      const nirnayMapped = all.filter((r) => r.isMappedInPanchayatNirnay);
+
       return {
         total,
         completedCount: completed.length,
@@ -82,7 +87,12 @@ export default function ExecutiveDashboardTab() {
         nsapRemainingCount: nsapRemaining.length,
         mgnregaTotal: mgnregaAll.length,
         mgnregaCompletedCount: mgnregaCompleted.length,
-        mgnregaRemainingCount: mgnregaRemaining.length
+        mgnregaRemainingCount: mgnregaRemaining.length,
+        nirnayCapturedCount: nirnayCaptured.length,
+        nirnayPendingCount: nirnayPending.length,
+        nirnayMappedCount: nirnayMapped.length,
+        nirnayPercent: total > 0 ? ((nirnayCaptured.length / total) * 100).toFixed(1) : '0.0',
+        nirnayMappedPercent: nirnayMapped.length > 0 ? ((nirnayCaptured.length / nirnayMapped.length) * 100).toFixed(1) : '0.0'
       };
     };
 
@@ -99,6 +109,11 @@ export default function ExecutiveDashboardTab() {
     const totalNSAPCompleted = baghpat.nsapCompletedCount + baraut.nsapCompletedCount;
     const totalNSAPRemaining = baghpat.nsapRemainingCount + baraut.nsapRemainingCount;
 
+    const totalNirnayCaptured = baghpat.nirnayCapturedCount + baraut.nirnayCapturedCount; // 9
+    const totalNirnayPending = baghpat.nirnayPendingCount + baraut.nirnayPendingCount;
+    const totalNirnayMapped = baghpat.nirnayMappedCount + baraut.nirnayMappedCount; // 66
+    const totalNirnayPercent = totalNirnayMapped > 0 ? ((totalNirnayCaptured / totalNirnayMapped) * 100).toFixed(1) : '0.0';
+
     return {
       baghpat,
       baraut,
@@ -111,7 +126,11 @@ export default function ExecutiveDashboardTab() {
       totalAmendedRemaining,
       totalNSAP,
       totalNSAPCompleted,
-      totalNSAPRemaining
+      totalNSAPRemaining,
+      totalNirnayCaptured,
+      totalNirnayPending,
+      totalNirnayMapped,
+      totalNirnayPercent
     };
   }, [records, asOfDate]);
 
@@ -144,7 +163,7 @@ export default function ExecutiveDashboardTab() {
       {/* ========================================================================= */}
       {/* 1. DISTRICT EXECUTIVE TOP METRIC CARDS */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
         {/* Total GPs */}
         <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-950/60 to-slate-900/80 border border-blue-500/20 backdrop-blur-md shadow-lg">
           <div className="flex items-center justify-between text-blue-400 mb-2">
@@ -205,6 +224,25 @@ export default function ExecutiveDashboardTab() {
           </div>
           <div className="text-[11px] text-amber-400/80 mt-1">
             बागपत: <strong>{blockStats.baghpat.amendedTotal}</strong> | बड़ौत: <strong>{blockStats.baraut.amendedTotal}</strong>
+          </div>
+        </div>
+
+        {/* Card 5: Panchayat Nirnay App (R 9.6.2) */}
+        <div 
+          onClick={() => setActiveTab('nirnay')}
+          className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/70 via-slate-900 to-teal-950/70 border border-emerald-500/30 backdrop-blur-md shadow-lg cursor-pointer hover:border-emerald-500/50 transition-all group col-span-2 md:col-span-1"
+        >
+          <div className="flex items-center justify-between text-emerald-400 mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider">पंचायत निर्णय ऐप (R 9.6.2)</span>
+            <Smartphone className="w-4 h-4 group-hover:scale-110 transition-transform text-emerald-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl md:text-3xl font-black text-emerald-300">{blockStats.totalNirnayCaptured}</span>
+            <span className="text-xs text-emerald-400 font-bold">/ {blockStats.totalNirnayMapped} मैप्ड ({blockStats.totalNirnayPercent}%)</span>
+          </div>
+          <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+            <span>बागपत: <strong className="text-blue-300">{blockStats.baghpat.nirnayCapturedCount}</strong> | बड़ौत: <strong className="text-indigo-300">{blockStats.baraut.nirnayCapturedCount}</strong></span>
+            <span className="text-[10px] text-emerald-400 flex items-center font-bold">ट्रैकर →</span>
           </div>
         </div>
       </div>
@@ -436,6 +474,55 @@ export default function ExecutiveDashboardTab() {
                     2 ब्लॉक स्तरीय सभाएं
                   </td>
                 </tr>
+
+                {/* Row 9: Panchayat Nirnay App Captured (R 9.6.2) */}
+                <tr className="hover:bg-slate-800/30 transition-colors bg-emerald-950/20">
+                  <td className="py-3 px-4 text-emerald-300 font-bold flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-emerald-400" />
+                    <div>
+                      <div>पंचायत निर्णय ऐप पर अपलोड (Captured in App - R 9.6.2)</div>
+                      <div className="text-[11px] text-emerald-400/80 font-normal">आधिकारिक पोर्टल पर लाइव सत्यापित प्रपत्र एवं फोटो</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-emerald-300">
+                    <span className="bg-emerald-500/25 text-emerald-300 px-3 py-1 rounded-lg border border-emerald-500/40 text-sm">
+                      {blockStats.baghpat.nirnayCapturedCount} / 44 ({blockStats.baghpat.nirnayPercent}%)
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-1">खेड़ा इस्लामपुर, खेड़की, लधवाड़ी, नैथला, नंगला-जफराबाद, निरोजपुर गूर्जर</span>
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-emerald-300">
+                    <span className="bg-emerald-500/25 text-emerald-300 px-3 py-1 rounded-lg border border-emerald-500/40 text-sm">
+                      {blockStats.baraut.nirnayCapturedCount} / 22 मैप्ड ({blockStats.baraut.nirnayMappedPercent}%)
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-1">अलावलपुर, अंगदपुर, फतहपुर चक (कुल 44 में 6.8%)</span>
+                  </td>
+                  <td className="py-3 px-4 text-center font-black text-emerald-300 bg-emerald-950/40">
+                    <span className="bg-emerald-500/30 text-emerald-200 px-3 py-1 rounded-lg border border-emerald-500/50 text-sm">
+                      {blockStats.totalNirnayCaptured} / {blockStats.totalNirnayMapped} मैप्ड ({blockStats.totalNirnayPercent}%)
+                    </span>
+                    <span className="text-[11px] text-emerald-400 block mt-1">कुल 9 ग्राम पंचायतें अपलोड</span>
+                  </td>
+                </tr>
+
+                {/* Row 10: Nirnay App Pending Confirmation */}
+                <tr className="hover:bg-slate-800/30 transition-colors bg-amber-950/10">
+                  <td className="py-3 px-4 text-amber-300 font-semibold flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <div>निर्णय ऐप पुष्टि हेतु लंबित (Pending Confirmation)</div>
+                      <div className="text-[11px] text-amber-400/80 font-normal">उपयोगकर्ता द्वारा व्यक्तिगत सत्यापन प्रतीक्षित</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-amber-300">
+                    {blockStats.baghpat.nirnayPendingCount} ग्राम पंचायतें
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-amber-300">
+                    {blockStats.baraut.nirnayPendingCount} ग्राम पंचायतें
+                  </td>
+                  <td className="py-3 px-4 text-center font-black text-amber-300 bg-amber-950/30">
+                    {blockStats.totalNirnayPending} ग्राम पंचायतें (मैनुअल सत्यापन हेतु)
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -560,6 +647,26 @@ export default function ExecutiveDashboardTab() {
               </span>
             </div>
           </div>
+
+          {/* Panchayat Nirnay App Box */}
+          <div 
+            onClick={() => { setSelectedBlock('Baghpat'); setActiveTab('nirnay'); }}
+            className="p-3 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900 border border-emerald-500/30 flex items-center justify-between text-xs cursor-pointer hover:border-emerald-500/50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-emerald-400" />
+              <div>
+                <span className="font-bold text-emerald-200">पंचायत निर्णय ऐप (R 9.6.2): </span>
+                <span className="text-slate-300">{blockStats.baghpat.nirnayCapturedCount} / 44 अपलोड</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 text-[11px]">
+                {blockStats.baghpat.nirnayPercent}% सत्यापित
+              </span>
+              <span className="text-emerald-400 font-bold text-[10px]">देखें →</span>
+            </div>
+          </div>
         </div>
 
         {/* BLOCK 2: BARAUT */}
@@ -674,6 +781,26 @@ export default function ExecutiveDashboardTab() {
               <span className="font-bold text-indigo-300">
                 {blockStats.baraut.mgnregaCompletedCount} सम्पन्न / {blockStats.baraut.mgnregaRemainingCount} शेष (कुल 44)
               </span>
+            </div>
+          </div>
+
+          {/* Panchayat Nirnay App Box */}
+          <div 
+            onClick={() => { setSelectedBlock('Baraut'); setActiveTab('nirnay'); }}
+            className="p-3 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900 border border-emerald-500/30 flex items-center justify-between text-xs cursor-pointer hover:border-emerald-500/50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-emerald-400" />
+              <div>
+                <span className="font-bold text-emerald-200">पंचायत निर्णय ऐप (R 9.6.2): </span>
+                <span className="text-slate-300">{blockStats.baraut.nirnayCapturedCount} / 22 मैप्ड अपलोड</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 text-[11px]">
+                {blockStats.baraut.nirnayMappedPercent}% मैप्ड ({blockStats.baraut.nirnayPercent}% कुल)
+              </span>
+              <span className="text-emerald-400 font-bold text-[10px]">देखें →</span>
             </div>
           </div>
         </div>

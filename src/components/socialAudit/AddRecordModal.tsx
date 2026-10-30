@@ -77,7 +77,9 @@ export default function AddRecordModal() {
       hasNSAP,
       hasMGNREGA,
       hasPMAYG,
-      status: 'scheduled'
+      status: 'scheduled',
+      panchayatNirnayStatus: 'pending',
+      isMappedInPanchayatNirnay: true
     });
   };
 

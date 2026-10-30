@@ -8,7 +8,8 @@ import { DISTRICT_META } from '@/data/socialAuditInitialData';
 import { getDelhiTimeString } from '@/lib/delhiTime';
 import { 
   Landmark, Sparkles, FileText, Calendar, Type, 
-  ChevronRight, CalendarDays, RefreshCw, LayoutDashboard, Clock, Radio
+  ChevronRight, CalendarDays, RefreshCw, LayoutDashboard, Clock, Radio,
+  Smartphone
 } from 'lucide-react';
 
 export default function SocialAuditHeader() {
@@ -57,6 +58,7 @@ export default function SocialAuditHeader() {
   const amendedCount = records.filter(r => r.isAmended).length;
   const nsapCount = records.filter(r => r.hasNSAP).length;
   const upcomingCount = records.filter(r => r.meetingDate >= asOfDate && r.status !== 'completed').length;
+  const nirnayCapturedCount = records.filter(r => r.panchayatNirnayStatus === 'captured').length;
 
   return (
     <header className="border-b border-white/10 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-5 py-4 shadow-xl">
@@ -249,7 +251,23 @@ export default function SocialAuditHeader() {
           )}
         </button>
 
-        {/* TAB 4: NSAP पेंशन रिपोर्ट */}
+        {/* TAB 4: पंचायत निर्णय ऐप (R 9.6.2) */}
+        <button
+          onClick={() => setActiveTab('nirnay')}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+            activeTab === 'nirnay'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+              : 'text-slate-300 hover:bg-white/5'
+          }`}
+        >
+          <Smartphone className="w-4 h-4 text-emerald-300" />
+          <span>पंचायत निर्णय ऐप (R 9.6.2)</span>
+          <span className="text-[10px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 px-1.5 py-0.2 rounded-full font-bold">
+            {nirnayCapturedCount} अपलोड
+          </span>
+        </button>
+
+        {/* TAB 5: NSAP पेंशन रिपोर्ट */}
         <button
           onClick={() => setActiveTab('nsap-report')}
           className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${
@@ -265,7 +283,7 @@ export default function SocialAuditHeader() {
           </span>
         </button>
 
-        {/* TAB 5: टीम एवं बी०आर०पी० रोस्टर */}
+        {/* TAB 6: टीम एवं बी०आर०पी० रोस्टर */}
         <button
           onClick={() => setActiveTab('roster')}
           className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${

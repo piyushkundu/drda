@@ -1,12 +1,10 @@
-'use client';
-
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus } from '@/types/socialAudit';
+import { SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, PanchayatNirnayStatus } from '@/types/socialAudit';
 import { INITIAL_SOCIAL_AUDIT_RECORDS, BLOCK_SABHA_RECORDS, DISTRICT_META } from '@/data/socialAuditInitialData';
 import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/lib/delhiTime';
 
-export type SocialAuditTab = 'upcoming' | 'dashboard' | 'calendar' | 'nsap-report' | 'roster' | 'overview';
+export type SocialAuditTab = 'upcoming' | 'dashboard' | 'calendar' | 'nirnay' | 'nsap-report' | 'roster' | 'overview';
 
 interface SocialAuditState {
   records: SocialAuditRecord[];
@@ -42,8 +40,9 @@ interface SocialAuditState {
   openAddModal: () => void;
   closeAddModal: () => void;
 
-  // Record CRUD
+  // Record CRUD & Nirnay App Confirmation
   updateRecord: (id: string, updates: Partial<SocialAuditRecord>) => void;
+  updatePanchayatNirnayStatus: (id: string, status: PanchayatNirnayStatus, notes?: string) => void;
   addRecord: (record: Omit<SocialAuditRecord, 'id'>) => void;
   deleteRecord: (id: string) => void;
   markCompleted: (id: string, isCompleted: boolean) => void;
@@ -171,6 +170,22 @@ export const useSocialAuditStore = create<SocialAuditState>()(
         }));
       },
 
+      updatePanchayatNirnayStatus: (id, status, notes) => {
+        set((state) => ({
+          records: state.records.map((r) => {
+            if (r.id === id) {
+              return {
+                ...r,
+                panchayatNirnayStatus: status,
+                panchayatNirnayCapturedDate: status === 'captured' ? (r.panchayatNirnayCapturedDate || getDelhiDateString()) : undefined,
+                panchayatNirnayNotes: notes !== undefined ? notes : r.panchayatNirnayNotes
+              };
+            }
+            return r;
+          })
+        }));
+      },
+
       addRecord: (newRecordData) => {
         set((state) => {
           const newId = `${newRecordData.block.toLowerCase()}-${Date.now()}`;
@@ -233,6 +248,28 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             state.isLiveSync = true;
           }
           state.liveDelhiTime = getDelhiTimeString();
+
+          // Sync Panchayat Nirnay baseline status if missing in cached localStorage
+          if (state.records && Array.isArray(state.records)) {
+            const baselineMap = new Map(INITIAL_SOCIAL_AUDIT_RECORDS.map(r => [r.id, r]));
+            let hasChanges = false;
+            const updatedRecords = state.records.map(r => {
+              const base = baselineMap.get(r.id);
+              if (r.panchayatNirnayStatus === undefined && base) {
+                hasChanges = true;
+                return {
+                  ...r,
+                  panchayatNirnayStatus: base.panchayatNirnayStatus,
+                  isMappedInPanchayatNirnay: base.isMappedInPanchayatNirnay,
+                  panchayatNirnayCapturedDate: base.panchayatNirnayCapturedDate
+                };
+              }
+              return r;
+            });
+            if (hasChanges) {
+              state.records = updatedRecords;
+            }
+          }
         }
       }
     }

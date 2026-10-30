@@ -7,6 +7,8 @@ export type AuditBlock = 'Baghpat' | 'Baraut';
 
 export type AuditStatus = 'scheduled' | 'in_progress' | 'completed' | 'amended' | 'postponed';
 
+export type PanchayatNirnayStatus = 'captured' | 'pending' | 'not_captured';
+
 export interface AmendmentDetails {
   originalDate: string;
   modifiedDate: string;
@@ -55,6 +57,11 @@ export interface SocialAuditRecord {
   status: AuditStatus;
   notes?: string;
   completedDate?: string;
+  // Panchayat Nirnay App (R 9.6.2) Tracking
+  panchayatNirnayStatus?: PanchayatNirnayStatus;
+  isMappedInPanchayatNirnay?: boolean;
+  panchayatNirnayCapturedDate?: string;
+  panchayatNirnayNotes?: string;
 }
 
 export interface BlockSabhaRecord {
