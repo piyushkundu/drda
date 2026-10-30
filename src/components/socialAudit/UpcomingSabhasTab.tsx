@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { SocialAuditRecord } from '@/types/socialAudit';
 import { 
@@ -11,9 +11,17 @@ import {
 } from 'lucide-react';
 
 export default function UpcomingSabhasTab() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { 
     records, 
     asOfDate, 
+    isLiveSync,
+    liveDelhiTime,
+    liveDelhiDate,
     fontViewMode, 
     openEditModal, 
     markCompleted,
@@ -37,12 +45,16 @@ export default function UpcomingSabhasTab() {
     }
   };
 
-  // Helper to calculate days diff from asOfDate
+  // Helper to calculate days diff from asOfDate with exact calendar boundaries
   const getDaysDiff = (targetDate: string) => {
-    const d1 = new Date(asOfDate).getTime();
-    const d2 = new Date(targetDate).getTime();
-    const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
-    return diff;
+    try {
+      const d1 = new Date(asOfDate + 'T00:00:00').getTime();
+      const d2 = new Date(targetDate + 'T00:00:00').getTime();
+      const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+      return diff;
+    } catch {
+      return 0;
+    }
   };
 
   // All upcoming meetings (meetingDate >= asOfDate and not completed)
@@ -158,8 +170,24 @@ export default function UpcomingSabhasTab() {
                   {upcomingCountTotal} शेष
                 </span>
               </h1>
-              <p className="text-xs text-slate-400 mt-0.5">
-                कट-ऑफ तिथि <strong className="text-slate-200">{formatDateHi(asOfDate)}</strong> से आगामी तिथियों में निर्धारित ग्राम सभाओं की लाइव समय-सारणी
+              <p className="text-xs text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+                <span>
+                  कट-ऑफ तिथि: <strong className="text-slate-200">{formatDateHi(asOfDate)}</strong>
+                </span>
+                <span className="text-slate-600">•</span>
+                <span className="inline-flex items-center gap-1.5 text-emerald-400 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block"></span>
+                  दिल्ली लाइव समय: <strong className="font-mono text-white" suppressHydrationWarning>{mounted ? (liveDelhiTime || '--:--:--') : '--:--:--'}</strong> (IST)
+                </span>
+                {isLiveSync ? (
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.2 rounded-full font-bold">
+                    स्वचालित सिंक
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.2 rounded-full font-bold">
+                    कस्टम तिथि सक्रिय
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -385,16 +413,25 @@ export default function UpcomingSabhasTab() {
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-base md:text-lg font-black text-white flex items-center gap-2">
+                <h2 className="text-base md:text-lg font-black text-white flex items-center gap-2 flex-wrap">
                   <span>
                     {isTodayBatch ? 'आज होने वाली ग्राम सभाएं (TODAY\'S MEETINGS)' : `अगली होने वाली ग्राम सभाएं (${formatDateHi(targetDate)})`}
                   </span>
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
                     {primaryMeetings.length} ग्राम पंचायतें {isTodayBatch ? 'आज निर्धारित' : 'निर्धारित'}
                   </span>
+                  {!isTodayBatch && (
+                    <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-slate-800 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                      <span>आज ({formatDateHi(asOfDate)}) बैठक नहीं है</span>
+                    </span>
+                  )}
                 </h2>
                 <p className="text-xs text-slate-400">
-                  दिनांक <strong className="text-white">{formatDateHi(targetDate)}</strong> को आयोजित होने वाली समस्त बैठकें
+                  {isTodayBatch ? (
+                    <>आज दिनांक <strong className="text-white">{formatDateHi(targetDate)}</strong> को आयोजित होने वाली समस्त बैठकें</>
+                  ) : (
+                    <>आज के उपरांत निकटतम तिथि <strong className="text-white">{formatDateHi(targetDate)}</strong> को आयोजित होने वाली समस्त बैठकें</>
+                  )}
                 </p>
               </div>
             </div>

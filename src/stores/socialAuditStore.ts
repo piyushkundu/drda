@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus } from '@/types/socialAudit';
 import { INITIAL_SOCIAL_AUDIT_RECORDS, BLOCK_SABHA_RECORDS, DISTRICT_META } from '@/data/socialAuditInitialData';
+import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/lib/delhiTime';
 
 export type SocialAuditTab = 'upcoming' | 'dashboard' | 'calendar' | 'nsap-report' | 'roster' | 'overview';
 
@@ -16,6 +17,10 @@ interface SocialAuditState {
   searchQuery: string;
   isEditMode: boolean;
   asOfDate: string; // YYYY-MM-DD used for NSAP reports and upcoming calculations
+  isLiveSync: boolean; // Whether date automatically syncs with live Delhi date
+  liveDelhiTime: string; // Real-time ticking Delhi time string e.g. "12:15:30 AM"
+  liveDelhiDate: string; // Today's Delhi date e.g. "2026-10-30"
+  lastOnlineSyncTime: number | null;
   activeTab: SocialAuditTab;
   selectedRecordForEdit: SocialAuditRecord | null;
   isAddModalOpen: boolean;
@@ -28,6 +33,9 @@ interface SocialAuditState {
   setSearchQuery: (query: string) => void;
   setIsEditMode: (isEdit: boolean) => void;
   setAsOfDate: (date: string) => void;
+  setLiveSync: (enabled: boolean) => void;
+  tickDelhiClock: () => void;
+  syncWithDelhiTime: (forceDate?: boolean) => Promise<void>;
   setActiveTab: (tab: SocialAuditTab) => void;
   openEditModal: (record: SocialAuditRecord) => void;
   closeEditModal: () => void;
@@ -52,8 +60,12 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       selectedStatus: 'all',
       searchQuery: '',
       isEditMode: false,
-      // Default reference date is 2026-10-29 (current schedule timeframe)
-      asOfDate: '2026-10-29',
+      // Default to live current Delhi (IST) date
+      asOfDate: getDelhiDateString(),
+      isLiveSync: true,
+      liveDelhiTime: getDelhiTimeString(),
+      liveDelhiDate: getDelhiDateString(),
+      lastOnlineSyncTime: null,
       activeTab: 'upcoming',
       selectedRecordForEdit: null,
       isAddModalOpen: false,
@@ -64,7 +76,68 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       setSelectedStatus: (status) => set({ selectedStatus: status }),
       setSearchQuery: (query) => set({ searchQuery: query }),
       setIsEditMode: (isEdit) => set({ isEditMode: isEdit }),
-      setAsOfDate: (date) => set({ asOfDate: date }),
+
+      setAsOfDate: (date) => {
+        const liveDate = getDelhiDateString();
+        set({
+          asOfDate: date,
+          isLiveSync: date === liveDate
+        });
+      },
+
+      setLiveSync: (enabled) => {
+        if (enabled) {
+          const liveDate = getDelhiDateString();
+          const liveTime = getDelhiTimeString();
+          set({
+            isLiveSync: true,
+            asOfDate: liveDate,
+            liveDelhiDate: liveDate,
+            liveDelhiTime: liveTime
+          });
+        } else {
+          set({ isLiveSync: false });
+        }
+      },
+
+      tickDelhiClock: () => {
+        const now = new Date();
+        const currentLiveTime = getDelhiTimeString(now);
+        const currentLiveDate = getDelhiDateString(now);
+
+        set((state) => {
+          const updates: Partial<SocialAuditState> = {
+            liveDelhiTime: currentLiveTime,
+            liveDelhiDate: currentLiveDate
+          };
+          // If live sync is enabled and date rolled over (e.g. midnight passed)
+          if (state.isLiveSync && state.asOfDate !== currentLiveDate) {
+            updates.asOfDate = currentLiveDate;
+          }
+          return updates;
+        });
+      },
+
+      syncWithDelhiTime: async (forceDate = false) => {
+        try {
+          const data = await fetchOnlineDelhiTime();
+          set((state) => {
+            const updates: Partial<SocialAuditState> = {
+              liveDelhiDate: data.date,
+              liveDelhiTime: data.time,
+              lastOnlineSyncTime: data.timestamp
+            };
+            if (state.isLiveSync || forceDate) {
+              updates.asOfDate = data.date;
+              updates.isLiveSync = true;
+            }
+            return updates;
+          });
+        } catch (err) {
+          console.warn('Failed to sync online Delhi time', err);
+        }
+      },
+
       setActiveTab: (tab) => set({ activeTab: tab }),
 
       openEditModal: (record) => set({ selectedRecordForEdit: record }),
@@ -146,9 +219,22 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       partialize: (state) => ({
         records: state.records,
         fontViewMode: state.fontViewMode,
+        isLiveSync: state.isLiveSync,
         asOfDate: state.asOfDate,
         activeTab: state.activeTab
-      })
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // If live sync is true (default) or undefined, ensure asOfDate is synced to today's Delhi date
+          if (state.isLiveSync === undefined || state.isLiveSync === true) {
+            const today = getDelhiDateString();
+            state.asOfDate = today;
+            state.liveDelhiDate = today;
+            state.isLiveSync = true;
+          }
+          state.liveDelhiTime = getDelhiTimeString();
+        }
+      }
     }
   )
 );

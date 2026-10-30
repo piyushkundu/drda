@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { NSAPReportSummary, NSAPReportRow, SocialAuditRecord } from '@/types/socialAudit';
 import { exportNSAPReportExcel } from '@/lib/exportSocialAuditExcel';
+import { getDelhiDateString, formatDelhiDateHindi } from '@/lib/delhiTime';
 import { 
   FileText, Calendar, Download, Printer, CheckCircle2, 
   Layers, ArrowUpRight, ShieldCheck, Landmark, Check,
@@ -162,10 +163,11 @@ export default function NSAPReportTab() {
     }
   };
 
-  // Quick preset dates
+  // Quick preset dates with live dynamic current date
+  const todayDelhi = getDelhiDateString();
   const presetDates = [
     { label: '08 अक्टूबर 2026 (मूल बेसलाइन)', value: '2026-10-08' },
-    { label: '29 अक्टूबर 2026 (वर्तमान तिथि)', value: '2026-10-29' },
+    { label: `${formatDelhiDateHindi(todayDelhi)} (आज की लाइव तिथि)`, value: todayDelhi },
     { label: '31 अक्टूबर 2026 (माह अंत)', value: '2026-10-31' },
     { label: '30 नवम्बर 2026 (बागपत पूर्ण)', value: '2026-11-30' },
     { label: '31 दिसम्बर 2026 (वित्तीय वर्ष पूर्ण)', value: '2026-12-31' }

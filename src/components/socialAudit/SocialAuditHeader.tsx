@@ -1,21 +1,29 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { useUIStore } from '@/stores/uiStore';
 import { FontViewMode } from '@/types/socialAudit';
 import { DISTRICT_META } from '@/data/socialAuditInitialData';
+import { getDelhiTimeString } from '@/lib/delhiTime';
 import { 
   Landmark, Sparkles, FileText, Calendar, Type, 
-  ChevronRight, CalendarDays, RefreshCw, LayoutDashboard, Clock
+  ChevronRight, CalendarDays, RefreshCw, LayoutDashboard, Clock, Radio
 } from 'lucide-react';
 
 export default function SocialAuditHeader() {
+  const [mounted, setMounted] = useState(false);
   const { 
     fontViewMode, 
     setFontViewMode, 
     asOfDate, 
     setAsOfDate,
+    isLiveSync,
+    setLiveSync,
+    liveDelhiTime,
+    liveDelhiDate,
+    tickDelhiClock,
+    syncWithDelhiTime,
     activeTab, 
     setActiveTab,
     records,
@@ -23,6 +31,28 @@ export default function SocialAuditHeader() {
   } = useSocialAuditStore();
 
   const { setSidebarPanel } = useUIStore();
+
+  // Keep Delhi time ticking every 1 second and sync online on load + every 60s
+  useEffect(() => {
+    setMounted(true);
+    // Initial online calibration
+    syncWithDelhiTime();
+
+    // 1-second interval to tick the clock live
+    const tickInterval = setInterval(() => {
+      tickDelhiClock();
+    }, 1000);
+
+    // 60-second background sync to avoid any drift
+    const syncInterval = setInterval(() => {
+      syncWithDelhiTime();
+    }, 60000);
+
+    return () => {
+      clearInterval(tickInterval);
+      clearInterval(syncInterval);
+    };
+  }, [tickDelhiClock, syncWithDelhiTime]);
 
   const amendedCount = records.filter(r => r.isAmended).length;
   const nsapCount = records.filter(r => r.hasNSAP).length;
@@ -58,17 +88,65 @@ export default function SocialAuditHeader() {
 
         {/* Right Action Controls: Page Hindi Suite Jump & Font Toggle */}
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+          {/* Live Delhi (IST) Clock Badge */}
+          <div 
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs border shadow-inner transition-all ${
+              isLiveSync 
+                ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300 shadow-emerald-950/50' 
+                : 'bg-slate-800/80 border-slate-700/80 text-slate-300'
+            }`}
+            title={isLiveSync ? "नई दिल्ली (IST) ऑनलाइन समय से लाइव सिंक है" : "कस्टम संदर्भ तिथि सक्रिय है"}
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                {isLiveSync && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                )}
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${isLiveSync ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
+              </span>
+              <span className="font-bold text-[10px] tracking-wider uppercase">
+                {isLiveSync ? 'लाइव दिल्ली' : 'कस्टम'}
+              </span>
+            </div>
+            <div className="h-3 w-px bg-white/20" />
+            <div className="flex items-center gap-1 font-mono font-bold text-white text-[11px]">
+              <Clock className={`w-3.5 h-3.5 shrink-0 ${isLiveSync ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
+              <span className="tabular-nums" suppressHydrationWarning>
+                {mounted ? (liveDelhiTime || getDelhiTimeString()) : '--:--:--'}
+              </span>
+            </div>
+          </div>
+
           {/* As-Of Date Reference Selector */}
-          <div className="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700/80 px-2.5 py-1.5 rounded-xl text-xs">
-            <Calendar className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-            <span className="text-slate-400 text-[11px] hidden sm:inline">कट-ऑफ तिथि:</span>
+          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs border transition-all ${
+            isLiveSync 
+              ? 'bg-slate-800/90 border-slate-700/80' 
+              : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+          }`}>
+            <Calendar className={`w-3.5 h-3.5 shrink-0 ${isLiveSync ? 'text-blue-400' : 'text-amber-400'}`} />
+            <span className="text-slate-400 text-[11px] hidden sm:inline">
+              {isLiveSync ? 'कट-ऑफ:' : 'कस्टम कट-ऑफ:'}
+            </span>
             <input
               type="date"
               value={asOfDate}
               onChange={(e) => setAsOfDate(e.target.value)}
-              className="bg-transparent text-white text-xs outline-none cursor-pointer font-medium"
+              className="bg-transparent text-white text-xs outline-none cursor-pointer font-bold font-mono"
               title="सोशल ऑडिट की संदर्भ तिथि बदलें"
             />
+            {!isLiveSync && (
+              <button
+                onClick={() => {
+                  setLiveSync(true);
+                  syncWithDelhiTime(true);
+                }}
+                className="ml-1 text-[10px] font-bold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40 px-2 py-0.5 rounded-md flex items-center gap-1 transition-all"
+                title="आज की लाइव दिल्ली तिथि पर वापस जाएं"
+              >
+                <RefreshCw className="w-2.5 h-2.5" />
+                <span>लाइव करें</span>
+              </button>
+            )}
           </div>
 
           {/* Font View Mode Toggle (Unicode vs KrutiDev vs Dual) */}

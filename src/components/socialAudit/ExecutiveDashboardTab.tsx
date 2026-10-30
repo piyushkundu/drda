@@ -36,10 +36,14 @@ export default function ExecutiveDashboardTab() {
 
   // Helper to calculate days diff from asOfDate
   const getDaysDiff = (targetDate: string) => {
-    const d1 = new Date(asOfDate).getTime();
-    const d2 = new Date(targetDate).getTime();
-    const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
-    return diff;
+    try {
+      const d1 = new Date(asOfDate + 'T00:00:00').getTime();
+      const d2 = new Date(targetDate + 'T00:00:00').getTime();
+      const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+      return diff;
+    } catch {
+      return 0;
+    }
   };
 
   // Compute detailed metrics for Baghpat and Baraut
