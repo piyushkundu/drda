@@ -9,6 +9,7 @@ import CalendarTableTab from './CalendarTableTab';
 import NSAPReportTab from './NSAPReportTab';
 import TeamRosterTab from './TeamRosterTab';
 import PanchayatNirnayTab from './PanchayatNirnayTab';
+import MisFeedingTab from './MisFeedingTab';
 import EditRecordModal from './EditRecordModal';
 import AddRecordModal from './AddRecordModal';
 
@@ -46,6 +47,13 @@ export default function SocialAuditDashboard() {
         {activeTab === 'nirnay' && (
           <div className="max-w-7xl mx-auto space-y-6">
             <PanchayatNirnayTab />
+          </div>
+        )}
+
+        {/* 5. MIS ऑडिट फीडिंग (R 9.1.3) */}
+        {activeTab === 'mis-feeding' && (
+          <div className="max-w-7xl mx-auto space-y-6">
+            <MisFeedingTab />
           </div>
         )}
 

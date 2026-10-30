@@ -9,7 +9,7 @@ import { getDelhiTimeString } from '@/lib/delhiTime';
 import { 
   Landmark, Sparkles, FileText, Calendar, Type, 
   ChevronRight, CalendarDays, RefreshCw, LayoutDashboard, Clock, Radio,
-  Smartphone
+  Smartphone, FileSpreadsheet
 } from 'lucide-react';
 
 export default function SocialAuditHeader() {
@@ -59,6 +59,7 @@ export default function SocialAuditHeader() {
   const nsapCount = records.filter(r => r.hasNSAP).length;
   const upcomingCount = records.filter(r => r.meetingDate >= asOfDate && r.status !== 'completed').length;
   const nirnayCapturedCount = records.filter(r => r.panchayatNirnayStatus === 'captured').length;
+  const misFedCount = records.filter(r => r.misStatus === 'fed').length;
 
   return (
     <header className="border-b border-white/10 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-5 py-4 shadow-xl">
@@ -264,6 +265,22 @@ export default function SocialAuditHeader() {
           <span>पंचायत निर्णय ऐप (R 9.6.2)</span>
           <span className="text-[10px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 px-1.5 py-0.2 rounded-full font-bold">
             {nirnayCapturedCount} अपलोड
+          </span>
+        </button>
+
+        {/* TAB 5: MIS ऑडिट फीडिंग (R 9.1.3) */}
+        <button
+          onClick={() => setActiveTab('mis-feeding')}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+            activeTab === 'mis-feeding'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+              : 'text-slate-300 hover:bg-white/5'
+          }`}
+        >
+          <FileSpreadsheet className="w-4 h-4 text-blue-300" />
+          <span>MIS ऑडिट फीडिंग (R 9.1.3)</span>
+          <span className="text-[10px] bg-blue-500/30 text-blue-200 border border-blue-400/40 px-1.5 py-0.2 rounded-full font-bold">
+            {misFedCount} फीडेड
           </span>
         </button>
 

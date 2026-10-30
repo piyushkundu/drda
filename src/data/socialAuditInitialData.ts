@@ -3506,9 +3506,35 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": false,
-    "panchayatNirnayStatus": "pending"
   }
 ];
+
+// Official R 9.1.3 MIS Audit Feeding Baseline (Financial Year 2026-27, District Baghpat)
+// Baghpat: 25 audited out of 44 | Baraut: 17 audited out of 44 | Total: 42 audited
+const BAGHPAT_MIS_FED_SNOS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 26, 27, 30]);
+const BARAUT_MIS_FED_SNOS = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18]);
+
+INITIAL_SOCIAL_AUDIT_RECORDS.forEach(record => {
+  if (record.block === 'Baghpat') {
+    if (BAGHPAT_MIS_FED_SNOS.has(record.sno)) {
+      record.misStatus = 'fed';
+      record.misAuditedCount = 1;
+      record.misFedDate = record.misFedDate || record.meetingDate;
+    } else {
+      record.misStatus = 'pending';
+      record.misAuditedCount = 0;
+    }
+  } else if (record.block === 'Baraut') {
+    if (BARAUT_MIS_FED_SNOS.has(record.sno)) {
+      record.misStatus = 'fed';
+      record.misAuditedCount = 1;
+      record.misFedDate = record.misFedDate || record.meetingDate;
+    } else {
+      record.misStatus = 'pending';
+      record.misAuditedCount = 0;
+    }
+  }
+});
 
 export const BLOCK_SABHA_RECORDS: BlockSabhaRecord[] = [
   {

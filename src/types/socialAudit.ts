@@ -9,6 +9,8 @@ export type AuditStatus = 'scheduled' | 'in_progress' | 'completed' | 'amended' 
 
 export type PanchayatNirnayStatus = 'captured' | 'pending' | 'not_captured';
 
+export type MisAuditStatus = 'fed' | 'pending' | 'not_fed';
+
 export interface AmendmentDetails {
   originalDate: string;
   modifiedDate: string;
@@ -62,6 +64,11 @@ export interface SocialAuditRecord {
   isMappedInPanchayatNirnay?: boolean;
   panchayatNirnayCapturedDate?: string;
   panchayatNirnayNotes?: string;
+  // MIS Audit Feeding (R 9.1.3) Tracking
+  misStatus?: MisAuditStatus;
+  misFedDate?: string;
+  misAuditedCount?: number;
+  misNotes?: string;
 }
 
 export interface BlockSabhaRecord {

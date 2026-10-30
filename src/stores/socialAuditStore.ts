@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, PanchayatNirnayStatus } from '@/types/socialAudit';
+import { SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, PanchayatNirnayStatus, MisAuditStatus } from '@/types/socialAudit';
 import { INITIAL_SOCIAL_AUDIT_RECORDS, BLOCK_SABHA_RECORDS, DISTRICT_META } from '@/data/socialAuditInitialData';
 import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/lib/delhiTime';
 import { NirnaySyncPayload } from '@/lib/nirnaySyncBookmarklet';
+import { MisSyncPayload } from '@/lib/misSyncBookmarklet';
 
-export type SocialAuditTab = 'upcoming' | 'dashboard' | 'calendar' | 'nirnay' | 'nsap-report' | 'roster' | 'overview';
+export type SocialAuditTab = 'upcoming' | 'dashboard' | 'calendar' | 'nirnay' | 'mis-feeding' | 'nsap-report' | 'roster' | 'overview';
 
 interface SocialAuditState {
   records: SocialAuditRecord[];
@@ -41,10 +42,12 @@ interface SocialAuditState {
   openAddModal: () => void;
   closeAddModal: () => void;
 
-  // Record CRUD & Nirnay App Confirmation
+  // Record CRUD, Nirnay App & MIS Feeding Confirmation
   updateRecord: (id: string, updates: Partial<SocialAuditRecord>) => void;
   updatePanchayatNirnayStatus: (id: string, status: PanchayatNirnayStatus, notes?: string) => void;
   syncNirnayFromPayload: (payload: NirnaySyncPayload) => { updatedCount: number; updatedNames: string[]; blockMatched: string };
+  updateMisStatus: (id: string, status: MisAuditStatus, notes?: string, fedDate?: string) => void;
+  syncMisFromPayload: (payload: MisSyncPayload) => { updatedCount: number; updatedNames: string[]; blockMatched: string };
   addRecord: (record: Omit<SocialAuditRecord, 'id'>) => void;
   deleteRecord: (id: string) => void;
   markCompleted: (id: string, isCompleted: boolean) => void;
@@ -253,6 +256,70 @@ export const useSocialAuditStore = create<SocialAuditState>()(
                   panchayatNirnayStatus: 'captured' as PanchayatNirnayStatus,
                   panchayatNirnayCapturedDate: r.panchayatNirnayCapturedDate || getDelhiDateString(),
                   isMappedInPanchayatNirnay: true
+                };
+              }
+            }
+            return r;
+          });
+
+          if (updatedNames.length > 0) {
+            set({ records: updatedRecords });
+          }
+        }
+
+        return {
+          updatedCount: updatedNames.length,
+          updatedNames,
+          blockMatched: payload.blockName || 'जनपद बागपत'
+        };
+      },
+
+      updateMisStatus: (id: string, status: MisAuditStatus, notes?: string, fedDate?: string) => {
+        set(state => ({
+          records: state.records.map(r => {
+            if (r.id === id) {
+              return {
+                ...r,
+                misStatus: status,
+                misAuditedCount: status === 'fed' ? 1 : 0,
+                misFedDate: status === 'fed' ? (fedDate || r.misFedDate || getDelhiDateString()) : undefined,
+                misNotes: notes !== undefined ? notes : r.misNotes
+              };
+            }
+            return r;
+          })
+        }));
+      },
+
+      syncMisFromPayload: (payload: MisSyncPayload) => {
+        const state = get();
+        const updatedNames: string[] = [];
+        const normalizedBlock = (payload.blockName || '').toUpperCase();
+
+        if (payload.auditedGps && payload.auditedGps.length > 0) {
+          const auditedSetBySno = new Set(payload.auditedGps.map(g => g.sno).filter(Boolean));
+          const auditedSetByName = new Set(payload.auditedGps.map(g => (g.name || '').toUpperCase().replace(/[^A-Z]/g, '')));
+
+          const updatedRecords = state.records.map(r => {
+            const rBlock = r.block.toUpperCase();
+            const isTargetBlock = !normalizedBlock || rBlock === normalizedBlock || 
+              (normalizedBlock.includes('BAGHPAT') && rBlock === 'BAGHPAT') ||
+              (normalizedBlock.includes('BARAUT') && rBlock === 'BARAUT');
+
+            if (!isTargetBlock) return r;
+
+            const snoMatch = r.sno && auditedSetBySno.has(r.sno);
+            const nameNorm = (r.gpNameUnicode || '').toUpperCase().replace(/[^A-Z]/g, '');
+            const nameMatch = nameNorm && auditedSetByName.has(nameNorm);
+
+            if (snoMatch || nameMatch) {
+              if (r.misStatus !== 'fed') {
+                updatedNames.push(r.gpNameUnicode);
+                return {
+                  ...r,
+                  misStatus: 'fed' as MisAuditStatus,
+                  misAuditedCount: 1,
+                  misFedDate: r.misFedDate || getDelhiDateString()
                 };
               }
             }
