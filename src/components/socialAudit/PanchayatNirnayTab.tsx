@@ -1,14 +1,20 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { PanchayatNirnayStatus, SocialAuditRecord } from '@/types/socialAudit';
+import { 
+  getBookmarkletHref, 
+  getBookmarkletScript, 
+  NirnaySyncPayload 
+} from '@/lib/nirnaySyncBookmarklet';
 import { 
   CheckCircle2, Clock, XCircle, Search, Filter, 
   Download, Sparkles, Building2, ShieldCheck, 
   Smartphone, AlertCircle, ArrowUpRight, Check,
   Layers, Landmark, FileSpreadsheet, RefreshCw,
-  Phone, UserCheck, Calendar, ChevronRight, AlertTriangle
+  Phone, UserCheck, Calendar, ChevronRight, AlertTriangle,
+  Zap, Copy, ExternalLink, HelpCircle, FileText
 } from 'lucide-react';
 
 export default function PanchayatNirnayTab() {
@@ -17,6 +23,7 @@ export default function PanchayatNirnayTab() {
     asOfDate, 
     fontViewMode, 
     updatePanchayatNirnayStatus,
+    syncNirnayFromPayload,
     openEditModal 
   } = useSocialAuditStore();
 
@@ -28,6 +35,14 @@ export default function PanchayatNirnayTab() {
   // Dedicated Pending Box local filter & toggle for viewing upcoming schedule
   const [pendingBlockFilter, setPendingBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
   const [showUpcomingList, setShowUpcomingList] = useState(false);
+
+  // 1-Click Bookmarklet & Sync Tool States
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isQuickPasteOpen, setIsQuickPasteOpen] = useState(false);
+  const [quickPasteText, setQuickPasteText] = useState('');
+  const [copiedBookmarklet, setCopiedBookmarklet] = useState(false);
+  const [syncToastMessage, setSyncToastMessage] = useState<string | null>(null);
+  const [lastSyncTimestamp, setLastSyncTimestamp] = useState<string | null>(null);
 
   // Helper to format date
   const formatDateHi = (dateStr?: string) => {
@@ -57,6 +72,50 @@ export default function PanchayatNirnayTab() {
     }
     return <span>{unicodeText}</span>;
   };
+
+  // =========================================================================
+  // BACKGROUND AUTO-SYNC LISTENER (Bookmarklet & API Polling)
+  // =========================================================================
+  useEffect(() => {
+    // 1. Check URL parameters for ?nirnaySync=...
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const syncParam = urlParams.get('nirnaySync');
+      if (syncParam) {
+        try {
+          const payload: NirnaySyncPayload = JSON.parse(decodeURIComponent(syncParam));
+          const res = syncNirnayFromPayload(payload);
+          setSyncToastMessage(`🎉 लाइव सिंक सफल! ${res.blockMatched} की ${res.updatedCount} ग्राम पंचायतें अद्यतन हुईं।`);
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (e) {
+          console.warn('Failed to parse nirnaySync URL param', e);
+        }
+      }
+    }
+
+    // 2. Poll /api/social-audit/sync-nirnay every 3 seconds for live bookmarklet updates
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/social-audit/sync-nirnay');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json && json.data && json.data.timestamp !== lastSyncTimestamp) {
+          setLastSyncTimestamp(json.data.timestamp);
+          const syncRes = syncNirnayFromPayload(json.data);
+          if (syncRes.updatedCount > 0) {
+            setSyncToastMessage(
+              `🎉 सरकारी पोर्टल से लाइव सिंक सफल! ${syncRes.blockMatched} की ${syncRes.updatedCount} ग्राम पंचायतें अद्यतन हुईं (${syncRes.updatedNames.slice(0, 3).join(', ')}${syncRes.updatedNames.length > 3 ? '...' : ''})`
+            );
+            setTimeout(() => setSyncToastMessage(null), 8000);
+          }
+        }
+      } catch (err) {
+        // silent
+      }
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [lastSyncTimestamp, syncNirnayFromPayload]);
 
   // Detailed Metrics computation strictly respecting asOfDate
   const metrics = useMemo(() => {
@@ -179,8 +238,49 @@ export default function PanchayatNirnayTab() {
     setTimeout(() => setJustUpdatedId(null), 1500);
   };
 
+  // Copy Bookmarklet Code
+  const handleCopyBookmarklet = () => {
+    const code = getBookmarkletHref();
+    navigator.clipboard.writeText(code);
+    setCopiedBookmarklet(true);
+    setTimeout(() => setCopiedBookmarklet(false), 2500);
+  };
+
+  // Handle Quick Paste JSON
+  const handleQuickPasteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload: NirnaySyncPayload = JSON.parse(quickPasteText);
+      const res = syncNirnayFromPayload(payload);
+      setSyncToastMessage(`🎉 पेस्ट सिंक सफल! ${res.blockMatched} की ${res.updatedCount} ग्राम पंचायतें अद्यतन हुईं।`);
+      setIsQuickPasteOpen(false);
+      setQuickPasteText('');
+      setTimeout(() => setSyncToastMessage(null), 8000);
+    } catch (err) {
+      alert('अमान्य JSON प्रारूप! कृपया बुकमार्कलेट द्वारा कॉपी किया गया कोड ही पेस्ट करें।');
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* ========================================================================= */}
+      {/* LIVE SYNC CELEBRATION TOAST */}
+      {/* ========================================================================= */}
+      {syncToastMessage && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white font-bold flex items-center justify-between shadow-2xl animate-bounce border border-emerald-300/40">
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-6 h-6 text-yellow-300 animate-spin" />
+            <span className="text-sm md:text-base">{syncToastMessage}</span>
+          </div>
+          <button
+            onClick={() => setSyncToastMessage(null)}
+            className="text-white hover:text-slate-200 text-sm font-bold bg-white/20 px-3 py-1 rounded-xl"
+          >
+            ✕ बंद करें
+          </button>
+        </div>
+      )}
+
       {/* ========================================================================= */}
       {/* 1. OFFICIAL REPORT HEADER BANNER (R 9.6.2) */}
       {/* ========================================================================= */}
@@ -234,7 +334,166 @@ export default function PanchayatNirnayTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. STATS OVERVIEW CARDS (DATE-AWARE) */}
+      {/* 2. ⚡ 1-CLICK BOOKMARKLET SYNC TOOL (METHOD 2) */}
+      {/* ========================================================================= */}
+      <div className="rounded-3xl bg-gradient-to-br from-indigo-950/60 via-slate-900 to-emerald-950/40 border-2 border-emerald-500/40 p-5 md:p-6 shadow-2xl space-y-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/20 flex items-center justify-center shrink-0">
+              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                <Zap className="w-6 h-6 text-emerald-400 animate-pulse" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base md:text-lg font-black text-white">
+                  1-क्लिक सरकारी पोर्टल ऑटो सिंक टूल (Bookmarklet Sync)
+                </h3>
+                <span className="text-[10px] font-black bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full uppercase">
+                  तरीका 2 सक्रिय
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                सरकारी वेबसाइट पर जाकर सिर्फ 1 क्लिक करें — सारा डेटा स्वतः फेच होकर आपके पेज हिंदी में बिना टाइप किए अपडेट हो जाएगा!
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsGuideOpen(!isGuideOpen)}
+              className="text-xs text-blue-400 hover:text-white bg-blue-950/60 hover:bg-blue-900/60 px-3 py-1.5 rounded-xl border border-blue-800/40 flex items-center gap-1.5 transition-colors font-semibold"
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span>{isGuideOpen ? 'गाइड छुपाएं' : 'कैसे उपयोग करें?'}</span>
+            </button>
+            <button
+              onClick={() => setIsQuickPasteOpen(true)}
+              className="text-xs text-amber-300 hover:text-white bg-amber-950/60 hover:bg-amber-900/60 px-3 py-1.5 rounded-xl border border-amber-800/40 flex items-center gap-1.5 transition-colors font-semibold"
+            >
+              <FileText className="w-4 h-4" />
+              <span>त्वरित पेस्ट (Quick Paste)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* The Actionable Draggable Bookmarklet Link */}
+        <div className="p-4 rounded-2xl bg-slate-950/80 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-slate-400">बुकमार्क बार पर ड्रैग करें:</span>
+            {/* Draggable Anchor Tag */}
+            <a
+              href={getBookmarkletHref()}
+              onClick={(e) => {
+                e.preventDefault();
+                alert('कृपया इस हरे बटन को माउस से दबाकर (Drag) अपने ब्राउज़र के बुकमार्क बार (Bookmarks Bar) पर खींचकर छोड़ें!');
+              }}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs shadow-xl shadow-emerald-600/30 border border-emerald-300 flex items-center gap-2 cursor-grab active:cursor-grabbing hover:scale-105 transition-all select-none"
+              title="इस बटन को खींचकर (Drag & Drop) अपने ब्राउज़र के बुकमार्क बार पर छोड़ें"
+            >
+              <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
+              <span>⚡ निर्णय ऐप सिंक (पेज हिंदी)</span>
+            </a>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopyBookmarklet}
+              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-all"
+              title="यदि ड्रैग न कर सकें तो बुकमार्क URL कॉपी करें"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>{copiedBookmarklet ? '✓ कोड कॉपी हो गया!' : 'बुकमार्क कोड कॉपी करें'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 3-Step Interactive Visual Guide */}
+        {isGuideOpen && (
+          <div className="p-4 rounded-2xl bg-slate-950/90 border border-blue-500/30 text-xs space-y-3">
+            <h4 className="font-bold text-white text-sm flex items-center gap-2 text-blue-300">
+              <span>सरल 3-चरणीय उपयोग विधि:</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                <div className="text-[10px] font-black uppercase text-blue-400">चरण 1</div>
+                <div className="font-bold text-white">बुकमार्क बार में जोड़ें</div>
+                <div className="text-slate-400 text-[11px] leading-relaxed">
+                  ऊपर दिए गए हरे बटन <strong>&apos;⚡ निर्णय ऐप सिंक&apos;</strong> को माउस से खींचकर (Drag) अपने ब्राउज़र के बुकमार्क बार (Bookmarks Bar) पर छोड़ दें। (शॉर्टकट: <code>Ctrl+Shift+B</code> से बुकमार्क बार दिखेगा)।
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                <div className="text-[10px] font-black uppercase text-emerald-400">चरण 2</div>
+                <div className="font-bold text-white">सरकारी पोर्टल खोलें</div>
+                <div className="text-slate-400 text-[11px] leading-relaxed">
+                  मनरेगा पोर्टल पर <strong>R 9.6.2</strong> रिपोर्ट खोलें (जैसे विकास खण्ड बागपत या बड़ौत की तालिका)।
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                <div className="text-[10px] font-black uppercase text-amber-400">चरण 3</div>
+                <div className="font-bold text-white">1 क्लिक करें और सिंक!</div>
+                <div className="text-slate-400 text-[11px] leading-relaxed">
+                  सरकारी पेज पर रहते हुए अपने बुकमार्क बार के <strong>&apos;⚡ निर्णय ऐप सिंक&apos;</strong> पर क्लिक करें। सारा डेटा 1 सेकंड में एक्सट्रैक्ट होकर आपके पेज हिंदी डैशबोर्ड पर स्वतः लाइव अपडेट हो जाएगा!
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. QUICK PASTE MODAL */}
+      {/* ========================================================================= */}
+      {isQuickPasteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <FileText className="w-5 h-5 text-amber-400" />
+                <span>सरकारी पोर्टल से सिंक डेटा पेस्ट करें (Quick Paste)</span>
+              </h3>
+              <button
+                onClick={() => setIsQuickPasteOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-slate-300">
+              यदि आप बुकमार्कलेट द्वारा कॉपी किया गया JSON कोड या डेटा यहाँ पेस्ट करेंगे, तो वह सीधे आपके रोस्टर में सिंक हो जाएगा:
+            </p>
+            <form onSubmit={handleQuickPasteSubmit} className="space-y-4">
+              <textarea
+                rows={6}
+                value={quickPasteText}
+                onChange={(e) => setQuickPasteText(e.target.value)}
+                placeholder='उदा० {"source":"bookmarklet","blockName":"BAGHPAT","capturedGps":[{"sno":24,"name":"KHERA ISLAMPUR"}]...}'
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-emerald-300 font-mono outline-none focus:border-amber-400"
+              />
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickPasteOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                >
+                  रद्द करें
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg"
+                >
+                  डेटा सिंक एवं लागू करें
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 4. STATS OVERVIEW CARDS (DATE-AWARE) */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Card 1: Total Captured in App */}
@@ -293,7 +552,7 @@ export default function PanchayatNirnayTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. CAPTURED HIGHLIGHT BADGES: 6 BAGHPAT + 3 BARAUT */}
+      {/* 5. CAPTURED HIGHLIGHT BADGES: 6 BAGHPAT + 3 BARAUT */}
       {/* ========================================================================= */}
       <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-blue-950/40 border border-emerald-500/20">
         <div className="flex items-center justify-between gap-2 mb-3">
@@ -363,7 +622,7 @@ export default function PanchayatNirnayTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. DEDICATED PENDING CONFIRMATION BOX (DATE-AWARE ACTION QUEUE) */}
+      {/* 6. DEDICATED PENDING CONFIRMATION BOX (DATE-AWARE ACTION QUEUE) */}
       {/* ========================================================================= */}
       <div className="rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-900 to-slate-950 border-2 border-amber-500/30 p-5 md:p-6 shadow-2xl space-y-4">
         {/* Header of Pending Box */}
@@ -448,7 +707,7 @@ export default function PanchayatNirnayTab() {
               </h4>
               <p className="text-xs text-slate-400 max-w-xl mx-auto mt-1 leading-relaxed">
                 आज तक की सभी विगत बैठकें पूरी तरह स्पष्ट हैं (9 ऐप पर अपलोड, 39 विगत में छूट गईं)।
-                आगामी बैठकें (31/10/2026 से) अपने निर्धारित बैठक दिवस पर स्वतः यहाँ पुष्टि हेतु प्रदर्शित होंगी, ताकि आप बैठक संपन्न होने पर ही निर्णय ले सकें।
+                आगामी बैठकें (31/10/2026 से) अपने निर्धारित बैठक दिवस पर स्वतः यहाँ पुष्टि हेतु प्रदर्शित होंगी। आप ऊपर दिए गए 1-क्लिक बुकमार्कलेट से भी सिंक कर सकते हैं।
               </p>
             </div>
 
@@ -574,7 +833,7 @@ export default function PanchayatNirnayTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 5. FILTER & SEARCH TOOLBAR FOR MASTER TABLE */}
+      {/* 7. FILTER & SEARCH TOOLBAR FOR MASTER TABLE */}
       {/* ========================================================================= */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-md">
         {/* Block Filters */}
@@ -686,7 +945,7 @@ export default function PanchayatNirnayTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 6. INTERACTIVE MASTER TABLE WITH 1-CLICK CONFIRMATION BUTTONS */}
+      {/* 8. INTERACTIVE MASTER TABLE WITH 1-CLICK CONFIRMATION BUTTONS */}
       {/* ========================================================================= */}
       <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">

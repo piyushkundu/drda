@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, PanchayatNirnayStatus } from '@/types/socialAudit';
 import { INITIAL_SOCIAL_AUDIT_RECORDS, BLOCK_SABHA_RECORDS, DISTRICT_META } from '@/data/socialAuditInitialData';
 import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/lib/delhiTime';
+import { NirnaySyncPayload } from '@/lib/nirnaySyncBookmarklet';
 
 export type SocialAuditTab = 'upcoming' | 'dashboard' | 'calendar' | 'nirnay' | 'nsap-report' | 'roster' | 'overview';
 
@@ -43,6 +44,7 @@ interface SocialAuditState {
   // Record CRUD & Nirnay App Confirmation
   updateRecord: (id: string, updates: Partial<SocialAuditRecord>) => void;
   updatePanchayatNirnayStatus: (id: string, status: PanchayatNirnayStatus, notes?: string) => void;
+  syncNirnayFromPayload: (payload: NirnaySyncPayload) => { updatedCount: number; updatedNames: string[]; blockMatched: string };
   addRecord: (record: Omit<SocialAuditRecord, 'id'>) => void;
   deleteRecord: (id: string) => void;
   markCompleted: (id: string, isCompleted: boolean) => void;
@@ -220,6 +222,53 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             return r;
           })
         }));
+      },
+
+      syncNirnayFromPayload: (payload: NirnaySyncPayload) => {
+        const state = get();
+        const updatedNames: string[] = [];
+        const normalizedBlock = (payload.blockName || '').toUpperCase();
+
+        if (payload.capturedGps && payload.capturedGps.length > 0) {
+          const capturedSetBySno = new Set(payload.capturedGps.map(g => g.sno).filter(Boolean));
+          const capturedSetByName = new Set(payload.capturedGps.map(g => (g.name || '').toUpperCase().replace(/[^A-Z]/g, '')));
+
+          const updatedRecords = state.records.map(r => {
+            const rBlock = r.block.toUpperCase();
+            const isTargetBlock = !normalizedBlock || rBlock === normalizedBlock || 
+              (normalizedBlock.includes('BAGHPAT') && rBlock === 'BAGHPAT') ||
+              (normalizedBlock.includes('BARAUT') && rBlock === 'BARAUT');
+
+            if (!isTargetBlock) return r;
+
+            const snoMatch = r.sno && capturedSetBySno.has(r.sno);
+            const nameNorm = (r.gpNameUnicode || '').toUpperCase().replace(/[^A-Z]/g, '');
+            const nameMatch = nameNorm && capturedSetByName.has(nameNorm);
+
+            if (snoMatch || nameMatch) {
+              if (r.panchayatNirnayStatus !== 'captured') {
+                updatedNames.push(r.gpNameUnicode);
+                return {
+                  ...r,
+                  panchayatNirnayStatus: 'captured' as PanchayatNirnayStatus,
+                  panchayatNirnayCapturedDate: r.panchayatNirnayCapturedDate || getDelhiDateString(),
+                  isMappedInPanchayatNirnay: true
+                };
+              }
+            }
+            return r;
+          });
+
+          if (updatedNames.length > 0) {
+            set({ records: updatedRecords });
+          }
+        }
+
+        return {
+          updatedCount: updatedNames.length,
+          updatedNames,
+          blockMatched: payload.blockName || 'जनपद बागपत'
+        };
       },
 
       resetToBaseline: () => {
