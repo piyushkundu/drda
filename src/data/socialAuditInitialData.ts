@@ -44,7 +44,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": true,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-2",
@@ -83,7 +83,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-3",
@@ -122,7 +122,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-4",
@@ -161,7 +161,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-5",
@@ -200,7 +200,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-6",
@@ -239,7 +239,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-7",
@@ -278,7 +278,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-8",
@@ -317,7 +317,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-9",
@@ -356,7 +356,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-10",
@@ -395,7 +395,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-11",
@@ -434,7 +434,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-12",
@@ -473,7 +473,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": true,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-13",
@@ -512,7 +512,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": true,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-14",
@@ -551,7 +551,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-15",
@@ -590,7 +590,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-16",
@@ -629,7 +629,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-17",
@@ -668,7 +668,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-18",
@@ -707,7 +707,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-19",
@@ -746,7 +746,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-20",
@@ -785,7 +785,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-21",
@@ -824,7 +824,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-22",
@@ -863,7 +863,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-23",
@@ -1073,7 +1073,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baghpat-28",
@@ -1882,7 +1882,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-4",
@@ -1921,7 +1921,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-5",
@@ -1960,7 +1960,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-6",
@@ -1999,7 +1999,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-7",
@@ -2038,7 +2038,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-8",
@@ -2077,7 +2077,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-9",
@@ -2116,7 +2116,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-10",
@@ -2155,7 +2155,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": true,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-11",
@@ -2194,7 +2194,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-12",
@@ -2233,7 +2233,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-13",
@@ -2272,7 +2272,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-14",
@@ -2311,7 +2311,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-15",
@@ -2350,7 +2350,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-16",
@@ -2389,7 +2389,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-17",
@@ -2468,7 +2468,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-19",
@@ -2552,7 +2552,7 @@ export const INITIAL_SOCIAL_AUDIT_RECORDS: SocialAuditRecord[] = [
     "hasPMAYG": false,
     "status": "scheduled",
     "isMappedInPanchayatNirnay": true,
-    "panchayatNirnayStatus": "pending"
+    "panchayatNirnayStatus": "not_captured"
   },
   {
     "id": "baraut-21",

@@ -249,12 +249,35 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           }
           state.liveDelhiTime = getDelhiTimeString();
 
-          // Sync Panchayat Nirnay baseline status if missing in cached localStorage
+          // Sync Panchayat Nirnay baseline status and migrate past meetings
           if (state.records && Array.isArray(state.records)) {
             const baselineMap = new Map(INITIAL_SOCIAL_AUDIT_RECORDS.map(r => [r.id, r]));
+            const capturedIds = new Set([
+              'baghpat-24', 'baghpat-25', 'baghpat-26', 'baghpat-28', 'baghpat-29', 'baghpat-30',
+              'baraut-1', 'baraut-2', 'baraut-17'
+            ]);
             let hasChanges = false;
             const updatedRecords = state.records.map(r => {
               const base = baselineMap.get(r.id);
+              // Ensure verified 9 records are captured
+              if (capturedIds.has(r.id) && r.panchayatNirnayStatus !== 'captured') {
+                hasChanges = true;
+                return {
+                  ...r,
+                  panchayatNirnayStatus: 'captured' as PanchayatNirnayStatus,
+                  panchayatNirnayCapturedDate: r.panchayatNirnayCapturedDate || r.meetingDate,
+                  isMappedInPanchayatNirnay: true
+                };
+              }
+              // Past meetings up to 2026-10-30 cannot be captured retroactively -> mark not_captured
+              if (!capturedIds.has(r.id) && r.meetingDate <= '2026-10-30' && r.panchayatNirnayStatus === 'pending') {
+                hasChanges = true;
+                return {
+                  ...r,
+                  panchayatNirnayStatus: 'not_captured' as PanchayatNirnayStatus
+                };
+              }
+              // If status is completely missing, pull from baseline
               if (r.panchayatNirnayStatus === undefined && base) {
                 hasChanges = true;
                 return {
