@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { PanchayatNirnayStatus, SocialAuditRecord } from '@/types/socialAudit';
 import { 
@@ -43,6 +43,15 @@ export default function PanchayatNirnayTab() {
   const [copiedBookmarklet, setCopiedBookmarklet] = useState(false);
   const [syncToastMessage, setSyncToastMessage] = useState<string | null>(null);
   const [lastSyncTimestamp, setLastSyncTimestamp] = useState<string | null>(null);
+
+  // Ref for bookmarklet anchor tag (sets href imperatively to prevent React javascript: URL security error)
+  const bookmarkletAnchorRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    if (bookmarkletAnchorRef.current) {
+      bookmarkletAnchorRef.current.setAttribute('href', getBookmarkletHref());
+    }
+  }, []);
 
   // Helper to format date
   const formatDateHi = (dateStr?: string) => {
@@ -381,9 +390,15 @@ export default function PanchayatNirnayTab() {
         <div className="p-4 rounded-2xl bg-slate-950/80 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-400">बुकमार्क बार पर ड्रैग करें:</span>
-            {/* Draggable Anchor Tag */}
+            {/* Draggable Anchor Tag without javascript: in JSX */}
             <a
-              href={getBookmarkletHref()}
+              ref={bookmarkletAnchorRef}
+              draggable="true"
+              onDragStart={(e) => {
+                const href = getBookmarkletHref();
+                e.dataTransfer.setData('text/uri-list', href);
+                e.dataTransfer.setData('text/plain', href);
+              }}
               onClick={(e) => {
                 e.preventDefault();
                 alert('कृपया इस हरे बटन को माउस से दबाकर (Drag) अपने ब्राउज़र के बुकमार्क बार (Bookmarks Bar) पर खींचकर छोड़ें!');
