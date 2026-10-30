@@ -21,13 +21,13 @@ export default function PanchayatNirnayTab() {
   } = useSocialAuditStore();
 
   const [selectedBlockFilter, setSelectedBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | PanchayatNirnayStatus>('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'captured' | 'due_pending' | 'upcoming' | 'not_captured'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [justUpdatedId, setJustUpdatedId] = useState<string | null>(null);
 
-  // Dedicated Pending Box local filter & search
+  // Dedicated Pending Box local filter & toggle for viewing upcoming schedule
   const [pendingBlockFilter, setPendingBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
-  const [pendingSearchQuery, setPendingSearchQuery] = useState('');
+  const [showUpcomingList, setShowUpcomingList] = useState(false);
 
   // Helper to format date
   const formatDateHi = (dateStr?: string) => {
@@ -58,7 +58,7 @@ export default function PanchayatNirnayTab() {
     return <span>{unicodeText}</span>;
   };
 
-  // Detailed Metrics computation
+  // Detailed Metrics computation strictly respecting asOfDate
   const metrics = useMemo(() => {
     const totalGps = records.length; // 88
     const baghpatTotal = records.filter(r => r.block === 'Baghpat').length; // 44
@@ -73,9 +73,15 @@ export default function PanchayatNirnayTab() {
     const capturedBaghpat = records.filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'captured');
     const capturedBaraut = records.filter(r => r.block === 'Baraut' && r.panchayatNirnayStatus === 'captured');
 
-    const pendingTotal = records.filter(r => r.panchayatNirnayStatus === 'pending');
-    const pendingBaghpat = records.filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'pending');
-    const pendingBaraut = records.filter(r => r.block === 'Baraut' && r.panchayatNirnayStatus === 'pending');
+    // Due Pending: Meeting date has arrived (meetingDate <= asOfDate) and status is pending
+    const duePendingTotal = records.filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+    const duePendingBaghpat = records.filter(r => r.block === 'Baghpat' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+    const duePendingBaraut = records.filter(r => r.block === 'Baraut' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+
+    // Upcoming Scheduled: Future meetings (meetingDate > asOfDate) awaiting their meeting date
+    const upcomingTotal = records.filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
+    const upcomingBaghpat = records.filter(r => r.block === 'Baghpat' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
+    const upcomingBaraut = records.filter(r => r.block === 'Baraut' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
 
     const notCapturedTotal = records.filter(r => r.panchayatNirnayStatus === 'not_captured');
     const notCapturedBaghpat = records.filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'not_captured');
@@ -89,9 +95,12 @@ export default function PanchayatNirnayTab() {
       capturedTotalCount: capturedTotal.length,
       capturedBaghpatCount: capturedBaghpat.length,
       capturedBarautCount: capturedBaraut.length,
-      pendingTotalCount: pendingTotal.length,
-      pendingBaghpatCount: pendingBaghpat.length,
-      pendingBarautCount: pendingBaraut.length,
+      duePendingTotalCount: duePendingTotal.length, // Currently 0!
+      duePendingBaghpatCount: duePendingBaghpat.length,
+      duePendingBarautCount: duePendingBaraut.length,
+      upcomingTotalCount: upcomingTotal.length, // Currently 40
+      upcomingBaghpatCount: upcomingBaghpat.length,
+      upcomingBarautCount: upcomingBaraut.length,
       notCapturedTotalCount: notCapturedTotal.length,
       notCapturedBaghpatCount: notCapturedBaghpat.length,
       notCapturedBarautCount: notCapturedBaraut.length,
@@ -100,27 +109,28 @@ export default function PanchayatNirnayTab() {
       barautPercentageMapped: barautMapped > 0 ? ((capturedBaraut.length / barautMapped) * 100).toFixed(2) : '0.00',
       districtPercentage: ((capturedTotal.length / totalMapped) * 100).toFixed(2)
     };
-  }, [records]);
+  }, [records, asOfDate]);
 
-  // Dedicated Pending Queue (Upcoming & New Meetings)
-  const pendingRecords = useMemo(() => {
+  // Active Pending Queue: Meetings that occurred on or before asOfDate AND have not been confirmed yet
+  const duePendingRecords = useMemo(() => {
     return records
-      .filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending')
+      .filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate)
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
-  }, [records]);
+  }, [records, asOfDate]);
 
-  const filteredPendingRecords = useMemo(() => {
-    return pendingRecords.filter(r => {
+  const filteredDuePendingRecords = useMemo(() => {
+    return duePendingRecords.filter(r => {
       if (pendingBlockFilter !== 'all' && r.block !== pendingBlockFilter) return false;
-      if (pendingSearchQuery.trim()) {
-        const q = pendingSearchQuery.toLowerCase().trim();
-        const matchGp = r.gpNameUnicode.toLowerCase().includes(q) || r.gpNameRaw.toLowerCase().includes(q);
-        const matchBrp = (r.brpName || '').toLowerCase().includes(q);
-        if (!matchGp && !matchBrp) return false;
-      }
       return true;
     });
-  }, [pendingRecords, pendingBlockFilter, pendingSearchQuery]);
+  }, [duePendingRecords, pendingBlockFilter]);
+
+  // Upcoming Scheduled Meetings (meetingDate > asOfDate): Future meetings not due yet
+  const upcomingScheduledRecords = useMemo(() => {
+    return records
+      .filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate)
+      .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
+  }, [records, asOfDate]);
 
   // Main Filtered records for table
   const filteredRecords = useMemo(() => {
@@ -130,7 +140,14 @@ export default function PanchayatNirnayTab() {
       // Status
       if (selectedStatusFilter !== 'all') {
         const status = r.panchayatNirnayStatus || 'pending';
-        if (status !== selectedStatusFilter) return false;
+        if (selectedStatusFilter === 'captured' && status !== 'captured') return false;
+        if (selectedStatusFilter === 'not_captured' && status !== 'not_captured') return false;
+        if (selectedStatusFilter === 'due_pending') {
+          if (status !== 'pending' || r.meetingDate > asOfDate) return false;
+        }
+        if (selectedStatusFilter === 'upcoming') {
+          if (status !== 'pending' || r.meetingDate <= asOfDate) return false;
+        }
       }
       // Search
       if (searchQuery.trim()) {
@@ -142,18 +159,19 @@ export default function PanchayatNirnayTab() {
       }
       return true;
     }).sort((a, b) => {
-      // Sort captured first, then pending, then not_captured, then by meetingDate
-      const score = (status?: string) => {
-        if (status === 'captured') return 1;
-        if (status === 'pending') return 2;
-        return 3;
+      // Sort captured first, then due pending, then upcoming, then not_captured
+      const score = (r: SocialAuditRecord) => {
+        if (r.panchayatNirnayStatus === 'captured') return 1;
+        if ((r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate) return 2;
+        if ((r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate) return 3;
+        return 4;
       };
-      const scoreA = score(a.panchayatNirnayStatus);
-      const scoreB = score(b.panchayatNirnayStatus);
+      const scoreA = score(a);
+      const scoreB = score(b);
       if (scoreA !== scoreB) return scoreA - scoreB;
       return a.meetingDate.localeCompare(b.meetingDate);
     });
-  }, [records, selectedBlockFilter, selectedStatusFilter, searchQuery]);
+  }, [records, asOfDate, selectedBlockFilter, selectedStatusFilter, searchQuery]);
 
   const handleStatusChange = (id: string, newStatus: PanchayatNirnayStatus) => {
     updatePanchayatNirnayStatus(id, newStatus);
@@ -189,9 +207,9 @@ export default function PanchayatNirnayTab() {
               ग्राम पंचायत सोशल ऑडिट • पंचायत निर्णय ऐप ट्रैकर
             </h1>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              सरकारी पोर्टल R 9.6.2 के अनुसार बागपत में <strong className="text-emerald-400 font-bold">6</strong> एवं बड़ौत में <strong className="text-emerald-400 font-bold">3</strong> ग्राम पंचायतें ऐप पर अपलोड हो चुकी हैं।
-              विगत बैठकों में जो ऐप पर नहीं हो सकीं, वे अब पोर्टल पर संभव नहीं होने के कारण <strong className="text-rose-400 font-semibold">&apos;नहीं हुआ&apos;</strong> में रखी गई हैं।
-              सभी आगामी एवं नई ग्राम सभाएं नीचे <strong className="text-amber-300 font-bold">&apos;लंबित पुष्टि बॉक्स&apos;</strong> में रहेंगी जब तक आप स्वयं 1-क्लिक से उनकी पुष्टि नहीं कर देते।
+              सरकारी पोर्टल R 9.6.2 के अनुसार बागपत में <strong className="text-emerald-400 font-bold">6</strong> एवं बड़ौत में <strong className="text-emerald-400 font-bold">3</strong> ग्राम पंचायतें अपलोड हैं।
+              विगत बैठकों में जो ऐप पर नहीं हो सकीं, वे अब पोर्टल पर संभव नहीं हैं।
+              आज (<strong className="text-white">{formatDateHi(asOfDate)}</strong>) तक की सभी बैठकें पूरी तरह अद्यतन हैं। आगामी सभाएं अपने बैठक दिवस पर स्वतः नीचे दिए गए <strong className="text-amber-300 font-bold">&apos;लंबित पुष्टि बॉक्स&apos;</strong> में निर्णय हेतु सक्रिय होंगी।
             </p>
           </div>
 
@@ -216,7 +234,7 @@ export default function PanchayatNirnayTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. STATS OVERVIEW CARDS */}
+      {/* 2. STATS OVERVIEW CARDS (DATE-AWARE) */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Card 1: Total Captured in App */}
@@ -245,31 +263,31 @@ export default function PanchayatNirnayTab() {
           </div>
         </div>
 
-        {/* Card 3: Pending Confirmation (Upcoming) */}
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-amber-500/40 shadow-lg ring-1 ring-amber-500/20">
+        {/* Card 3: Due for Confirmation (Actionable Pending - Currently 0!) */}
+        <div className="p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/40 shadow-lg ring-1 ring-emerald-500/20">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
-            <span>आगामी पुष्टि प्रतीक्षित (Pending)</span>
-            <Clock className="w-4 h-4 text-amber-400" />
+            <span>आज तक लंबित (Due Pending)</span>
+            <Clock className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-black text-amber-300">
-            {metrics.pendingTotalCount} <span className="text-xs font-normal text-slate-400">GPs</span>
+          <div className="text-2xl font-black text-emerald-300">
+            {metrics.duePendingTotalCount} <span className="text-xs font-normal text-slate-400">GPs</span>
           </div>
-          <div className="mt-2 text-[11px] text-amber-400 font-bold">
-            नीचे लंबित बॉक्स में प्रतीक्षारत
+          <div className="mt-2 text-[11px] text-emerald-400 font-bold">
+            {metrics.duePendingTotalCount === 0 ? '✓ आज तक सब क्लियर है' : 'सत्यापन प्रतीक्षित'}
           </div>
         </div>
 
-        {/* Card 4: Total Mapped Coverage */}
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-indigo-500/30 shadow-lg">
+        {/* Card 4: Upcoming Scheduled Meetings */}
+        <div className="p-4 rounded-2xl bg-slate-900/90 border border-blue-500/30 shadow-lg">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
-            <span>कुल मैप्ड ग्राम पंचायतें</span>
-            <Building2 className="w-4 h-4 text-indigo-400" />
+            <span>आगामी प्रस्तावित बैठकें</span>
+            <Calendar className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="text-2xl font-black text-indigo-300">
-            {metrics.totalMapped} <span className="text-xs font-normal text-slate-400">/ 88 (75%)</span>
+          <div className="text-2xl font-black text-blue-400">
+            {metrics.upcomingTotalCount} <span className="text-xs font-normal text-slate-400">GPs</span>
           </div>
           <div className="mt-2 text-[11px] text-slate-400">
-            बागपत: <strong className="text-white">44</strong> | बड़ौत: <strong className="text-white">22</strong>
+            31/10 से बैठक दिवस पर स्वतः सक्रिय
           </div>
         </div>
       </div>
@@ -345,33 +363,44 @@ export default function PanchayatNirnayTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. DEDICATED PENDING CONFIRMATION BOX (USER ACTION QUEUE) */}
+      {/* 4. DEDICATED PENDING CONFIRMATION BOX (DATE-AWARE ACTION QUEUE) */}
       {/* ========================================================================= */}
-      <div className="rounded-3xl bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-950 border-2 border-amber-500/40 p-5 md:p-6 shadow-2xl space-y-4">
+      <div className="rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-900 to-slate-950 border-2 border-amber-500/30 p-5 md:p-6 shadow-2xl space-y-4">
         {/* Header of Pending Box */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-amber-500/20 pb-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shadow-lg shadow-amber-500/20">
-              <Clock className="w-6 h-6 animate-pulse" />
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg ${
+              duePendingRecords.length > 0 
+                ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-amber-500/20' 
+                : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 shadow-emerald-500/20'
+            }`}>
+              {duePendingRecords.length > 0 ? (
+                <Clock className="w-6 h-6 animate-pulse" />
+              ) : (
+                <ShieldCheck className="w-6 h-6 text-emerald-400" />
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base md:text-lg font-black text-white">
                   पंचायत निर्णय ऐप • लंबित पुष्टि बॉक्स (Pending Confirmation Box)
                 </h2>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500 text-slate-950 shadow-md">
-                  {pendingRecords.length} लंबित
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-black shadow-md ${
+                  duePendingRecords.length > 0 
+                    ? 'bg-amber-500 text-slate-950' 
+                    : 'bg-emerald-500 text-slate-950'
+                }`}>
+                  {duePendingRecords.length} आज तक लंबित
                 </span>
               </div>
-              <p className="text-xs text-amber-200/80 mt-0.5">
-                आगामी एवं नई ग्राम सभाएं — जब तक आप स्वयं 1-क्लिक से पुष्टि नहीं करेंगे, ये इसी बॉक्स में सुरक्षित रहेंगी।
+              <p className="text-xs text-slate-300 mt-0.5">
+                बैठक तिथि के अनुसार सत्यापन — सभा संपन्न होने के दिन ही पुष्टि हेतु यहाँ प्रदर्शित होगी।
               </p>
             </div>
           </div>
 
-          {/* Pending Box Filters & Search */}
-          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-            {/* Block filter */}
+          {/* If there are due records, show block filter */}
+          {duePendingRecords.length > 0 && (
             <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
               <button
                 onClick={() => setPendingBlockFilter('all')}
@@ -381,7 +410,7 @@ export default function PanchayatNirnayTab() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                सभी ({pendingRecords.length})
+                सभी ({duePendingRecords.length})
               </button>
               <button
                 onClick={() => setPendingBlockFilter('Baghpat')}
@@ -391,7 +420,7 @@ export default function PanchayatNirnayTab() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                बागपत ({metrics.pendingBaghpatCount})
+                बागपत ({duePendingRecords.filter(r => r.block === 'Baghpat').length})
               </button>
               <button
                 onClick={() => setPendingBlockFilter('Baraut')}
@@ -401,36 +430,71 @@ export default function PanchayatNirnayTab() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                बड़ौत ({metrics.pendingBarautCount})
+                बड़ौत ({duePendingRecords.filter(r => r.block === 'Baraut').length})
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* When 0 Due Records (All clear today) */}
+        {duePendingRecords.length === 0 ? (
+          <div className="py-8 px-6 text-center rounded-2xl bg-slate-950/60 border border-emerald-500/20 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+            <div>
+              <h4 className="text-base font-bold text-emerald-300">
+                आज ({formatDateHi(asOfDate)}) की तिथि तक कोई भी सभा निर्णय ऐप पर लंबित नहीं है!
+              </h4>
+              <p className="text-xs text-slate-400 max-w-xl mx-auto mt-1 leading-relaxed">
+                आज तक की सभी विगत बैठकें पूरी तरह स्पष्ट हैं (9 ऐप पर अपलोड, 39 विगत में छूट गईं)।
+                आगामी बैठकें (31/10/2026 से) अपने निर्धारित बैठक दिवस पर स्वतः यहाँ पुष्टि हेतु प्रदर्शित होंगी, ताकि आप बैठक संपन्न होने पर ही निर्णय ले सकें।
+              </p>
+            </div>
+
+            {/* Quick expandable view for 40 upcoming meetings */}
+            <div className="pt-2 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowUpcomingList(!showUpcomingList)}
+                className="text-xs font-bold text-blue-400 hover:text-blue-300 bg-blue-950/60 hover:bg-blue-900/60 px-4 py-2 rounded-xl border border-blue-800/50 flex items-center gap-1.5 transition-all shadow-md"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{showUpcomingList ? 'आगामी सूची संक्षेप करें' : `आगामी निर्धारित बैठकें देखें (${upcomingScheduledRecords.length} सभाएं • 31/10 से शुरू)`}</span>
+                <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showUpcomingList ? 'rotate-90' : ''}`} />
               </button>
             </div>
 
-            {/* Quick search */}
-            <div className="relative flex-1 lg:w-56">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={pendingSearchQuery}
-                onChange={(e) => setPendingSearchQuery(e.target.value)}
-                placeholder="लंबित ग्राम पंचायत खोजें..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Pending Cards Grid */}
-        {filteredPendingRecords.length === 0 ? (
-          <div className="py-10 text-center rounded-2xl bg-slate-950/40 border border-dashed border-slate-800 space-y-2">
-            <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-            <h4 className="text-sm font-bold text-white">सभी बैठकें अद्यतन हैं!</h4>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              इस फ़िल्टर में कोई भी ग्राम सभा पुष्टि हेतु लंबित नहीं है। नई ग्राम सभा जोड़ने पर वह स्वतः यहाँ दिखाई देगी।
-            </p>
+            {/* If user clicks to view upcoming scheduled */}
+            {showUpcomingList && (
+              <div className="mt-4 pt-4 border-t border-slate-800 text-left space-y-3">
+                <div className="flex items-center justify-between text-xs text-slate-400 font-semibold px-1">
+                  <span>भविष्य की प्रस्तावित बैठकें (बैठक दिवस पर स्वतः सक्रिय होंगी):</span>
+                  <span className="text-blue-400">कुल {upcomingScheduledRecords.length} ग्राम पंचायतें</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 max-h-[300px] overflow-y-auto pr-1">
+                  {upcomingScheduledRecords.map((r) => (
+                    <div key={r.id} className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs">
+                      <div>
+                        <div className="font-bold text-white">{renderText(gpNameUnicode(r), r.gpNameKrutiDev)}</div>
+                        <div className="text-[10px] text-slate-400">{r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'} • BRP: {r.brpName || '—'}</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[11px] font-mono font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30 block">
+                          {formatDateHi(r.meetingDate)}
+                        </span>
+                        <span className="text-[9px] text-slate-400 mt-0.5 block">आगामी</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
+          /* When duePendingRecords > 0 (e.g. on 31-Oct-2026 or when date changes) */
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 max-h-[520px] overflow-y-auto pr-1">
-            {filteredPendingRecords.map((gp) => {
+            {filteredDuePendingRecords.map((gp) => {
               const isJustUpdated = justUpdatedId === gp.id;
 
               return (
@@ -459,7 +523,7 @@ export default function PanchayatNirnayTab() {
                   {/* Center: GP Name & BRP */}
                   <div>
                     <h4 className="text-base font-black text-white">
-                      {renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}
+                      {renderText(gpNameUnicode(gp), gp.gpNameKrutiDev)}
                     </h4>
                     <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
                       <span className="flex items-center gap-1 truncate">
@@ -573,15 +637,26 @@ export default function PanchayatNirnayTab() {
               <span>अपलोड ({metrics.capturedTotalCount})</span>
             </button>
             <button
-              onClick={() => setSelectedStatusFilter('pending')}
+              onClick={() => setSelectedStatusFilter('due_pending')}
               className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center gap-1 ${
-                selectedStatusFilter === 'pending'
+                selectedStatusFilter === 'due_pending'
                   ? 'bg-amber-600 text-white'
                   : 'text-amber-400 hover:bg-amber-950/40'
               }`}
             >
               <Clock className="w-3 h-3" />
-              <span>लंबित ({metrics.pendingTotalCount})</span>
+              <span>आज तक लंबित ({metrics.duePendingTotalCount})</span>
+            </button>
+            <button
+              onClick={() => setSelectedStatusFilter('upcoming')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center gap-1 ${
+                selectedStatusFilter === 'upcoming'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-blue-400 hover:bg-blue-950/40'
+              }`}
+            >
+              <Calendar className="w-3 h-3" />
+              <span>आगामी ({metrics.upcomingTotalCount})</span>
             </button>
             <button
               onClick={() => setSelectedStatusFilter('not_captured')}
@@ -624,9 +699,9 @@ export default function PanchayatNirnayTab() {
                 <th className="py-3 px-3 text-center">सोशल ऑडिट तिथि</th>
                 <th className="py-3 px-3 text-center">निर्णय ऐप मैपिंग</th>
                 <th className="py-3 px-4 text-center">
-                  पंचायत निर्णय ऐप स्थिति (मैनुअल पुष्टि)
+                  पंचायत निर्णय ऐप स्थिति (सत्यापन)
                 </th>
-                <th className="py-3 px-3 text-center">अपलोड दिनांक</th>
+                <th className="py-3 px-3 text-center">अपलोड / स्थिति विवरण</th>
                 <th className="py-3 px-3 text-center">कार्रवाई</th>
               </tr>
             </thead>
@@ -640,6 +715,7 @@ export default function PanchayatNirnayTab() {
               ) : (
                 filteredRecords.map((r, idx) => {
                   const status: PanchayatNirnayStatus = r.panchayatNirnayStatus || 'pending';
+                  const isFuture = r.meetingDate > asOfDate;
                   const isJustUpdated = justUpdatedId === r.id;
 
                   return (
@@ -695,63 +771,58 @@ export default function PanchayatNirnayTab() {
                         )}
                       </td>
 
-                      {/* Interactive Manual Confirmation Buttons */}
+                      {/* Status / Interactive Buttons */}
                       <td className="py-3 px-4 text-center">
-                        <div className="inline-flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1 shadow-inner">
-                          {/* Button 1: Captured */}
-                          <button
-                            onClick={() => handleStatusChange(r.id, 'captured')}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                              status === 'captured'
-                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/40 scale-105'
-                                : 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-950/40'
-                            }`}
-                            title="सत्यापित करें: पंचायत निर्णय ऐप पर अपलोड हो चुका है"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>सत्यापित</span>
-                          </button>
-
-                          {/* Button 2: Pending */}
-                          <button
-                            onClick={() => handleStatusChange(r.id, 'pending')}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                              status === 'pending'
-                                ? 'bg-amber-600 text-white shadow-md shadow-amber-600/40 scale-105'
-                                : 'text-slate-400 hover:text-amber-300 hover:bg-amber-950/40'
-                            }`}
-                            title="लंबित: ऐप पर अपलोड की पुष्टि प्रतीक्षित है"
-                          >
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>लंबित</span>
-                          </button>
-
-                          {/* Button 3: Not Captured */}
-                          <button
-                            onClick={() => handleStatusChange(r.id, 'not_captured')}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                              status === 'not_captured'
-                                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/40 scale-105'
-                                : 'text-slate-400 hover:text-rose-300 hover:bg-rose-950/40'
-                            }`}
-                            title="चिह्नित करें: ऐप पर अपलोड नहीं हुआ है"
-                          >
-                            <XCircle className="w-3.5 h-3.5" />
-                            <span>नहीं हुआ</span>
-                          </button>
-                        </div>
+                        {status === 'captured' ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold shadow-sm">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>सत्यापित (Captured)</span>
+                          </span>
+                        ) : status === 'not_captured' ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30 text-xs font-semibold">
+                            <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                            <span>नहीं हुआ (Not Captured)</span>
+                          </span>
+                        ) : isFuture ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-950/40 text-blue-300 border border-blue-500/30 text-xs font-medium">
+                            <Clock className="w-3.5 h-3.5 text-blue-400" />
+                            <span>आगामी ({formatDateHi(r.meetingDate)} को सक्रिय)</span>
+                          </span>
+                        ) : (
+                          /* Due Pending (meetingDate <= asOfDate) */
+                          <div className="inline-flex items-center bg-slate-950 p-1 rounded-xl border border-amber-500/40 gap-1 shadow-inner">
+                            <button
+                              onClick={() => handleStatusChange(r.id, 'captured')}
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-md flex items-center gap-1"
+                              title="सत्यापित करें"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>सत्यापित</span>
+                            </button>
+                            <button
+                              onClick={() => handleStatusChange(r.id, 'not_captured')}
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 text-white shadow-md flex items-center gap-1"
+                              title="नहीं हुआ"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              <span>नहीं हुआ</span>
+                            </button>
+                          </div>
+                        )}
                       </td>
 
-                      {/* Captured / Upload Date */}
+                      {/* Captured / Upload Date / Status Detail */}
                       <td className="py-3 px-3 text-center text-xs font-mono">
                         {status === 'captured' ? (
                           <span className="text-emerald-400 font-bold">
                             {formatDateHi(r.panchayatNirnayCapturedDate || r.meetingDate)}
                           </span>
                         ) : status === 'not_captured' ? (
-                          <span className="text-rose-400/80 text-[11px]">छूट गई</span>
+                          <span className="text-rose-400/80 text-[11px]">छूट गई (विगत)</span>
+                        ) : isFuture ? (
+                          <span className="text-slate-400 text-[11px]">बैठक प्रतीक्षित</span>
                         ) : (
-                          <span className="text-amber-400/80 text-[11px]">प्रतीक्षारत</span>
+                          <span className="text-amber-400 font-bold text-[11px]">पुष्टि प्रतीक्षित</span>
                         )}
                       </td>
 

@@ -69,7 +69,8 @@ export default function ExecutiveDashboardTab() {
 
       // Panchayat Nirnay App (R 9.6.2) stats
       const nirnayCaptured = all.filter((r) => r.panchayatNirnayStatus === 'captured');
-      const nirnayPending = all.filter((r) => r.panchayatNirnayStatus === 'pending');
+      const nirnayDuePending = all.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+      const nirnayUpcoming = all.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
       const nirnayNotCaptured = all.filter((r) => r.panchayatNirnayStatus === 'not_captured');
       const nirnayMapped = all.filter((r) => r.isMappedInPanchayatNirnay);
 
@@ -90,7 +91,8 @@ export default function ExecutiveDashboardTab() {
         mgnregaCompletedCount: mgnregaCompleted.length,
         mgnregaRemainingCount: mgnregaRemaining.length,
         nirnayCapturedCount: nirnayCaptured.length,
-        nirnayPendingCount: nirnayPending.length,
+        nirnayDuePendingCount: nirnayDuePending.length,
+        nirnayUpcomingCount: nirnayUpcoming.length,
         nirnayNotCapturedCount: nirnayNotCaptured.length,
         nirnayMappedCount: nirnayMapped.length,
         nirnayPercent: total > 0 ? ((nirnayCaptured.length / total) * 100).toFixed(1) : '0.0',
@@ -112,8 +114,9 @@ export default function ExecutiveDashboardTab() {
     const totalNSAPRemaining = baghpat.nsapRemainingCount + baraut.nsapRemainingCount;
 
     const totalNirnayCaptured = baghpat.nirnayCapturedCount + baraut.nirnayCapturedCount; // 9
-    const totalNirnayPending = baghpat.nirnayPendingCount + baraut.nirnayPendingCount;
-    const totalNirnayNotCaptured = baghpat.nirnayNotCapturedCount + baraut.nirnayNotCapturedCount;
+    const totalNirnayDuePending = baghpat.nirnayDuePendingCount + baraut.nirnayDuePendingCount; // 0
+    const totalNirnayUpcoming = baghpat.nirnayUpcomingCount + baraut.nirnayUpcomingCount; // 40
+    const totalNirnayNotCaptured = baghpat.nirnayNotCapturedCount + baraut.nirnayNotCapturedCount; // 39
     const totalNirnayMapped = baghpat.nirnayMappedCount + baraut.nirnayMappedCount; // 66
     const totalNirnayPercent = totalNirnayMapped > 0 ? ((totalNirnayCaptured / totalNirnayMapped) * 100).toFixed(1) : '0.0';
 
@@ -131,7 +134,8 @@ export default function ExecutiveDashboardTab() {
       totalNSAPCompleted,
       totalNSAPRemaining,
       totalNirnayCaptured,
-      totalNirnayPending,
+      totalNirnayDuePending,
+      totalNirnayUpcoming,
       totalNirnayNotCaptured,
       totalNirnayMapped,
       totalNirnayPercent
@@ -248,9 +252,9 @@ export default function ExecutiveDashboardTab() {
             <span>बागपत: <strong className="text-blue-300">{blockStats.baghpat.nirnayCapturedCount}</strong> | बड़ौत: <strong className="text-indigo-300">{blockStats.baraut.nirnayCapturedCount}</strong></span>
             <span className="text-[10px] text-emerald-400 flex items-center font-bold">ट्रैकर →</span>
           </div>
-          <div className="text-[10px] text-amber-300/90 mt-1 pt-1 border-t border-white/5 flex items-center justify-between">
-            <span>लंबित बॉक्स: <strong>{blockStats.totalNirnayPending}</strong></span>
-            <span className="text-rose-400/80">विगत छूटी: <strong>{blockStats.totalNirnayNotCaptured}</strong></span>
+          <div className="text-[10px] text-slate-300 mt-1 pt-1 border-t border-white/5 flex items-center justify-between">
+            <span className="text-emerald-300 font-semibold">आज तक लंबित: <strong>{blockStats.totalNirnayDuePending}</strong> (सब क्लियर)</span>
+            <span className="text-blue-300 font-medium">आगामी: <strong>{blockStats.totalNirnayUpcoming}</strong></span>
           </div>
         </div>
       </div>
@@ -512,33 +516,59 @@ export default function ExecutiveDashboardTab() {
                   </td>
                 </tr>
 
-                {/* Row 10: Nirnay App Pending Confirmation */}
-                <tr className="hover:bg-slate-800/30 transition-colors bg-amber-950/10">
-                  <td className="py-3 px-4 text-amber-300 font-semibold flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-amber-400" />
+                {/* Row 10: Nirnay App Due Pending Confirmation */}
+                <tr className="hover:bg-slate-800/30 transition-colors bg-emerald-950/10">
+                  <td className="py-3 px-4 text-emerald-300 font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     <div>
-                      <div>आगामी बैठकों की निर्णय ऐप पुष्टि लंबित (Pending Box)</div>
-                      <div className="text-[11px] text-amber-400/80 font-normal">लंबित बॉक्स में उपयोगकर्ता द्वारा 1-क्लिक पुष्टि प्रतीक्षित</div>
+                      <div>आज तक निर्णय ऐप पुष्टि लंबित (Due for Action)</div>
+                      <div className="text-[11px] text-emerald-400/80 font-normal">आज ({formatDateHi(asOfDate)}) की तिथि तक सब अद्यतन एवं क्लियर है</div>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-center font-bold text-amber-300">
-                    <span className="bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-500/30">
-                      {blockStats.baghpat.nirnayPendingCount} लंबित
+                  <td className="py-3 px-4 text-center font-bold text-emerald-300">
+                    <span className="bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                      {blockStats.baghpat.nirnayDuePendingCount} लंबित (0)
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-center font-bold text-amber-300">
-                    <span className="bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-500/30">
-                      {blockStats.baraut.nirnayPendingCount} लंबित
+                  <td className="py-3 px-4 text-center font-bold text-emerald-300">
+                    <span className="bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                      {blockStats.baraut.nirnayDuePendingCount} लंबित (0)
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-center font-black text-amber-300 bg-amber-950/30">
-                    <span className="bg-amber-500/30 text-amber-200 px-3 py-1 rounded-lg border border-amber-500/50">
-                      {blockStats.totalNirnayPending} ग्राम पंचायतें (लंबित बॉक्स में)
+                  <td className="py-3 px-4 text-center font-black text-emerald-300 bg-emerald-950/30">
+                    <span className="bg-emerald-500/30 text-emerald-200 px-3 py-1 rounded-lg border border-emerald-500/50">
+                      {blockStats.totalNirnayDuePending} लंबित (आज तक सब क्लियर)
                     </span>
                   </td>
                 </tr>
 
-                {/* Row 11: Nirnay App Missed Past Meetings */}
+                {/* Row 11: Upcoming Scheduled Meetings */}
+                <tr className="hover:bg-slate-800/30 transition-colors bg-blue-950/10">
+                  <td className="py-3 px-4 text-blue-300 font-semibold flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-400" />
+                    <div>
+                      <div>आगामी निर्धारित बैठकें (Future Scheduled Meetings)</div>
+                      <div className="text-[11px] text-blue-400/80 font-normal">31/10/2026 से — बैठक दिवस पर स्वतः लंबित बॉक्स में सक्रिय होंगी</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-blue-300">
+                    <span className="bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg border border-blue-500/30">
+                      {blockStats.baghpat.nirnayUpcomingCount} आगामी
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-blue-300">
+                    <span className="bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg border border-blue-500/30">
+                      {blockStats.baraut.nirnayUpcomingCount} आगामी
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-center font-black text-blue-300 bg-blue-950/30">
+                    <span className="bg-blue-500/30 text-blue-200 px-3 py-1 rounded-lg border border-blue-500/50">
+                      {blockStats.totalNirnayUpcoming} बैठकें (प्रस्तावित)
+                    </span>
+                  </td>
+                </tr>
+
+                {/* Row 12: Nirnay App Missed Past Meetings */}
                 <tr className="hover:bg-slate-800/30 transition-colors bg-rose-950/10">
                   <td className="py-3 px-4 text-rose-300 font-medium flex items-center gap-2">
                     <XCircle className="w-4 h-4 text-rose-400" />
