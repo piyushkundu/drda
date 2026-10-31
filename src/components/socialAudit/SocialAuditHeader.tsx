@@ -9,11 +9,12 @@ import { getDelhiTimeString } from '@/lib/delhiTime';
 import { 
   Landmark, Sparkles, FileText, Calendar, Type, 
   ChevronRight, CalendarDays, RefreshCw, LayoutDashboard, Clock, Radio,
-  Smartphone, FileSpreadsheet, Users
+  Smartphone, FileSpreadsheet, Users, Cloud, Check
 } from 'lucide-react';
 
 export default function SocialAuditHeader() {
   const [mounted, setMounted] = useState(false);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
   const { 
     fontViewMode, 
     setFontViewMode, 
@@ -29,16 +30,23 @@ export default function SocialAuditHeader() {
     setActiveTab,
     records,
     nsapRecords,
-    resetToBaseline 
+    resetToBaseline,
+    firebaseSyncStatus,
+    firebaseLastSyncedAt,
+    initFirebaseSync,
+    forceSyncToFirebase
   } = useSocialAuditStore();
 
   const { setSidebarPanel } = useUIStore();
 
-  // Keep Delhi time ticking every 1 second and sync online on load + every 60s
+  // Keep Delhi time ticking every 1 second, sync online, and initialize Firebase real-time sync
   useEffect(() => {
     setMounted(true);
     // Initial online calibration
     syncWithDelhiTime();
+
+    // Initialize Firebase Cloud Sync (bidirectional real-time)
+    initFirebaseSync();
 
     // 1-second interval to tick the clock live
     const tickInterval = setInterval(() => {
@@ -54,7 +62,7 @@ export default function SocialAuditHeader() {
       clearInterval(tickInterval);
       clearInterval(syncInterval);
     };
-  }, [tickDelhiClock, syncWithDelhiTime]);
+  }, [tickDelhiClock, syncWithDelhiTime, initFirebaseSync]);
 
   const amendedCount = records.filter(r => r.isAmended).length;
   const nsapCount = records.filter(r => r.hasNSAP).length;
@@ -152,6 +160,49 @@ export default function SocialAuditHeader() {
               </button>
             )}
           </div>
+
+          {/* Real-time Firebase Cloud Sync Status Button */}
+          <button
+            onClick={async () => {
+              setSyncToast('फायरबेस सर्वर से सिंक हो रहा है...');
+              const ok = await forceSyncToFirebase();
+              setSyncToast(ok ? 'सर्वर (Firebase) से पूर्णतः सिंक हो गया!' : 'सिंक में त्रुटि!');
+              setTimeout(() => setSyncToast(null), 3000);
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border transition-all ${
+              firebaseSyncStatus === 'syncing' || firebaseSyncStatus === 'loading'
+                ? 'bg-amber-950/60 border-amber-500/50 text-amber-300 shadow-amber-950/40'
+                : firebaseSyncStatus === 'synced'
+                ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300 shadow-emerald-950/40 hover:border-emerald-400'
+                : 'bg-rose-950/60 border-rose-500/50 text-rose-300 shadow-rose-950/40 hover:border-rose-400'
+            }`}
+            title="क्लिक करके फायरबेस सर्वर से तुरंत सिंक करें"
+          >
+            {firebaseSyncStatus === 'syncing' || firebaseSyncStatus === 'loading' ? (
+              <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+            ) : firebaseSyncStatus === 'synced' ? (
+              <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5 text-rose-400" />
+            )}
+            <span className="font-bold text-[11px]">
+              {firebaseSyncStatus === 'syncing'
+                ? 'सर्वर सेविंग...'
+                : firebaseSyncStatus === 'loading'
+                ? 'लोड हो रहा है...'
+                : firebaseSyncStatus === 'synced'
+                ? (firebaseLastSyncedAt ? `सर्वर सुरक्षित (${firebaseLastSyncedAt})` : 'सर्वर सुरक्षित ✓')
+                : 'सिंक पुनः प्रयास'}
+            </span>
+          </button>
+
+          {/* Sync Floating Toast */}
+          {syncToast && (
+            <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900 border border-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 animate-bounce">
+              <Check className="w-4 h-4 text-emerald-400" />
+              <span>{syncToast}</span>
+            </div>
+          )}
 
           {/* Font View Mode Toggle (Unicode vs KrutiDev vs Dual) */}
           <div className="flex items-center bg-slate-800/80 border border-slate-700/80 rounded-xl p-1 text-xs">

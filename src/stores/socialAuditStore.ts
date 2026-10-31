@@ -9,8 +9,16 @@ import { INITIAL_NSAP_DATA_RECORDS } from '@/data/nsapDataInitial';
 import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/lib/delhiTime';
 import { NirnaySyncPayload } from '@/lib/nirnaySyncBookmarklet';
 import { MisSyncPayload } from '@/lib/misSyncBookmarklet';
+import { 
+  loadSocialAuditFromFirestore, 
+  saveSocialAuditToFirestore, 
+  subscribeToSocialAuditFirestore,
+  SocialAuditFirestoreDoc 
+} from '@/lib/socialAuditFirebase';
 
 export type SocialAuditTab = 'upcoming' | 'dashboard' | 'calendar' | 'nirnay' | 'mis-feeding' | 'nsap-data' | 'nsap-report' | 'roster' | 'overview';
+
+export type FirebaseSyncStatus = 'synced' | 'syncing' | 'error' | 'loading' | 'offline';
 
 interface SocialAuditState {
   records: SocialAuditRecord[];
@@ -29,6 +37,12 @@ interface SocialAuditState {
   activeTab: SocialAuditTab;
   selectedRecordForEdit: SocialAuditRecord | null;
   isAddModalOpen: boolean;
+
+  // Firebase Real-time Cloud Sync
+  firebaseSyncStatus: FirebaseSyncStatus;
+  firebaseLastSyncedAt: string | null;
+  initFirebaseSync: () => Promise<void>;
+  forceSyncToFirebase: () => Promise<boolean>;
 
   // Actions
   setFontViewMode: (mode: FontViewMode) => void;
@@ -67,6 +81,34 @@ interface SocialAuditState {
   deleteNsapBeneficiary: (gpId: string, beneficiaryId: string) => void;
 }
 
+let _localChangeTimestamp = 0;
+
+/**
+ * Triggers a debounced or immediate save to Firebase Firestore
+ * and keeps the UI status in sync.
+ */
+function notifyStoreChange(state: SocialAuditState, immediate = false) {
+  if (typeof window === 'undefined') return;
+  _localChangeTimestamp = Date.now();
+  useSocialAuditStore.setState({ firebaseSyncStatus: 'syncing' });
+
+  saveSocialAuditToFirestore(
+    state.records,
+    state.nsapRecords,
+    state.asOfDate,
+    state.isLiveSync,
+    immediate
+  ).then((success) => {
+    useSocialAuditStore.setState({
+      firebaseSyncStatus: success ? 'synced' : 'error',
+      firebaseLastSyncedAt: success ? new Date().toLocaleTimeString('hi-IN') : state.firebaseLastSyncedAt
+    });
+  }).catch((err) => {
+    console.error('Firebase auto-save error:', err);
+    useSocialAuditStore.setState({ firebaseSyncStatus: 'error' });
+  });
+}
+
 export const useSocialAuditStore = create<SocialAuditState>()(
   persist(
     (set, get) => ({
@@ -88,6 +130,93 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       selectedRecordForEdit: null,
       isAddModalOpen: false,
 
+      // Firebase Sync State
+      firebaseSyncStatus: 'loading',
+      firebaseLastSyncedAt: null,
+
+      initFirebaseSync: async () => {
+        if (typeof window === 'undefined') return;
+        if ((window as any).__socialAuditFirebaseSubscribed) return;
+        (window as any).__socialAuditFirebaseSubscribed = true;
+
+        set({ firebaseSyncStatus: 'loading' });
+
+        try {
+          // 1. Initial fetch from Firebase Firestore
+          const remoteDoc = await loadSocialAuditFromFirestore();
+
+          if (remoteDoc && remoteDoc.records && remoteDoc.records.length > 0) {
+            _localChangeTimestamp = remoteDoc.version || Date.now();
+            set({
+              records: remoteDoc.records,
+              nsapRecords: (remoteDoc.nsapRecords && remoteDoc.nsapRecords.length > 0) 
+                ? remoteDoc.nsapRecords 
+                : get().nsapRecords,
+              firebaseSyncStatus: 'synced',
+              firebaseLastSyncedAt: remoteDoc.updatedAt 
+                ? new Date(remoteDoc.updatedAt).toLocaleTimeString('hi-IN') 
+                : new Date().toLocaleTimeString('hi-IN')
+            });
+          } else {
+            // Document does not exist yet on server: seed current local state to Firestore
+            const state = get();
+            await saveSocialAuditToFirestore(
+              state.records,
+              state.nsapRecords,
+              state.asOfDate,
+              state.isLiveSync,
+              true
+            );
+            set({
+              firebaseSyncStatus: 'synced',
+              firebaseLastSyncedAt: new Date().toLocaleTimeString('hi-IN')
+            });
+          }
+
+          // 2. Subscribe to real-time updates from Firebase Firestore
+          subscribeToSocialAuditFirestore((remoteData) => {
+            if (!remoteData || !remoteData.records) return;
+            // Adopt if remote version is newer than our local mutation timestamp
+            if (remoteData.version && remoteData.version > _localChangeTimestamp) {
+              _localChangeTimestamp = remoteData.version;
+              set({
+                records: remoteData.records,
+                nsapRecords: (remoteData.nsapRecords && remoteData.nsapRecords.length > 0)
+                  ? remoteData.nsapRecords
+                  : get().nsapRecords,
+                firebaseSyncStatus: 'synced',
+                firebaseLastSyncedAt: remoteData.updatedAt 
+                  ? new Date(remoteData.updatedAt).toLocaleTimeString('hi-IN') 
+                  : new Date().toLocaleTimeString('hi-IN')
+              });
+            }
+          }, (err) => {
+            console.warn('Real-time Firebase listener warning:', err);
+            set({ firebaseSyncStatus: 'error' });
+          });
+        } catch (err) {
+          console.error('initFirebaseSync error:', err);
+          set({ firebaseSyncStatus: 'error' });
+        }
+      },
+
+      forceSyncToFirebase: async () => {
+        const state = get();
+        set({ firebaseSyncStatus: 'syncing' });
+        const success = await saveSocialAuditToFirestore(
+          state.records,
+          state.nsapRecords,
+          state.asOfDate,
+          state.isLiveSync,
+          true
+        );
+        set({
+          firebaseSyncStatus: success ? 'synced' : 'error',
+          firebaseLastSyncedAt: success ? new Date().toLocaleTimeString('hi-IN') : state.firebaseLastSyncedAt
+        });
+        return success;
+      },
+
       setFontViewMode: (mode) => set({ fontViewMode: mode }),
       setSelectedBlock: (block) => set({ selectedBlock: block }),
       setSelectedScheme: (scheme) => set({ selectedScheme: scheme }),
@@ -101,6 +230,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           asOfDate: date,
           isLiveSync: date === liveDate
         });
+        notifyStoreChange(get());
       },
 
       setLiveSync: (enabled) => {
@@ -116,43 +246,46 @@ export const useSocialAuditStore = create<SocialAuditState>()(
         } else {
           set({ isLiveSync: false });
         }
+        notifyStoreChange(get());
       },
 
       tickDelhiClock: () => {
-        const now = new Date();
-        const currentLiveTime = getDelhiTimeString(now);
-        const currentLiveDate = getDelhiDateString(now);
+        const state = get();
+        const currentClockTime = getDelhiTimeString();
+        const currentClockDate = getDelhiDateString();
 
-        set((state) => {
-          const updates: Partial<SocialAuditState> = {
-            liveDelhiTime: currentLiveTime,
-            liveDelhiDate: currentLiveDate
-          };
-          // If live sync is enabled and date rolled over (e.g. midnight passed)
-          if (state.isLiveSync && state.asOfDate !== currentLiveDate) {
-            updates.asOfDate = currentLiveDate;
+        const updates: Partial<SocialAuditState> = {
+          liveDelhiTime: currentClockTime
+        };
+
+        if (state.liveDelhiDate !== currentClockDate) {
+          updates.liveDelhiDate = currentClockDate;
+          if (state.isLiveSync) {
+            updates.asOfDate = currentClockDate;
           }
-          return updates;
-        });
+        }
+
+        set(updates);
       },
 
       syncWithDelhiTime: async (forceDate = false) => {
         try {
-          const data = await fetchOnlineDelhiTime();
-          set((state) => {
-            const updates: Partial<SocialAuditState> = {
-              liveDelhiDate: data.date,
-              liveDelhiTime: data.time,
-              lastOnlineSyncTime: data.timestamp
-            };
-            if (state.isLiveSync || forceDate) {
-              updates.asOfDate = data.date;
-              updates.isLiveSync = true;
-            }
-            return updates;
+          const onlineInfo = await fetchOnlineDelhiTime();
+          const updates: Partial<SocialAuditState> = {
+            liveDelhiTime: onlineInfo.time,
+            liveDelhiDate: onlineInfo.date,
+            lastOnlineSyncTime: Date.now()
+          };
+          if (forceDate || get().isLiveSync) {
+            updates.asOfDate = onlineInfo.date;
+          }
+          set(updates);
+        } catch {
+          set({
+            liveDelhiTime: getDelhiTimeString(),
+            liveDelhiDate: getDelhiDateString(),
+            lastOnlineSyncTime: Date.now()
           });
-        } catch (err) {
-          console.warn('Failed to sync online Delhi time', err);
         }
       },
 
@@ -160,33 +293,18 @@ export const useSocialAuditStore = create<SocialAuditState>()(
 
       openEditModal: (record) => set({ selectedRecordForEdit: record }),
       closeEditModal: () => set({ selectedRecordForEdit: null }),
+
       openAddModal: () => set({ isAddModalOpen: true }),
       closeAddModal: () => set({ isAddModalOpen: false }),
 
       updateRecord: (id, updates) => {
         set((state) => ({
-          records: state.records.map((r) => {
-            if (r.id === id) {
-              const updated = { ...r, ...updates };
-              // If meeting date changed, flag as amended
-              if (updates.meetingDate && updates.meetingDate !== r.meetingDate && !r.isAmended) {
-                updated.isAmended = true;
-                updated.originalMeetingDate = r.originalMeetingDate || r.meetingDate;
-                updated.status = 'amended';
-                if (!updated.amendmentDetails) {
-                  updated.amendmentDetails = {
-                    originalDate: r.meetingDate,
-                    modifiedDate: updates.meetingDate,
-                    reason: updates.notes || 'उपयोगकर्ता द्वारा संशोधित'
-                  };
-                }
-              }
-              return updated;
-            }
-            return r;
-          }),
-          selectedRecordForEdit: null
+          records: state.records.map((r) => r.id === id ? { ...r, ...updates } : r),
+          selectedRecordForEdit: state.selectedRecordForEdit?.id === id 
+            ? { ...state.selectedRecordForEdit, ...updates } 
+            : state.selectedRecordForEdit
         }));
+        notifyStoreChange(get());
       },
 
       updatePanchayatNirnayStatus: (id, status, notes) => {
@@ -203,20 +321,20 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             return r;
           })
         }));
+        notifyStoreChange(get());
       },
 
-      addRecord: (newRecordData) => {
-        set((state) => {
-          const newId = `${newRecordData.block.toLowerCase()}-${Date.now()}`;
-          const newRecord: SocialAuditRecord = {
-            ...newRecordData,
-            id: newId
-          };
-          return {
-            records: [...state.records, newRecord],
-            isAddModalOpen: false
-          };
-        });
+      addRecord: (recordData) => {
+        const id = `${recordData.block.toLowerCase()}-${Date.now()}`;
+        const newRecord: SocialAuditRecord = {
+          ...recordData,
+          id,
+        };
+        set((state) => ({
+          records: [newRecord, ...state.records],
+          isAddModalOpen: false
+        }));
+        notifyStoreChange(get());
       },
 
       deleteRecord: (id) => {
@@ -224,6 +342,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           records: state.records.filter((r) => r.id !== id),
           selectedRecordForEdit: null
         }));
+        notifyStoreChange(get());
       },
 
       markCompleted: (id, isCompleted) => {
@@ -239,6 +358,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             return r;
           })
         }));
+        notifyStoreChange(get());
       },
 
       syncNirnayFromPayload: (payload: NirnaySyncPayload) => {
@@ -278,6 +398,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
 
           if (updatedNames.length > 0) {
             set({ records: updatedRecords });
+            notifyStoreChange(get(), true);
           }
         }
 
@@ -303,6 +424,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             return r;
           })
         }));
+        notifyStoreChange(get());
       },
 
       syncMisFromPayload: (payload: MisSyncPayload) => {
@@ -342,6 +464,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
 
           if (updatedNames.length > 0) {
             set({ records: updatedRecords });
+            notifyStoreChange(get(), true);
           }
         }
 
@@ -358,6 +481,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             records: INITIAL_SOCIAL_AUDIT_RECORDS,
             nsapRecords: INITIAL_NSAP_DATA_RECORDS
           });
+          notifyStoreChange(get(), true);
         }
       },
 
@@ -366,18 +490,21 @@ export const useSocialAuditStore = create<SocialAuditState>()(
         set((state) => ({
           nsapRecords: [data, ...state.nsapRecords.filter(r => r.gpNameUnicode !== data.gpNameUnicode)]
         }));
+        notifyStoreChange(get());
       },
 
       updateNsapRecord: (id: string, updates: Partial<NSAPGramPanchayatData>) => {
         set((state) => ({
           nsapRecords: state.nsapRecords.map(r => r.id === id ? { ...r, ...updates } : r)
         }));
+        notifyStoreChange(get());
       },
 
       deleteNsapRecord: (id: string) => {
         set((state) => ({
           nsapRecords: state.nsapRecords.filter(r => r.id !== id)
         }));
+        notifyStoreChange(get());
       },
 
       addNsapBeneficiary: (gpId: string, beneficiary: Omit<NSAPBeneficiaryRecord, 'id'>) => {
@@ -399,6 +526,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             } : r)
           };
         });
+        notifyStoreChange(get());
       },
 
       addNsapBeneficiariesBatch: (gpId: string, beneficiaries: Omit<NSAPBeneficiaryRecord, 'id'>[]) => {
@@ -421,6 +549,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             } : r)
           };
         });
+        notifyStoreChange(get(), true);
       },
 
       deleteNsapBeneficiary: (gpId: string, beneficiaryId: string) => {
@@ -438,6 +567,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             } : r)
           };
         });
+        notifyStoreChange(get());
       }
     }),
     {
@@ -481,19 +611,18 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           }
           state.liveDelhiTime = getDelhiTimeString();
 
-          // Sync Panchayat Nirnay baseline status and migrate past meetings
+          // Sync Panchayat Nirnay baseline status if missing
           if (state.records && Array.isArray(state.records)) {
             const baselineMap = new Map(INITIAL_SOCIAL_AUDIT_RECORDS.map(r => [r.id, r]));
             const capturedIds = new Set([
               'baghpat-24', 'baghpat-25', 'baghpat-26', 'baghpat-28', 'baghpat-29', 'baghpat-30',
               'baraut-1', 'baraut-2', 'baraut-17'
             ]);
-            let hasChanges = false;
+            
             const updatedRecords = state.records.map(r => {
               const base = baselineMap.get(r.id);
               // Ensure verified 9 records are captured
               if (capturedIds.has(r.id) && r.panchayatNirnayStatus !== 'captured') {
-                hasChanges = true;
                 return {
                   ...r,
                   panchayatNirnayStatus: 'captured' as PanchayatNirnayStatus,
@@ -501,17 +630,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
                   isMappedInPanchayatNirnay: true
                 };
               }
-              // Past meetings up to 2026-10-30 cannot be captured retroactively -> mark not_captured
-              if (!capturedIds.has(r.id) && r.meetingDate <= '2026-10-30' && r.panchayatNirnayStatus === 'pending') {
-                hasChanges = true;
-                return {
-                  ...r,
-                  panchayatNirnayStatus: 'not_captured' as PanchayatNirnayStatus
-                };
-              }
-              // If status is completely missing, pull from baseline
+              // If status is completely undefined, pull from baseline
               if (r.panchayatNirnayStatus === undefined && base) {
-                hasChanges = true;
                 return {
                   ...r,
                   panchayatNirnayStatus: base.panchayatNirnayStatus,
@@ -522,38 +642,26 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               return r;
             });
 
-            // Sync MIS Feeding baseline status from official R 9.1.3 report (42 fed: 25 Baghpat, 17 Baraut)
+            // Initialize MIS feeding status only if undefined
             const baghpatFedSet = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 26, 27, 30]);
             const barautFedSet = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18]);
 
             const finalRecords = updatedRecords.map(r => {
-              const isBaghpatFed = r.block === 'Baghpat' && baghpatFedSet.has(r.sno);
-              const isBarautFed = r.block === 'Baraut' && barautFedSet.has(r.sno);
-              const isFedOfficial = isBaghpatFed || isBarautFed;
-
-              if (isFedOfficial && r.misStatus !== 'fed') {
-                hasChanges = true;
+              if (r.misStatus === undefined) {
+                const isBaghpatFed = r.block === 'Baghpat' && baghpatFedSet.has(r.sno);
+                const isBarautFed = r.block === 'Baraut' && barautFedSet.has(r.sno);
+                const isFedOfficial = isBaghpatFed || isBarautFed;
                 return {
                   ...r,
-                  misStatus: 'fed' as MisAuditStatus,
-                  misAuditedCount: 1,
-                  misFedDate: r.misFedDate || r.meetingDate
-                };
-              }
-              if (!isFedOfficial && r.misStatus !== 'pending') {
-                hasChanges = true;
-                return {
-                  ...r,
-                  misStatus: 'pending' as MisAuditStatus,
-                  misAuditedCount: 0
+                  misStatus: (isFedOfficial ? 'fed' : 'pending') as MisAuditStatus,
+                  misAuditedCount: isFedOfficial ? 1 : 0,
+                  misFedDate: isFedOfficial ? r.meetingDate : undefined
                 };
               }
               return r;
             });
 
-            if (hasChanges) {
-              state.records = finalRecords;
-            }
+            state.records = finalRecords;
           }
         }
       }
