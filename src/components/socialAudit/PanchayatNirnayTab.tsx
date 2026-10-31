@@ -44,15 +44,6 @@ export default function PanchayatNirnayTab() {
   const [syncToastMessage, setSyncToastMessage] = useState<string | null>(null);
   const [lastSyncTimestamp, setLastSyncTimestamp] = useState<string | null>(null);
 
-  // Ref for bookmarklet anchor tag (sets href imperatively to prevent React javascript: URL security error)
-  const bookmarkletAnchorRef = useRef<HTMLAnchorElement>(null);
-
-  useEffect(() => {
-    if (bookmarkletAnchorRef.current) {
-      bookmarkletAnchorRef.current.setAttribute('href', getBookmarkletHref());
-    }
-  }, []);
-
   // Helper to format date
   const formatDateHi = (dateStr?: string) => {
     if (!dateStr) return '—';
@@ -88,17 +79,21 @@ export default function PanchayatNirnayTab() {
   useEffect(() => {
     // 1. Check URL parameters for ?nirnaySync=...
     if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const syncParam = urlParams.get('nirnaySync');
-      if (syncParam) {
-        try {
-          const payload: NirnaySyncPayload = JSON.parse(decodeURIComponent(syncParam));
-          const res = syncNirnayFromPayload(payload);
-          setSyncToastMessage(`🎉 लाइव सिंक सफल! ${res.blockMatched} की ${res.updatedCount} ग्राम पंचायतें अद्यतन हुईं।`);
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const syncParam = urlParams.get('nirnaySync');
+        if (syncParam) {
+          const decoded = decodeURIComponent(syncParam).trim();
+          if (decoded.startsWith('{') && decoded.endsWith('}')) {
+            const payload: NirnaySyncPayload = JSON.parse(decoded);
+            const res = syncNirnayFromPayload(payload);
+            setSyncToastMessage(`🎉 लाइव सिंक सफल! ${res.blockMatched} की ${res.updatedCount} ग्राम पंचायतें अद्यतन हुईं।`);
+          }
           window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {
-          console.warn('Failed to parse nirnaySync URL param', e);
         }
+      } catch (e) {
+        console.warn('Failed to parse nirnaySync URL param', e);
+        try { window.history.replaceState({}, document.title, window.location.pathname); } catch {}
       }
     }
 
@@ -390,21 +385,25 @@ export default function PanchayatNirnayTab() {
         <div className="p-4 rounded-2xl bg-slate-950/80 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-400">बुकमार्क बार पर ड्रैग करें:</span>
-            {/* Draggable Anchor Tag without javascript: in JSX */}
+            {/* Draggable Anchor Tag without persistent javascript: in JSX/DOM */}
             <a
-              ref={bookmarkletAnchorRef}
+              href="#nirnay-sync"
               draggable="true"
               onDragStart={(e) => {
                 const href = getBookmarkletHref();
+                e.currentTarget.setAttribute('href', href);
                 e.dataTransfer.setData('text/uri-list', href);
                 e.dataTransfer.setData('text/plain', href);
               }}
+              onDragEnd={(e) => {
+                e.currentTarget.setAttribute('href', '#nirnay-sync');
+              }}
               onClick={(e) => {
                 e.preventDefault();
-                alert('कृपया इस हरे बटन को माउस से दबाकर (Drag) अपने ब्राउज़र के बुकमार्क बार (Bookmarks Bar) पर खींचकर छोड़ें!');
+                handleCopyBookmarklet();
               }}
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs shadow-xl shadow-emerald-600/30 border border-emerald-300 flex items-center gap-2 cursor-grab active:cursor-grabbing hover:scale-105 transition-all select-none"
-              title="इस बटन को खींचकर (Drag & Drop) अपने ब्राउज़र के बुकमार्क बार पर छोड़ें"
+              title="इस बटन को खींचकर (Drag & Drop) अपने ब्राउज़र के बुकमार्क बार पर छोड़ें या क्लिक करके कोड कॉपी करें"
             >
               <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
               <span>⚡ निर्णय ऐप सिंक (पेज हिंदी)</span>

@@ -115,3 +115,46 @@ export interface NSAPReportSummary {
 }
 
 export type FontViewMode = 'unicode' | 'krutidev' | 'dual';
+
+// ============================================================================
+// NSAP Detailed Beneficiary & Gram Panchayat Data Types
+// Matches the official monthly format from Directorate / image
+// "राष्ट्रीय वृद्धावस्था पेंशन योजनान्तर्गत माह अक्टूबर तक सोशल ऑडिट की मासिक प्रगति रिपोर्ट हेतु प्रारूप"
+// ============================================================================
+
+export type NSAPBeneficiaryCategory = 'ineligible' | 'deceased' | 'unverified' | 'verified_direct' | 'verified_family' | 'other';
+
+export interface NSAPBeneficiaryRecord {
+  id: string;
+  category: NSAPBeneficiaryCategory;
+  categoryHindi: string;
+  nameKrutiDev?: string;
+  nameUnicode: string;
+  registrationId: string;
+  reason?: string;
+  deathDate?: string;
+  financialIrregularity?: number;
+  notes?: string;
+}
+
+export interface NSAPGramPanchayatData {
+  id: string;
+  sno: number;
+  rosterRecordId?: string;
+  gpNameKrutiDev: string;
+  gpNameUnicode: string;
+  block: AuditBlock;
+  meetingDate: string;
+  totalBeneficiaries: number;
+  verifiedDirect: number;
+  verifiedFamily: number;
+  verifiedTotal: number;
+  unverifiedReason?: string;
+  unverifiedCount?: number;
+  financialIrregularityAmount?: number;
+  irregularityNotes?: string;
+  responsiblePersons?: string;
+  otherNotes?: string;
+  beneficiaries: NSAPBeneficiaryRecord[];
+  recordedDate?: string;
+}

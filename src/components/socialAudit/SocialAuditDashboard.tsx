@@ -10,6 +10,7 @@ import NSAPReportTab from './NSAPReportTab';
 import TeamRosterTab from './TeamRosterTab';
 import PanchayatNirnayTab from './PanchayatNirnayTab';
 import MisFeedingTab from './MisFeedingTab';
+import NSAPDataTab from './NSAPDataTab';
 import EditRecordModal from './EditRecordModal';
 import AddRecordModal from './AddRecordModal';
 
@@ -54,6 +55,13 @@ export default function SocialAuditDashboard() {
         {activeTab === 'mis-feeding' && (
           <div className="max-w-7xl mx-auto space-y-6">
             <MisFeedingTab />
+          </div>
+        )}
+
+        {/* 6. NSAP डेटा (मासिक रिपोर्ट प्रारूप एवं लाभार्थी सूची) */}
+        {activeTab === 'nsap-data' && (
+          <div className="max-w-7xl mx-auto space-y-6">
+            <NSAPDataTab />
           </div>
         )}
 

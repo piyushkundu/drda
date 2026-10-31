@@ -205,7 +205,7 @@ export function getMisBookmarkletScript(): string {
         (count > 0 ? '<div style="margin-top:6px;background:#111827;padding:8px;border-radius:10px;border:1px solid #1f2937;font-size:11px;color:#93c5fd;max-height:80px;overflow-y:auto;">' + gpList + (count > 8 ? '... आदि' : '') + '</div>' : '') +
       '</div>' +
       '<div style="display:flex;gap:8px;">' +
-        '<a href="http://localhost:3000/?misSync=' + encodeURIComponent(jsonStr) + '" target="_blank" style="flex:1;background:#2563eb;color:#fff;text-align:center;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:bold;text-decoration:none;display:block;">पेज हिंदी में देखें →</a>' +
+        '<a href="http://localhost:3000" target="_blank" style="flex:1;background:#2563eb;color:#fff;text-align:center;padding:8px 12px;border-radius:10px;font-size:12px;font-weight:bold;text-decoration:none;display:block;">पेज हिंदी में देखें →</a>' +
         '<button id="copyMisJsonBtn" style="background:#1e293b;border:1px solid #334155;color:#f1f5f9;padding:8px 12px;border-radius:10px;font-size:11px;cursor:pointer;font-weight:bold;">डेटा कॉपी</button>' +
       '</div>';
 

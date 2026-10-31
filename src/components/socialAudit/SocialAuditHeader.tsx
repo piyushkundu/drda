@@ -9,7 +9,7 @@ import { getDelhiTimeString } from '@/lib/delhiTime';
 import { 
   Landmark, Sparkles, FileText, Calendar, Type, 
   ChevronRight, CalendarDays, RefreshCw, LayoutDashboard, Clock, Radio,
-  Smartphone, FileSpreadsheet
+  Smartphone, FileSpreadsheet, Users
 } from 'lucide-react';
 
 export default function SocialAuditHeader() {
@@ -28,6 +28,7 @@ export default function SocialAuditHeader() {
     activeTab, 
     setActiveTab,
     records,
+    nsapRecords,
     resetToBaseline 
   } = useSocialAuditStore();
 
@@ -284,7 +285,23 @@ export default function SocialAuditHeader() {
           </span>
         </button>
 
-        {/* TAB 5: NSAP पेंशन रिपोर्ट */}
+        {/* TAB 6: NSAP डेटा (मासिक रिपोर्ट प्रारूप एवं लाभार्थी सूची) */}
+        <button
+          onClick={() => setActiveTab('nsap-data')}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+            activeTab === 'nsap-data'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+              : 'text-slate-300 hover:bg-white/5'
+          }`}
+        >
+          <Users className="w-4 h-4 text-emerald-300" />
+          <span>NSAP डेटा</span>
+          <span className="text-[10px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 px-1.5 py-0.2 rounded-full font-bold">
+            {nsapRecords?.length || 16} रिकॉर्डेड
+          </span>
+        </button>
+
+        {/* TAB 7: NSAP पेंशन रिपोर्ट */}
         <button
           onClick={() => setActiveTab('nsap-report')}
           className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${

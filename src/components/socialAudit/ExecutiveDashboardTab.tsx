@@ -8,7 +8,7 @@ import {
   AlertCircle, CheckCircle2, ChevronRight, Sparkles,
   Layers, ArrowUpRight, Check, AlertTriangle, TrendingUp,
   BarChart3, Landmark, Eye, Table2, ChevronDown, ChevronUp,
-  ArrowRight, Smartphone, ShieldCheck, XCircle
+  ArrowRight, Smartphone, ShieldCheck, XCircle, FileSpreadsheet
 } from 'lucide-react';
 
 export default function ExecutiveDashboardTab() {
@@ -74,6 +74,17 @@ export default function ExecutiveDashboardTab() {
       const nirnayNotCaptured = all.filter((r) => r.panchayatNirnayStatus === 'not_captured');
       const nirnayMapped = all.filter((r) => r.isMappedInPanchayatNirnay);
 
+      // MIS Audit Feeding (R 9.1.3) stats
+      const misFed = all.filter((r) => r.misStatus === 'fed');
+      const misPending = all.filter((r) => (r.misStatus || 'pending') !== 'fed');
+      const misDuePending = all.filter((r) => (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
+      const misUpcoming = all.filter((r) => (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
+
+      // MIS Pending with NSAP
+      const misPendingNSAP = misPending.filter((r) => r.hasNSAP);
+      const misDuePendingNSAP = misDuePending.filter((r) => r.hasNSAP);
+      const misFedNSAP = misFed.filter((r) => r.hasNSAP);
+
       return {
         total,
         completedCount: completed.length,
@@ -96,7 +107,15 @@ export default function ExecutiveDashboardTab() {
         nirnayNotCapturedCount: nirnayNotCaptured.length,
         nirnayMappedCount: nirnayMapped.length,
         nirnayPercent: total > 0 ? ((nirnayCaptured.length / total) * 100).toFixed(1) : '0.0',
-        nirnayMappedPercent: nirnayMapped.length > 0 ? ((nirnayCaptured.length / nirnayMapped.length) * 100).toFixed(1) : '0.0'
+        nirnayMappedPercent: nirnayMapped.length > 0 ? ((nirnayCaptured.length / nirnayMapped.length) * 100).toFixed(1) : '0.0',
+        misFedCount: misFed.length,
+        misPendingCount: misPending.length,
+        misDuePendingCount: misDuePending.length,
+        misUpcomingCount: misUpcoming.length,
+        misPendingNSAPCount: misPendingNSAP.length,
+        misDuePendingNSAPCount: misDuePendingNSAP.length,
+        misFedNSAPCount: misFedNSAP.length,
+        misFedPercent: total > 0 ? ((misFed.length / total) * 100).toFixed(1) : '0.0',
       };
     };
 
@@ -120,6 +139,15 @@ export default function ExecutiveDashboardTab() {
     const totalNirnayMapped = baghpat.nirnayMappedCount + baraut.nirnayMappedCount; // 66
     const totalNirnayPercent = totalNirnayMapped > 0 ? ((totalNirnayCaptured / totalNirnayMapped) * 100).toFixed(1) : '0.0';
 
+    const totalMisFed = baghpat.misFedCount + baraut.misFedCount;
+    const totalMisPending = baghpat.misPendingCount + baraut.misPendingCount;
+    const totalMisDuePending = baghpat.misDuePendingCount + baraut.misDuePendingCount;
+    const totalMisUpcoming = baghpat.misUpcomingCount + baraut.misUpcomingCount;
+    const totalMisPendingNSAP = baghpat.misPendingNSAPCount + baraut.misPendingNSAPCount;
+    const totalMisDuePendingNSAP = baghpat.misDuePendingNSAPCount + baraut.misDuePendingNSAPCount;
+    const totalMisFedNSAP = baghpat.misFedNSAPCount + baraut.misFedNSAPCount;
+    const districtMisFedPercent = totalGPs > 0 ? ((totalMisFed / totalGPs) * 100).toFixed(1) : '0.0';
+
     return {
       baghpat,
       baraut,
@@ -138,7 +166,15 @@ export default function ExecutiveDashboardTab() {
       totalNirnayUpcoming,
       totalNirnayNotCaptured,
       totalNirnayMapped,
-      totalNirnayPercent
+      totalNirnayPercent,
+      totalMisFed,
+      totalMisPending,
+      totalMisDuePending,
+      totalMisUpcoming,
+      totalMisPendingNSAP,
+      totalMisDuePendingNSAP,
+      totalMisFedNSAP,
+      districtMisFedPercent,
     };
   }, [records, asOfDate]);
 
@@ -171,7 +207,7 @@ export default function ExecutiveDashboardTab() {
       {/* ========================================================================= */}
       {/* 1. DISTRICT EXECUTIVE TOP METRIC CARDS */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {/* Total GPs */}
         <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-950/60 to-slate-900/80 border border-blue-500/20 backdrop-blur-md shadow-lg">
           <div className="flex items-center justify-between text-blue-400 mb-2">
@@ -238,23 +274,56 @@ export default function ExecutiveDashboardTab() {
         {/* Card 5: Panchayat Nirnay App (R 9.6.2) */}
         <div 
           onClick={() => setActiveTab('nirnay')}
-          className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/70 via-slate-900 to-teal-950/70 border border-emerald-500/30 backdrop-blur-md shadow-lg cursor-pointer hover:border-emerald-500/50 transition-all group col-span-2 md:col-span-1"
+          className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/70 via-slate-900 to-teal-950/70 border border-emerald-500/30 backdrop-blur-md shadow-lg cursor-pointer hover:border-emerald-500/50 transition-all group"
         >
           <div className="flex items-center justify-between text-emerald-400 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">पंचायत निर्णय ऐप (R 9.6.2)</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">निर्णय ऐप (R 9.6.2)</span>
             <Smartphone className="w-4 h-4 group-hover:scale-110 transition-transform text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl md:text-3xl font-black text-emerald-300">{blockStats.totalNirnayCaptured}</span>
-            <span className="text-xs text-emerald-400 font-bold">/ {blockStats.totalNirnayMapped} मैप्ड ({blockStats.totalNirnayPercent}%)</span>
+            <span className="text-xs text-emerald-400 font-bold">/ {blockStats.totalNirnayMapped} ({blockStats.totalNirnayPercent}%)</span>
           </div>
           <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
             <span>बागपत: <strong className="text-blue-300">{blockStats.baghpat.nirnayCapturedCount}</strong> | बड़ौत: <strong className="text-indigo-300">{blockStats.baraut.nirnayCapturedCount}</strong></span>
             <span className="text-[10px] text-emerald-400 flex items-center font-bold">ट्रैकर →</span>
           </div>
           <div className="text-[10px] text-slate-300 mt-1 pt-1 border-t border-white/5 flex items-center justify-between">
-            <span className="text-emerald-300 font-semibold">आज तक लंबित: <strong>{blockStats.totalNirnayDuePending}</strong> (सब क्लियर)</span>
+            <span className="text-emerald-300 font-semibold">आज तक लंबित: <strong>{blockStats.totalNirnayDuePending}</strong></span>
             <span className="text-blue-300 font-medium">आगामी: <strong>{blockStats.totalNirnayUpcoming}</strong></span>
+          </div>
+        </div>
+
+        {/* Card 6: MIS Audit Feeding (R 9.1.3) */}
+        <div 
+          onClick={() => setActiveTab('mis-feeding')}
+          className="p-4 rounded-2xl bg-gradient-to-br from-blue-950/70 via-slate-900 to-indigo-950/70 border border-blue-500/30 backdrop-blur-md shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group"
+        >
+          <div className="flex items-center justify-between text-blue-400 mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider">MIS फीडिंग (R 9.1.3)</span>
+            <FileSpreadsheet className="w-4 h-4 group-hover:scale-110 transition-transform text-blue-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl md:text-3xl font-black text-blue-300">{blockStats.totalMisFed}</span>
+            <span className="text-xs text-blue-400 font-bold">/ {blockStats.totalGPs} ({blockStats.districtMisFedPercent}%)</span>
+          </div>
+          <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+            <span>बागपत: <strong className="text-blue-300">{blockStats.baghpat.misFedCount}</strong> | बड़ौत: <strong className="text-indigo-300">{blockStats.baraut.misFedCount}</strong></span>
+            <span className="text-[10px] text-blue-400 flex items-center font-bold">ट्रैकर →</span>
+          </div>
+          <div className="text-[10px] text-slate-300 mt-1 pt-1 border-t border-white/5 flex items-center justify-between">
+            <span className="text-rose-300 font-semibold">
+              देय लंबित: <strong>{blockStats.totalMisDuePending}</strong>
+              {blockStats.totalMisDuePendingNSAP > 0 && (
+                <span className="text-emerald-300 ml-0.5">({blockStats.totalMisDuePendingNSAP} NSAP)</span>
+              )}
+            </span>
+            <span className="text-amber-300 font-medium">
+              समस्त: <strong>{blockStats.totalMisPending}</strong>
+              {blockStats.totalMisPendingNSAP > 0 && (
+                <span className="text-emerald-300 ml-0.5">({blockStats.totalMisPendingNSAP} NSAP)</span>
+              )}
+            </span>
           </div>
         </div>
       </div>
@@ -587,6 +656,111 @@ export default function ExecutiveDashboardTab() {
                     {blockStats.totalNirnayNotCaptured} बैठकें (छूट गईं)
                   </td>
                 </tr>
+
+                {/* Row 13: MIS Portal Audits Fed (R 9.1.3 - Column 8 = 1) */}
+                <tr className="hover:bg-slate-800/30 transition-colors bg-blue-950/20">
+                  <td className="py-3 px-4 text-blue-300 font-bold flex items-center gap-2">
+                    <FileSpreadsheet className="w-4 h-4 text-blue-400" />
+                    <div>
+                      <div>MIS पोर्टल पर सोशल ऑडिट फीडेड (R 9.1.3 - Column 8 = 1)</div>
+                      <div className="text-[11px] text-blue-400/80 font-normal">मनरेगा सोशल ऑडिट कैलेंडर बनाम संपन्न ऑडिट सरकारी रिपोर्ट</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-blue-300">
+                    <span className="bg-blue-500/25 text-blue-300 px-3 py-1 rounded-lg border border-blue-500/40 text-sm">
+                      {blockStats.baghpat.misFedCount} / 44 ({blockStats.baghpat.misFedPercent}%)
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-1">25 ग्राम पंचायतें फीडेड</span>
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-blue-300">
+                    <span className="bg-blue-500/25 text-blue-300 px-3 py-1 rounded-lg border border-blue-500/40 text-sm">
+                      {blockStats.baraut.misFedCount} / 44 ({blockStats.baraut.misFedPercent}%)
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-1">17 ग्राम पंचायतें फीडेड</span>
+                  </td>
+                  <td className="py-3 px-4 text-center font-black text-blue-300 bg-blue-950/40">
+                    <span className="bg-blue-500/30 text-blue-200 px-3 py-1 rounded-lg border border-blue-500/50 text-sm">
+                      {blockStats.totalMisFed} / 88 ({blockStats.districtMisFedPercent}%)
+                    </span>
+                    <span className="text-[11px] text-blue-400 block mt-1 font-bold">कुल {blockStats.totalMisFed} ग्राम पंचायतें फीडेड</span>
+                  </td>
+                </tr>
+
+                {/* Row 14: MIS Feeding Due Pending */}
+                <tr className="hover:bg-slate-800/30 transition-colors bg-amber-950/15">
+                  <td className="py-3 px-4 text-amber-300 font-semibold flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <div>MIS फीडिंग: आज तक लंबित बैठकें (Due Pending)</div>
+                      <div className="text-[11px] text-amber-400/80 font-normal">बैठक संपन्न हो चुकी है परंतु वेबसाइट पर अभी फीड नहीं हुई</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-amber-300">
+                    <span className="bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-500/30">
+                      {blockStats.baghpat.misDuePendingCount} लंबित
+                    </span>
+                    {blockStats.baghpat.misDuePendingNSAPCount > 0 && (
+                      <span className="text-[10px] text-emerald-400 block mt-1 font-semibold">
+                        {blockStats.baghpat.misDuePendingNSAPCount} में NSAP पेंशन सत्यापन
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-amber-300">
+                    <span className="bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-500/30">
+                      {blockStats.baraut.misDuePendingCount} लंबित
+                    </span>
+                    {blockStats.baraut.misDuePendingNSAPCount > 0 && (
+                      <span className="text-[10px] text-emerald-400 block mt-1 font-semibold">
+                        {blockStats.baraut.misDuePendingNSAPCount} में NSAP पेंशन सत्यापन
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-center font-black text-amber-300 bg-amber-950/30">
+                    <span className="bg-amber-500/30 text-amber-200 px-3 py-1 rounded-lg border border-amber-500/50">
+                      {blockStats.totalMisDuePending} लंबित बैठकें
+                    </span>
+                    {blockStats.totalMisDuePendingNSAP > 0 && (
+                      <span className="text-[11px] text-emerald-300 block mt-1 font-bold">
+                        {blockStats.totalMisDuePendingNSAP} में NSAP पेंशन सत्यापन
+                      </span>
+                    )}
+                  </td>
+                </tr>
+
+                {/* Row 15: MIS Pending with NSAP Pension Verification */}
+                <tr className="hover:bg-slate-800/30 transition-colors bg-emerald-950/15">
+                  <td className="py-3 px-4 text-emerald-300 font-semibold flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-400" />
+                    <div>
+                      <div>समस्त MIS लंबित में NSAP पेंशन सत्यापन (Pending with NSAP)</div>
+                      <div className="text-[11px] text-emerald-400/80 font-normal">अवशेष/लंबित पंचायतों में जहां NSAP राष्ट्रीय सामाजिक सहायता पेंशन शामिल है</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-emerald-300">
+                    <span className="bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                      {blockStats.baghpat.misPendingNSAPCount} / {blockStats.baghpat.nsapTotal} पंचायतें
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-1">
+                      (कुल {blockStats.baghpat.misPendingCount} लंबित में से)
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-center font-bold text-emerald-300">
+                    <span className="bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                      {blockStats.baraut.misPendingNSAPCount} / {blockStats.baraut.nsapTotal} पंचायतें
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-1">
+                      (कुल {blockStats.baraut.misPendingCount} लंबित में से)
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-center font-black text-emerald-300 bg-emerald-950/30">
+                    <span className="bg-emerald-500/30 text-emerald-200 px-3 py-1 rounded-lg border border-emerald-500/50">
+                      {blockStats.totalMisPendingNSAP} / {blockStats.totalNSAP} पंचायतें
+                    </span>
+                    <span className="text-[11px] text-emerald-400 block mt-1 font-bold">
+                      (समस्त {blockStats.totalMisPending} लंबित में से {blockStats.totalMisPendingNSAP} में NSAP)
+                    </span>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -731,6 +905,29 @@ export default function ExecutiveDashboardTab() {
               <span className="text-emerald-400 font-bold text-[10px]">देखें →</span>
             </div>
           </div>
+
+          {/* MIS Audit Feeding (R 9.1.3) Box */}
+          <div 
+            onClick={() => { setSelectedBlock('Baghpat'); setActiveTab('mis-feeding'); }}
+            className="p-3 rounded-2xl bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-slate-900 border border-blue-500/30 flex items-center justify-between text-xs cursor-pointer hover:border-blue-500/50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-blue-400" />
+              <div>
+                <span className="font-bold text-blue-200">MIS फीडिंग (R 9.1.3): </span>
+                <span className="text-slate-300">{blockStats.baghpat.misFedCount} / 44 फीडेड</span>
+                <span className="text-amber-300 ml-1.5 text-[11px] font-semibold">
+                  ({blockStats.baghpat.misDuePendingCount} आज तक लंबित{blockStats.baghpat.misDuePendingNSAPCount > 0 ? `, ${blockStats.baghpat.misDuePendingNSAPCount} NSAP` : ''})
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="bg-blue-500/20 text-blue-300 font-bold px-2 py-0.5 rounded-full border border-blue-500/30 text-[11px]">
+                {blockStats.baghpat.misFedPercent}%
+              </span>
+              <span className="text-blue-400 font-bold text-[10px]">देखें →</span>
+            </div>
+          </div>
         </div>
 
         {/* BLOCK 2: BARAUT */}
@@ -865,6 +1062,29 @@ export default function ExecutiveDashboardTab() {
                 {blockStats.baraut.nirnayMappedPercent}% मैप्ड ({blockStats.baraut.nirnayPercent}% कुल)
               </span>
               <span className="text-emerald-400 font-bold text-[10px]">देखें →</span>
+            </div>
+          </div>
+
+          {/* MIS Audit Feeding (R 9.1.3) Box */}
+          <div 
+            onClick={() => { setSelectedBlock('Baraut'); setActiveTab('mis-feeding'); }}
+            className="p-3 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-blue-950/30 to-slate-900 border border-indigo-500/30 flex items-center justify-between text-xs cursor-pointer hover:border-indigo-500/50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
+              <div>
+                <span className="font-bold text-indigo-200">MIS फीडिंग (R 9.1.3): </span>
+                <span className="text-slate-300">{blockStats.baraut.misFedCount} / 44 फीडेड</span>
+                <span className="text-amber-300 ml-1.5 text-[11px] font-semibold">
+                  ({blockStats.baraut.misDuePendingCount} आज तक लंबित{blockStats.baraut.misDuePendingNSAPCount > 0 ? `, ${blockStats.baraut.misDuePendingNSAPCount} NSAP` : ''})
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded-full border border-indigo-500/30 text-[11px]">
+                {blockStats.baraut.misFedPercent}%
+              </span>
+              <span className="text-indigo-400 font-bold text-[10px]">देखें →</span>
             </div>
           </div>
         </div>

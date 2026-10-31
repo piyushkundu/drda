@@ -27,7 +27,7 @@ export default function MisFeedingTab() {
   } = useSocialAuditStore();
 
   const [selectedBlockFilter, setSelectedBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'fed' | 'all_pending' | 'due_pending' | 'upcoming'>('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'fed' | 'all_pending' | 'due_pending' | 'pending_nsap' | 'upcoming'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [justUpdatedId, setJustUpdatedId] = useState<string | null>(null);
 
@@ -43,15 +43,6 @@ export default function MisFeedingTab() {
   const [copiedBookmarklet, setCopiedBookmarklet] = useState(false);
   const [syncToastMessage, setSyncToastMessage] = useState<string | null>(null);
   const [lastSyncTimestamp, setLastSyncTimestamp] = useState<string | null>(null);
-
-  // Ref for bookmarklet anchor tag (sets href imperatively to prevent React javascript: URL security error)
-  const bookmarkletAnchorRef = useRef<HTMLAnchorElement>(null);
-
-  useEffect(() => {
-    if (bookmarkletAnchorRef.current) {
-      bookmarkletAnchorRef.current.setAttribute('href', getMisBookmarkletHref());
-    }
-  }, []);
 
   // Helper to format date
   const formatDateHi = (dateStr?: string) => {
@@ -88,17 +79,21 @@ export default function MisFeedingTab() {
   useEffect(() => {
     // 1. Check URL parameters for ?misSync=...
     if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const syncParam = urlParams.get('misSync');
-      if (syncParam) {
-        try {
-          const payload: MisSyncPayload = JSON.parse(decodeURIComponent(syncParam));
-          const res = syncMisFromPayload(payload);
-          setSyncToastMessage(`🎉 MIS लाइव सिंक सफल! ${res.blockMatched} की ${res.updatedCount} ग्राम पंचायतें अद्यतन हुईं।`);
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const syncParam = urlParams.get('misSync');
+        if (syncParam) {
+          const decoded = decodeURIComponent(syncParam).trim();
+          if (decoded.startsWith('{') && decoded.endsWith('}')) {
+            const payload: MisSyncPayload = JSON.parse(decoded);
+            const res = syncMisFromPayload(payload);
+            setSyncToastMessage(`🎉 MIS लाइव सिंक सफल! ${res.blockMatched} की ${res.updatedCount} ग्राम पंचायतें अद्यतन हुईं।`);
+          }
           window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {
-          console.warn('Failed to parse misSync URL param', e);
         }
+      } catch (e) {
+        console.warn('Failed to parse misSync URL param', e);
+        try { window.history.replaceState({}, document.title, window.location.pathname); } catch {}
       }
     }
 
@@ -151,6 +146,16 @@ export default function MisFeedingTab() {
     const upcomingBaghpat = records.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
     const upcomingBaraut = records.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
 
+    // Pending with NSAP Pension
+    const pendingWithNSAPTotal = allPendingTotal.filter(r => r.hasNSAP);
+    const pendingWithNSAPBaghpat = allPendingBaghpat.filter(r => r.hasNSAP);
+    const pendingWithNSAPBaraut = allPendingBaraut.filter(r => r.hasNSAP);
+
+    // Due Pending with NSAP Pension
+    const duePendingWithNSAPTotal = duePendingTotal.filter(r => r.hasNSAP);
+    const duePendingWithNSAPBaghpat = duePendingBaghpat.filter(r => r.hasNSAP);
+    const duePendingWithNSAPBaraut = duePendingBaraut.filter(r => r.hasNSAP);
+
     return {
       totalGps,
       baghpatTotal,
@@ -167,6 +172,12 @@ export default function MisFeedingTab() {
       upcomingTotalCount: upcomingTotal.length, // Baseline 40 (15 in Baghpat + 25 in Baraut)
       upcomingBaghpatCount: upcomingBaghpat.length, // 15
       upcomingBarautCount: upcomingBaraut.length, // 25
+      pendingWithNSAPTotalCount: pendingWithNSAPTotal.length,
+      pendingWithNSAPBaghpatCount: pendingWithNSAPBaghpat.length,
+      pendingWithNSAPBarautCount: pendingWithNSAPBaraut.length,
+      duePendingWithNSAPTotalCount: duePendingWithNSAPTotal.length,
+      duePendingWithNSAPBaghpatCount: duePendingWithNSAPBaghpat.length,
+      duePendingWithNSAPBarautCount: duePendingWithNSAPBaraut.length,
       fedPercentage: totalGps > 0 ? ((fedTotal.length / totalGps) * 100).toFixed(2) : '0.00',
       baghpatFedPercentage: baghpatTotal > 0 ? ((fedBaghpat.length / baghpatTotal) * 100).toFixed(2) : '0.00',
       barautFedPercentage: barautTotal > 0 ? ((fedBaraut.length / barautTotal) * 100).toFixed(2) : '0.00',
@@ -212,6 +223,8 @@ export default function MisFeedingTab() {
         if (r.misStatus === 'fed') return false;
       } else if (selectedStatusFilter === 'due_pending') {
         if (r.misStatus === 'fed' || r.meetingDate > asOfDate) return false;
+      } else if (selectedStatusFilter === 'pending_nsap') {
+        if (r.misStatus === 'fed' || !r.hasNSAP) return false;
       } else if (selectedStatusFilter === 'upcoming') {
         if (r.misStatus === 'fed' || r.meetingDate <= asOfDate) return false;
       }
@@ -421,21 +434,25 @@ export default function MisFeedingTab() {
         <div className="p-4 rounded-2xl bg-slate-950/80 border border-blue-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-400">बुकमार्क बार पर ड्रैग करें:</span>
-            {/* Draggable Anchor Tag without javascript: in JSX */}
+            {/* Draggable Anchor Tag without persistent javascript: in JSX/DOM */}
             <a
-              ref={bookmarkletAnchorRef}
+              href="#mis-sync"
               draggable="true"
               onDragStart={(e) => {
                 const href = getMisBookmarkletHref();
+                e.currentTarget.setAttribute('href', href);
                 e.dataTransfer.setData('text/uri-list', href);
                 e.dataTransfer.setData('text/plain', href);
               }}
+              onDragEnd={(e) => {
+                e.currentTarget.setAttribute('href', '#mis-sync');
+              }}
               onClick={(e) => {
                 e.preventDefault();
-                alert('कृपया इस नीले बटन को माउस से दबाकर (Drag) अपने ब्राउज़र के बुकमार्क बार (Bookmarks Bar) पर खींचकर छोड़ें!');
+                handleCopyBookmarklet();
               }}
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-xl shadow-blue-600/30 border border-blue-300 flex items-center gap-2 cursor-grab active:cursor-grabbing hover:scale-105 transition-all select-none"
-              title="इस बटन को खींचकर (Drag & Drop) अपने ब्राउज़र के बुकमार्क बार पर छोड़ें"
+              title="इस बटन को खींचकर (Drag & Drop) अपने ब्राउज़र के बुकमार्क बार पर छोड़ें या क्लिक करके कोड कॉपी करें"
             >
               <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
               <span>⚡ MIS सिंक (R 9.1.3)</span>
@@ -590,6 +607,12 @@ export default function MisFeedingTab() {
             <span>बागपत: <strong className="text-amber-300">{metrics.allPendingBaghpatCount}</strong></span>
             <span>बड़ौत: <strong className="text-amber-300">{metrics.allPendingBarautCount}</strong></span>
           </div>
+          <div className="text-[11px] text-emerald-300 font-semibold pt-1 border-t border-white/5 flex items-center justify-between">
+            <span>लंबित में NSAP पेंशन:</span>
+            <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40 font-bold">
+              {metrics.pendingWithNSAPTotalCount} पंचायतें
+            </span>
+          </div>
         </div>
 
         {/* Card 4: आज तक लंबित (Due Pending) */}
@@ -609,6 +632,12 @@ export default function MisFeedingTab() {
             <span>बागपत: <strong className="text-rose-300">{metrics.duePendingBaghpatCount}</strong></span>
             <span>बड़ौत: <strong className="text-rose-300">{metrics.duePendingBarautCount}</strong></span>
           </div>
+          <div className="text-[11px] text-emerald-300 font-semibold pt-1 border-t border-white/5 flex items-center justify-between">
+            <span>देय में NSAP पेंशन:</span>
+            <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40 font-bold">
+              {metrics.duePendingWithNSAPTotalCount} पंचायतें
+            </span>
+          </div>
         </div>
       </div>
 
@@ -624,13 +653,19 @@ export default function MisFeedingTab() {
               </div>
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-lg md:text-xl font-black text-white">
                   लंबित पुष्टि बॉक्स (MIS Feeding Action)
                 </h3>
                 <span className="text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full">
                   {pendingBoxRecords.length} प्रदर्शित
                 </span>
+                {pendingBoxRecords.filter(r => r.hasNSAP).length > 0 && (
+                  <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    {pendingBoxRecords.filter(r => r.hasNSAP).length} में NSAP पेंशन शामिल
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-300 mt-1">
                 {pendingViewScope === 'due' 
@@ -716,20 +751,26 @@ export default function MisFeedingTab() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
                         SR# {r.sno}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                         {r.block === 'Baghpat' ? 'विकास खण्ड बागपत' : 'विकास खण्ड बड़ौत'}
                       </span>
+                      {r.hasNSAP && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          NSAP पेंशन
+                        </span>
+                      )}
                     </div>
                     <div className="text-base font-black text-white pt-1">
                       {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
                     </div>
                   </div>
 
-                  <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-xl border ${
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-xl border shrink-0 ${
                     isPastMeeting 
                       ? 'text-amber-400 bg-amber-950/80 border-amber-700/50' 
                       : 'text-indigo-300 bg-indigo-950/80 border-indigo-700/50'
@@ -739,10 +780,24 @@ export default function MisFeedingTab() {
                   </span>
                 </div>
 
-                <div className="text-xs text-slate-400 space-y-1 pt-1 border-t border-slate-800">
+                <div className="text-xs text-slate-400 space-y-1.5 pt-1 border-t border-slate-800">
                   <div className="flex items-center justify-between">
                     <span>{isPastMeeting ? 'बैठक संपन्न तिथि:' : 'प्रस्तावित बैठक तिथि:'}</span>
                     <strong className="text-white font-mono">{formatDateHi(r.meetingDate)}</strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>ऑडिट योजना:</span>
+                    <div className="flex items-center gap-1">
+                      {r.hasNSAP && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-emerald-400" />
+                          NSAP पेंशन
+                        </span>
+                      )}
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                        मनरेगा
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>BRP:</span>
@@ -799,8 +854,15 @@ export default function MisFeedingTab() {
                   className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs"
                 >
                   <div>
-                    <div className="font-bold text-slate-200">
-                      {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-200">
+                        {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
+                      </span>
+                      {r.hasNSAP && (
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                          NSAP
+                        </span>
+                      )}
                     </div>
                     <div className="text-[10px] text-slate-400">
                       SR# {r.sno} • {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
@@ -868,6 +930,7 @@ export default function MisFeedingTab() {
               <option value="fed">✅ MIS पर फीडेड ({metrics.fedTotalCount})</option>
               <option value="all_pending">⏳ समस्त लंबित ({metrics.allPendingTotalCount})</option>
               <option value="due_pending">⚠️ आज तक लंबित - संपन्न ({metrics.duePendingTotalCount})</option>
+              <option value="pending_nsap">🟢 लंबित जिनमें NSAP शामिल है ({metrics.pendingWithNSAPTotalCount})</option>
               <option value="upcoming">📅 आगामी बैठकें ({metrics.upcomingTotalCount})</option>
             </select>
 
@@ -926,8 +989,16 @@ export default function MisFeedingTab() {
                     </td>
 
                     <td className="py-3 px-4">
-                      <div className="font-bold text-white text-sm">
-                        {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white text-sm">
+                          {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
+                        </span>
+                        {r.hasNSAP && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            NSAP पेंशन
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-slate-400 mt-0.5">
                         BRP: {r.brpName} ({r.brpPhone})

@@ -1,15 +1,20 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, PanchayatNirnayStatus, MisAuditStatus } from '@/types/socialAudit';
+import { 
+  SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, 
+  PanchayatNirnayStatus, MisAuditStatus, NSAPGramPanchayatData, NSAPBeneficiaryRecord 
+} from '@/types/socialAudit';
 import { INITIAL_SOCIAL_AUDIT_RECORDS, BLOCK_SABHA_RECORDS, DISTRICT_META } from '@/data/socialAuditInitialData';
+import { INITIAL_NSAP_DATA_RECORDS } from '@/data/nsapDataInitial';
 import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/lib/delhiTime';
 import { NirnaySyncPayload } from '@/lib/nirnaySyncBookmarklet';
 import { MisSyncPayload } from '@/lib/misSyncBookmarklet';
 
-export type SocialAuditTab = 'upcoming' | 'dashboard' | 'calendar' | 'nirnay' | 'mis-feeding' | 'nsap-report' | 'roster' | 'overview';
+export type SocialAuditTab = 'upcoming' | 'dashboard' | 'calendar' | 'nirnay' | 'mis-feeding' | 'nsap-data' | 'nsap-report' | 'roster' | 'overview';
 
 interface SocialAuditState {
   records: SocialAuditRecord[];
+  nsapRecords: NSAPGramPanchayatData[];
   fontViewMode: FontViewMode;
   selectedBlock: 'all' | AuditBlock;
   selectedScheme: 'all' | 'nsap' | 'mgnrega' | 'pmayg';
@@ -52,12 +57,20 @@ interface SocialAuditState {
   deleteRecord: (id: string) => void;
   markCompleted: (id: string, isCompleted: boolean) => void;
   resetToBaseline: () => void;
+
+  // NSAP Detailed Beneficiary Data Management Actions
+  addNsapRecord: (data: NSAPGramPanchayatData) => void;
+  updateNsapRecord: (id: string, updates: Partial<NSAPGramPanchayatData>) => void;
+  deleteNsapRecord: (id: string) => void;
+  addNsapBeneficiary: (gpId: string, beneficiary: Omit<NSAPBeneficiaryRecord, 'id'>) => void;
+  deleteNsapBeneficiary: (gpId: string, beneficiaryId: string) => void;
 }
 
 export const useSocialAuditStore = create<SocialAuditState>()(
   persist(
     (set, get) => ({
       records: INITIAL_SOCIAL_AUDIT_RECORDS,
+      nsapRecords: INITIAL_NSAP_DATA_RECORDS,
       fontViewMode: 'unicode',
       selectedBlock: 'all',
       selectedScheme: 'all',
@@ -340,8 +353,68 @@ export const useSocialAuditStore = create<SocialAuditState>()(
 
       resetToBaseline: () => {
         if (typeof window !== 'undefined' && window.confirm('क्या आप सोशल ऑडिट कैलेंडर को मूल आधिकारिक डेटा पर रीसेट करना चाहते हैं?')) {
-          set({ records: INITIAL_SOCIAL_AUDIT_RECORDS });
+          set({ 
+            records: INITIAL_SOCIAL_AUDIT_RECORDS,
+            nsapRecords: INITIAL_NSAP_DATA_RECORDS
+          });
         }
+      },
+
+      // NSAP Detailed Beneficiary Actions
+      addNsapRecord: (data: NSAPGramPanchayatData) => {
+        set((state) => ({
+          nsapRecords: [data, ...state.nsapRecords.filter(r => r.gpNameUnicode !== data.gpNameUnicode)]
+        }));
+      },
+
+      updateNsapRecord: (id: string, updates: Partial<NSAPGramPanchayatData>) => {
+        set((state) => ({
+          nsapRecords: state.nsapRecords.map(r => r.id === id ? { ...r, ...updates } : r)
+        }));
+      },
+
+      deleteNsapRecord: (id: string) => {
+        set((state) => ({
+          nsapRecords: state.nsapRecords.filter(r => r.id !== id)
+        }));
+      },
+
+      addNsapBeneficiary: (gpId: string, beneficiary: Omit<NSAPBeneficiaryRecord, 'id'>) => {
+        set((state) => {
+          const target = state.nsapRecords.find(r => r.id === gpId);
+          if (!target) return state;
+          const newBen: NSAPBeneficiaryRecord = {
+            ...beneficiary,
+            id: `ben-${gpId}-${Date.now()}`
+          };
+          const updatedBens = [newBen, ...target.beneficiaries];
+          return {
+            nsapRecords: state.nsapRecords.map(r => r.id === gpId ? {
+              ...r,
+              beneficiaries: updatedBens,
+              ineligibleCount: updatedBens.filter(b => b.category === 'ineligible').length,
+              deceasedCount: updatedBens.filter(b => b.category === 'deceased').length,
+              unverifiedCount: updatedBens.filter(b => b.category === 'unverified').length,
+            } : r)
+          };
+        });
+      },
+
+      deleteNsapBeneficiary: (gpId: string, beneficiaryId: string) => {
+        set((state) => {
+          const target = state.nsapRecords.find(r => r.id === gpId);
+          if (!target) return state;
+          const updatedBens = target.beneficiaries.filter(b => b.id !== beneficiaryId);
+          return {
+            nsapRecords: state.nsapRecords.map(r => r.id === gpId ? {
+              ...r,
+              beneficiaries: updatedBens,
+              ineligibleCount: updatedBens.filter(b => b.category === 'ineligible').length,
+              deceasedCount: updatedBens.filter(b => b.category === 'deceased').length,
+              unverifiedCount: updatedBens.filter(b => b.category === 'unverified').length,
+            } : r)
+          };
+        });
       }
     }),
     {
@@ -349,6 +422,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         records: state.records,
+        nsapRecords: state.nsapRecords,
         fontViewMode: state.fontViewMode,
         isLiveSync: state.isLiveSync,
         asOfDate: state.asOfDate,
@@ -356,6 +430,25 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // Rehydrate NSAP data records if missing in local storage
+          if (!state.nsapRecords || !Array.isArray(state.nsapRecords) || state.nsapRecords.length === 0) {
+            state.nsapRecords = INITIAL_NSAP_DATA_RECORDS;
+          } else {
+            // Attach rosterRecordId and ensure correct block for baseline records
+            state.nsapRecords = state.nsapRecords.map(r => {
+              const baseMatch = INITIAL_NSAP_DATA_RECORDS.find(init => init.id === r.id);
+              if (baseMatch) {
+                return {
+                  ...r,
+                  rosterRecordId: r.rosterRecordId || baseMatch.rosterRecordId,
+                  block: baseMatch.block,
+                  meetingDate: baseMatch.meetingDate
+                };
+              }
+              return r;
+            });
+          }
+
           // If live sync is true (default) or undefined, ensure asOfDate is synced to today's Delhi date
           if (state.isLiveSync === undefined || state.isLiveSync === true) {
             const today = getDelhiDateString();
@@ -424,7 +517,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
                   misFedDate: r.misFedDate || r.meetingDate
                 };
               }
-              if (!isFedOfficial && (!r.misStatus || r.misStatus === 'not_fed')) {
+              if (!isFedOfficial && r.misStatus !== 'pending') {
                 hasChanges = true;
                 return {
                   ...r,
