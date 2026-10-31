@@ -257,7 +257,7 @@ export default function MisFeedingTab() {
               एमआईएस सोशल ऑडिट फीडिंग स्थिति ट्रैकर
             </h1>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              सरकारी पोर्टल R 9.1.3 रिपोर्ट के अनुसार बागपत में <strong className="text-blue-400 font-bold">25</strong> एवं बड़ौत में <strong className="text-indigo-400 font-bold">17</strong> ग्राम पंचायतों का सोशल ऑडिट डेटा वेबसाइट पर फीड हो चुका है (कुल <strong>42</strong>)।
+              सरकारी पोर्टल R 9.1.3 रिपोर्ट के अनुसार वर्तमान में बागपत में <strong className="text-blue-400 font-bold">{metrics.fedBaghpatCount}</strong> एवं बड़ौत में <strong className="text-indigo-400 font-bold">{metrics.fedBarautCount}</strong> ग्राम पंचायतों का सोशल ऑडिट डेटा वेबसाइट पर फीड हो चुका है (कुल <strong className="text-blue-300 font-bold">{metrics.fedTotalCount}</strong>)।
               आज (<strong className="text-white">{formatDateHi(asOfDate)}</strong>) की तिथि तक जिन पंचायतों की बैठक हो चुकी है परंतु वेबसाइट पर फीड नहीं हुई हैं, वे नीचे <strong className="text-amber-300 font-bold">&apos;आज तक लंबित पुष्टि बॉक्स&apos;</strong> में निर्णय हेतु उपलब्ध हैं।
             </p>
           </div>

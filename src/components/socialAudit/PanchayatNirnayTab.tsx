@@ -132,6 +132,19 @@ export default function PanchayatNirnayTab() {
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
   }, [records, asOfDate]);
 
+  // Active Captured Records: Filter records by status === 'captured' dynamically
+  const capturedBaghpatRecords = useMemo(() => {
+    return records
+      .filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'captured')
+      .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
+  }, [records]);
+
+  const capturedBarautRecords = useMemo(() => {
+    return records
+      .filter(r => r.block === 'Baraut' && r.panchayatNirnayStatus === 'captured')
+      .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
+  }, [records]);
+
   // Main Filtered records for table
   const filteredRecords = useMemo(() => {
     return records.filter(r => {
@@ -207,8 +220,7 @@ export default function PanchayatNirnayTab() {
               ग्राम पंचायत सोशल ऑडिट • पंचायत निर्णय ऐप ट्रैकर
             </h1>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              सरकारी पोर्टल R 9.6.2 के अनुसार बागपत में <strong className="text-emerald-400 font-bold">6</strong> एवं बड़ौत में <strong className="text-emerald-400 font-bold">3</strong> ग्राम पंचायतें अपलोड हैं।
-              विगत बैठकों में जो ऐप पर नहीं हो सकीं, वे अब पोर्टल पर संभव नहीं हैं।
+              पंचायत निर्णय ऐप (R 9.6.2) के अनुसार वर्तमान में बागपत में <strong className="text-emerald-400 font-bold">{metrics.capturedBaghpatCount}</strong> एवं बड़ौत में <strong className="text-emerald-400 font-bold">{metrics.capturedBarautCount}</strong> ग्राम पंचायतें अपलोड हैं (कुल <strong className="text-emerald-400 font-bold">{metrics.capturedTotalCount}</strong>)।
               आज (<strong className="text-white">{formatDateHi(asOfDate)}</strong>) तक की सभी बैठकें पूरी तरह अद्यतन हैं। आगामी सभाएं अपने बैठक दिवस पर स्वतः नीचे दिए गए <strong className="text-amber-300 font-bold">&apos;लंबित पुष्टि बॉक्स&apos;</strong> में निर्णय हेतु सक्रिय होंगी।
             </p>
           </div>
@@ -293,70 +305,67 @@ export default function PanchayatNirnayTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 5. CAPTURED HIGHLIGHT BADGES: 6 BAGHPAT + 3 BARAUT */}
+      {/* 3. CAPTURED HIGHLIGHT BADGES: DYNAMICALLY SYNCED WITH ALL USER ACCEPTED GPs */}
       {/* ========================================================================= */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-blue-950/40 border border-emerald-500/20">
-        <div className="flex items-center justify-between gap-2 mb-3">
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-blue-950/40 border border-emerald-500/20 shadow-xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             <span className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400">
               <CheckCircle2 className="w-4 h-4" />
             </span>
             <h3 className="text-sm font-bold text-white">
-              आधिकारिक रिपोर्ट R 9.6.2 से सत्यापित 9 ग्राम पंचायतें (Live Captured)
+              सत्यापित एवं अपलोड {metrics.capturedTotalCount} ग्राम पंचायतें (Live Captured)
             </h3>
           </div>
-          <span className="text-xs text-emerald-400 font-semibold">
-            6 बागपत + 3 बड़ौत = 9 पूर्ण
+          <span className="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30">
+            {metrics.capturedBaghpatCount} बागपत + {metrics.capturedBarautCount} बड़ौत = {metrics.capturedTotalCount} पूर्ण
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Baghpat 6 */}
+          {/* Baghpat */}
           <div className="p-3.5 rounded-xl bg-slate-950/60 border border-blue-500/20 space-y-2">
             <div className="text-xs font-bold text-blue-400 flex items-center justify-between">
-              <span>विकास खण्ड बागपत (6 ग्राम पंचायतें):</span>
+              <span>विकास खण्ड बागपत ({metrics.capturedBaghpatCount} ग्राम पंचायतें):</span>
               <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">
-                13.64% पूर्ण
+                {metrics.baghpatPercentage}% पूर्ण
               </span>
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
-              {[
-                { name: 'खेड़ा इस्लामपुर', date: '16/10/2026' },
-                { name: 'खेड़की', date: '29/10/2026' },
-                { name: 'लधवाड़ी', date: '22/10/2026' },
-                { name: 'नैथला', date: '27/10/2026' },
-                { name: 'नंगला-जफराबाद', date: '27/10/2026' },
-                { name: 'निरोजपुर गूर्जर', date: '27/10/2026' }
-              ].map(gp => (
-                <span key={gp.name} className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-medium flex items-center gap-1.5">
-                  <Check className="w-3 h-3 text-emerald-400" />
-                  <span>{gp.name}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">({gp.date})</span>
-                </span>
-              ))}
+              {capturedBaghpatRecords.length > 0 ? (
+                capturedBaghpatRecords.map(gp => (
+                  <span key={gp.id} className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-medium flex items-center gap-1.5 transition-all">
+                    <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>{renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">({formatDateHi(gp.meetingDate)})</span>
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-slate-500 italic">कोई ग्राम पंचायत अपलोड नहीं है</span>
+              )}
             </div>
           </div>
 
-          {/* Baraut 3 */}
+          {/* Baraut */}
           <div className="p-3.5 rounded-xl bg-slate-950/60 border border-indigo-500/20 space-y-2">
             <div className="text-xs font-bold text-indigo-400 flex items-center justify-between">
-              <span>विकास खण्ड बड़ौत (3 ग्राम पंचायतें):</span>
+              <span>विकास खण्ड बड़ौत ({metrics.capturedBarautCount} ग्राम पंचायतें):</span>
               <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
-                6.82% पूर्ण (मैप्ड में 13.6%)
+                {metrics.barautPercentageTotal}% पूर्ण (मैप्ड में {metrics.barautPercentageMapped}%)
               </span>
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
-              {[
-                { name: 'अलावलपुर', date: '12/09/2026' },
-                { name: 'अंगदपुर', date: '12/09/2026' },
-                { name: 'फतहपुर चक', date: '22/10/2026' }
-              ].map(gp => (
-                <span key={gp.name} className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-medium flex items-center gap-1.5">
-                  <Check className="w-3 h-3 text-emerald-400" />
-                  <span>{gp.name}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">({gp.date})</span>
-                </span>
-              ))}
+              {capturedBarautRecords.length > 0 ? (
+                capturedBarautRecords.map(gp => (
+                  <span key={gp.id} className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-medium flex items-center gap-1.5 transition-all">
+                    <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>{renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">({formatDateHi(gp.meetingDate)})</span>
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-slate-500 italic">कोई ग्राम पंचायत अपलोड नहीं है</span>
+              )}
             </div>
           </div>
         </div>
