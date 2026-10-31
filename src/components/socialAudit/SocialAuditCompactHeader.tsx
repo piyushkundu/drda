@@ -1,0 +1,275 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { useUIStore } from '@/stores/uiStore';
+import { DISTRICT_META } from '@/data/socialAuditInitialData';
+import { getDelhiTimeString } from '@/lib/delhiTime';
+import { 
+  Landmark, Clock, Calendar, Cloud, Server, RefreshCw, 
+  Menu, PanelLeftClose, PanelLeftOpen, Sparkles, ChevronRight, 
+  Check, User, ShieldCheck, AlertCircle, Radio
+} from 'lucide-react';
+
+interface CompactHeaderProps {
+  isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+  isMobileSidebarOpen: boolean;
+  setIsMobileSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+export default function SocialAuditCompactHeader({
+  isSidebarCollapsed,
+  setIsSidebarCollapsed,
+  isMobileSidebarOpen,
+  setIsMobileSidebarOpen
+}: CompactHeaderProps) {
+  const [mounted, setMounted] = useState(false);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
+
+  const { 
+    fontViewMode, 
+    setFontViewMode, 
+    asOfDate, 
+    setAsOfDate,
+    isLiveSync,
+    setLiveSync,
+    liveDelhiTime,
+    tickDelhiClock,
+    syncWithDelhiTime,
+    firebaseSyncStatus,
+    firebaseLastSyncedAt,
+    initFirebaseSync,
+    forceSyncToFirebase
+  } = useSocialAuditStore();
+
+  const { setSidebarPanel } = useUIStore();
+
+  // Clock ticking and Firebase initialization
+  useEffect(() => {
+    setMounted(true);
+    syncWithDelhiTime();
+    initFirebaseSync();
+
+    const tickInterval = setInterval(() => {
+      tickDelhiClock();
+    }, 1000);
+
+    const syncInterval = setInterval(() => {
+      syncWithDelhiTime();
+    }, 60000);
+
+    return () => {
+      clearInterval(tickInterval);
+      clearInterval(syncInterval);
+    };
+  }, [tickDelhiClock, syncWithDelhiTime, initFirebaseSync]);
+
+  const handleManualSync = async () => {
+    setSyncToast('सर्वर से डेटा सिंक हो रहा है...');
+    const ok = await forceSyncToFirebase();
+    await syncWithDelhiTime();
+    setSyncToast(ok ? 'सर्वर से पूर्णतः सिंक हो गया!' : 'सिंक में त्रुटि!');
+    setTimeout(() => setSyncToast(null), 3000);
+  };
+
+  return (
+    <header className="h-14 sm:h-16 bg-white border-b border-slate-200/90 shadow-sm z-30 px-3 sm:px-5 flex items-center justify-between shrink-0 select-none">
+      {/* LEFT: Mobile Toggle + Desktop Collapse + Government Branding */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Mobile Hamburger Toggle */}
+        <button
+          onClick={() => setIsMobileSidebarOpen((prev) => !prev)}
+          className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+          title="मेन्यू खोलें"
+          aria-label="Toggle Navigation Menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        {/* Desktop Sidebar Collapse Toggle */}
+        <button
+          onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+          className="hidden lg:flex p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+          title={isSidebarCollapsed ? 'साइडबार विस्तृत करें' : 'साइडबार संकुचित करें'}
+          aria-label="Toggle Sidebar"
+        >
+          {isSidebarCollapsed ? (
+            <PanelLeftOpen className="w-5 h-5 text-blue-700" />
+          ) : (
+            <PanelLeftClose className="w-5 h-5 text-slate-600" />
+          )}
+        </button>
+
+        {/* Official Emblem & Branding */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-800 to-indigo-900 text-white flex items-center justify-center shadow-md shadow-blue-800/20 shrink-0">
+            <Landmark className="w-5 h-5 text-amber-300" />
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-none">
+                सोशल ऑडिट बागपत
+              </h1>
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-blue-800 border border-blue-200">
+                FY {DISTRICT_META.financialYear || '2026-27'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium leading-tight mt-0.5 hidden xs:block">
+              जनपद बागपत, उत्तर प्रदेश • DDO प्रशासनिक पोर्टल
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT: Status Badges, Clocks, Sync & Actions */}
+      <div className="flex items-center gap-1.5 sm:gap-2.5">
+        
+        {/* Live Delhi IST Clock Pill */}
+        <div 
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs shadow-inner"
+          title="भारतीय मानक समय (IST) लाइव दिल्ली घड़ी"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <Clock className="w-3.5 h-3.5 text-slate-500" />
+          <span className="font-mono font-bold text-slate-800 tabular-nums text-[11px]" suppressHydrationWarning>
+            {mounted ? (liveDelhiTime || getDelhiTimeString()) : '--:--:--'}
+          </span>
+        </div>
+
+        {/* As-Of Date Selector */}
+        <div 
+          className="flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs"
+          title="सोशल ऑडिट कट-ऑफ संदर्भ तिथि"
+        >
+          <Calendar className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+          <input
+            type="date"
+            value={asOfDate}
+            onChange={(e) => setAsOfDate(e.target.value)}
+            className="bg-transparent text-slate-800 text-[11px] outline-none cursor-pointer font-bold font-mono"
+            title="संदर्भ तिथि बदलें"
+          />
+        </div>
+
+        {/* Real-time Firebase Cloud Connection State */}
+        <div
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-bold shadow-sm transition-all ${
+            firebaseSyncStatus === 'synced'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : firebaseSyncStatus === 'syncing' || firebaseSyncStatus === 'loading'
+              ? 'bg-amber-50 text-amber-800 border-amber-200'
+              : 'bg-rose-50 text-rose-800 border-rose-200'
+          }`}
+          title={`फायरबेस क्लाउड: ${
+            firebaseSyncStatus === 'synced' ? 'कनेक्टेड एवं सुरक्षित' : firebaseSyncStatus === 'syncing' ? 'सिंकिंग जारी...' : 'त्रुटि/ऑफलाइन'
+          } (अंतिम सिंक: ${firebaseLastSyncedAt || 'सक्रिय'})`}
+        >
+          <span className="relative flex h-2 w-2 shrink-0">
+            {firebaseSyncStatus === 'syncing' ? (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            ) : null}
+            <span
+              className={`relative inline-flex rounded-full h-2 w-2 ${
+                firebaseSyncStatus === 'synced'
+                  ? 'bg-emerald-500'
+                  : firebaseSyncStatus === 'syncing' || firebaseSyncStatus === 'loading'
+                  ? 'bg-amber-500'
+                  : 'bg-rose-500'
+              }`}
+            />
+          </span>
+          <Cloud className="w-3.5 h-3.5 shrink-0 hidden sm:inline" />
+          <span className="hidden sm:inline">
+            {firebaseSyncStatus === 'synced'
+              ? 'फायरबेस'
+              : firebaseSyncStatus === 'syncing'
+              ? 'सिंकिंग'
+              : 'ऑफलाइन'}
+          </span>
+        </div>
+
+        {/* Server Online Status Indicator */}
+        <div 
+          className="hidden lg:flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] font-medium"
+          title="सर्वर स्थिति: ऑनलाइन व सक्रिय"
+        >
+          <Server className="w-3 h-3 text-emerald-600" />
+          <span className="text-[10px] font-bold text-slate-700">सर्वर ऑनलाइन</span>
+        </div>
+
+        {/* Manual Refresh / Cloud Sync Button */}
+        <button
+          onClick={handleManualSync}
+          className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 shadow-sm"
+          title="डेटा क्लाउड से रिफ्रेश व सिंक करें"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 text-blue-700 ${firebaseSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline">सिंक</span>
+        </button>
+
+        {/* Floating Sync Toast Notification */}
+        {syncToast && (
+          <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white border border-emerald-500 text-xs font-bold px-4 py-2 rounded-2xl shadow-xl flex items-center gap-2 animate-bounce">
+            <Check className="w-4 h-4 text-emerald-400" />
+            <span>{syncToast}</span>
+          </div>
+        )}
+
+        {/* Font View Mode Segmented Selector */}
+        <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl p-0.5 text-xs">
+          <button
+            onClick={() => setFontViewMode('unicode')}
+            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+              fontViewMode === 'unicode'
+                ? 'bg-blue-700 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+            title="यूनिकोड / मंगल"
+          >
+            यूनिकोड
+          </button>
+          <button
+            onClick={() => setFontViewMode('krutidev')}
+            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+              fontViewMode === 'krutidev'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+            style={{ fontFamily: fontViewMode === 'krutidev' ? "'Kruti Dev 010', sans-serif" : undefined }}
+            title="कृतिदेव 010"
+          >
+            कृतिदेव
+          </button>
+          <button
+            onClick={() => setFontViewMode('dual')}
+            className={`px-1.5 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+              fontViewMode === 'dual'
+                ? 'bg-indigo-700 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+            title="द्विभाषी दोनों फ़ॉन्ट"
+          >
+            द्विभाषी
+          </button>
+        </div>
+
+        {/* User Account / Page Hindi Suite Jump */}
+        <button
+          onClick={() => setSidebarPanel('dashboard')}
+          className="flex items-center gap-1.5 bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-sm transition-all transform active:scale-95 shrink-0"
+          title="पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <span className="hidden md:inline">पेज हिंदी सुइट</span>
+          <ChevronRight className="w-3 h-3 text-white/70" />
+        </button>
+      </div>
+    </header>
+  );
+}
+

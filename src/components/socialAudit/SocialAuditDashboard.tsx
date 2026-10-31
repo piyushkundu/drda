@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
-import SocialAuditHeader from './SocialAuditHeader';
+import SocialAuditCompactHeader from './SocialAuditCompactHeader';
+import SocialAuditSidebar from './SocialAuditSidebar';
 import UpcomingSabhasTab from './UpcomingSabhasTab';
 import ExecutiveDashboardTab from './ExecutiveDashboardTab';
 import CalendarTableTab from './CalendarTableTab';
@@ -17,68 +18,77 @@ import AddRecordModal from './AddRecordModal';
 export default function SocialAuditDashboard() {
   const { activeTab } = useSocialAuditStore();
 
+  // Desktop sidebar collapse state & mobile drawer state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-slate-100 overflow-hidden font-sans">
-      {/* Top Header & Navigation */}
-      <SocialAuditHeader />
+    <div className="flex flex-col h-screen w-screen bg-slate-100 text-slate-800 overflow-hidden font-sans">
+      {/* 1. Compact Top Header (~56-64px height) */}
+      <SocialAuditCompactHeader
+        isSidebarCollapsed={isSidebarCollapsed}
+        setIsSidebarCollapsed={setIsSidebarCollapsed}
+        isMobileSidebarOpen={isMobileSidebarOpen}
+        setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+      />
 
-      {/* Main Tab Content Area */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scrollbar-thin">
-        {/* 1. आगामी सभाएं (FIRST TAB) */}
-        {activeTab === 'upcoming' && (
-          <div className="max-w-7xl mx-auto space-y-6">
-            <UpcomingSabhasTab />
+      {/* 2. Main Shell: Collapsible Left Sidebar + Main Content Area */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Collapsible Left Sidebar */}
+        <SocialAuditSidebar
+          isCollapsed={isSidebarCollapsed}
+          setIsCollapsed={setIsSidebarCollapsed}
+          isOpenMobile={isMobileSidebarOpen}
+          setIsOpenMobile={setIsMobileSidebarOpen}
+        />
+
+        {/* Main Content Area */}
+        <main className="flex-1 h-full overflow-y-auto p-3 sm:p-5 md:p-6 bg-slate-100/70 scrollbar-thin">
+          <div className="w-full max-w-[1920px] mx-auto space-y-5">
+            {/* 1. डैशबोर्ड (PRIMARY MONITORING CENTER) */}
+            {(activeTab === 'dashboard' || activeTab === 'overview') && (
+              <ExecutiveDashboardTab />
+            )}
+
+            {/* 2. आगामी सभाएं */}
+            {activeTab === 'upcoming' && (
+              <UpcomingSabhasTab />
+            )}
+
+            {/* 3. सोशल ऑडिट कैलेंडर (रोस्टर) */}
+            {activeTab === 'calendar' && (
+              <CalendarTableTab />
+            )}
+
+            {/* 4. पंचायत निर्णय ऐप (R 9.6.2) */}
+            {activeTab === 'nirnay' && (
+              <PanchayatNirnayTab />
+            )}
+
+            {/* 5. MIS ऑडिट फीडिंग (R 9.1.3) */}
+            {activeTab === 'mis-feeding' && (
+              <MisFeedingTab />
+            )}
+
+            {/* 6. NSAP डेटा (लाभार्थी विवरण व प्रविष्टि) */}
+            {activeTab === 'nsap-data' && (
+              <NSAPDataTab />
+            )}
+
+            {/* 7. NSAP पेंशन रिपोर्ट (मासिक प्रारूप) */}
+            {activeTab === 'nsap-report' && (
+              <NSAPReportTab />
+            )}
+
+            {/* 8. टीम एवं बी०आर०पी० रोस्टर */}
+            {activeTab === 'roster' && (
+              <TeamRosterTab />
+            )}
           </div>
-        )}
+        </main>
+      </div>
 
-        {/* 2. डैशबोर्ड (SECOND TAB) */}
-        {(activeTab === 'dashboard' || activeTab === 'overview') && (
-          <div className="max-w-7xl mx-auto space-y-6">
-            <ExecutiveDashboardTab />
-          </div>
-        )}
-
-        {activeTab === 'calendar' && (
-          <div className="max-w-7xl mx-auto space-y-6">
-            <CalendarTableTab />
-          </div>
-        )}
-
-        {/* 4. पंचायत निर्णय ऐप (R 9.6.2) */}
-        {activeTab === 'nirnay' && (
-          <div className="max-w-7xl mx-auto space-y-6">
-            <PanchayatNirnayTab />
-          </div>
-        )}
-
-        {/* 5. MIS ऑडिट फीडिंग (R 9.1.3) */}
-        {activeTab === 'mis-feeding' && (
-          <div className="max-w-7xl mx-auto space-y-6">
-            <MisFeedingTab />
-          </div>
-        )}
-
-        {/* 6. NSAP डेटा (मासिक रिपोर्ट प्रारूप एवं लाभार्थी सूची) */}
-        {activeTab === 'nsap-data' && (
-          <div className="max-w-7xl mx-auto space-y-6">
-            <NSAPDataTab />
-          </div>
-        )}
-
-        {activeTab === 'nsap-report' && (
-          <div className="max-w-7xl mx-auto space-y-6">
-            <NSAPReportTab />
-          </div>
-        )}
-
-        {activeTab === 'roster' && (
-          <div className="max-w-7xl mx-auto space-y-6">
-            <TeamRosterTab />
-          </div>
-        )}
-      </main>
-
-      {/* Edit & Add Modals */}
+      {/* Shared Modals */}
       <EditRecordModal />
       <AddRecordModal />
     </div>

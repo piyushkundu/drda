@@ -73,7 +73,7 @@ export default function Home() {
   // If in Social Audit mode, show full-screen Social Audit portal without Page Hindi sidebar and status bar
   if (isSocialAudit) {
     return (
-      <div className="h-screen w-screen overflow-hidden bg-slate-950">
+      <div className="h-screen w-screen overflow-hidden bg-slate-100">
         <SocialAuditDashboard />
       </div>
     );
