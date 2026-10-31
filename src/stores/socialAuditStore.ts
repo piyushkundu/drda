@@ -63,6 +63,7 @@ interface SocialAuditState {
   updateNsapRecord: (id: string, updates: Partial<NSAPGramPanchayatData>) => void;
   deleteNsapRecord: (id: string) => void;
   addNsapBeneficiary: (gpId: string, beneficiary: Omit<NSAPBeneficiaryRecord, 'id'>) => void;
+  addNsapBeneficiariesBatch: (gpId: string, beneficiaries: Omit<NSAPBeneficiaryRecord, 'id'>[]) => void;
   deleteNsapBeneficiary: (gpId: string, beneficiaryId: string) => void;
 }
 
@@ -388,6 +389,28 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             id: `ben-${gpId}-${Date.now()}`
           };
           const updatedBens = [newBen, ...target.beneficiaries];
+          return {
+            nsapRecords: state.nsapRecords.map(r => r.id === gpId ? {
+              ...r,
+              beneficiaries: updatedBens,
+              ineligibleCount: updatedBens.filter(b => b.category === 'ineligible').length,
+              deceasedCount: updatedBens.filter(b => b.category === 'deceased').length,
+              unverifiedCount: updatedBens.filter(b => b.category === 'unverified').length,
+            } : r)
+          };
+        });
+      },
+
+      addNsapBeneficiariesBatch: (gpId: string, beneficiaries: Omit<NSAPBeneficiaryRecord, 'id'>[]) => {
+        set((state) => {
+          const target = state.nsapRecords.find(r => r.id === gpId);
+          if (!target || !beneficiaries.length) return state;
+          const timestamp = Date.now();
+          const newBens: NSAPBeneficiaryRecord[] = beneficiaries.map((b, idx) => ({
+            ...b,
+            id: `ben-${gpId}-${timestamp}-${idx}`
+          }));
+          const updatedBens = [...newBens, ...target.beneficiaries];
           return {
             nsapRecords: state.nsapRecords.map(r => r.id === gpId ? {
               ...r,
