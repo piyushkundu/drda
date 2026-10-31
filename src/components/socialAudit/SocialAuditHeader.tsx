@@ -71,25 +71,25 @@ export default function SocialAuditHeader() {
   const misFedCount = records.filter(r => r.misStatus === 'fed').length;
 
   return (
-    <header className="border-b border-white/10 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-3 sm:px-5 py-2.5 sm:py-3.5 shadow-xl">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 sm:gap-4">
+    <header className="border-b border-white/10 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-5 py-4 shadow-xl">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         {/* Title & Official Branding */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-400 p-0.5 shadow-lg shadow-orange-500/20 flex items-center justify-center shrink-0">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] sm:rounded-[14px] flex items-center justify-center">
-              <Landmark className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-400 p-0.5 shadow-lg shadow-orange-500/20 flex items-center justify-center">
+            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+              <Landmark className="w-6 h-6 text-amber-400" />
             </div>
           </div>
           <div>
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <span className="text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase px-2 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                 उत्तर प्रदेश शासन • जिला विकास अधिकारी (DDO) बागपत
               </span>
-              <span className="text-[10px] sm:text-[11px] font-medium text-slate-400">
+              <span className="text-[11px] font-medium text-slate-400">
                 वित्तीय वर्ष {DISTRICT_META.financialYear}
               </span>
             </div>
-            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-black tracking-tight text-white flex items-center gap-2">
               <span>सोशल ऑडिट बागपत</span>
               <span className="text-xs font-normal text-slate-400 hidden sm:inline">
                 (विकास खण्ड बागपत एवं बड़ौत)
@@ -99,30 +99,30 @@ export default function SocialAuditHeader() {
         </div>
 
         {/* Right Action Controls: Page Hindi Suite Jump & Font Toggle */}
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 w-full md:w-auto justify-start md:justify-end">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
           {/* Live Delhi (IST) Clock Badge */}
           <div 
-            className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[11px] sm:text-xs border shadow-inner transition-all ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs border shadow-inner transition-all ${
               isLiveSync 
                 ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300 shadow-emerald-950/50' 
                 : 'bg-slate-800/80 border-slate-700/80 text-slate-300'
             }`}
             title={isLiveSync ? "नई दिल्ली (IST) ऑनलाइन समय से लाइव सिंक है" : "कस्टम संदर्भ तिथि सक्रिय है"}
           >
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
                 {isLiveSync && (
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 )}
                 <span className={`relative inline-flex rounded-full h-2 w-2 ${isLiveSync ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
               </span>
-              <span className="font-bold text-[9px] sm:text-[10px] tracking-wider uppercase">
+              <span className="font-bold text-[10px] tracking-wider uppercase">
                 {isLiveSync ? 'लाइव दिल्ली' : 'कस्टम'}
               </span>
             </div>
             <div className="h-3 w-px bg-white/20" />
-            <div className="flex items-center gap-1 font-mono font-bold text-white text-[10px] sm:text-[11px]">
-              <Clock className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${isLiveSync ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
+            <div className="flex items-center gap-1 font-mono font-bold text-white text-[11px]">
+              <Clock className={`w-3.5 h-3.5 shrink-0 ${isLiveSync ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
               <span className="tabular-nums" suppressHydrationWarning>
                 {mounted ? (liveDelhiTime || getDelhiTimeString()) : '--:--:--'}
               </span>
@@ -130,17 +130,20 @@ export default function SocialAuditHeader() {
           </div>
 
           {/* As-Of Date Reference Selector */}
-          <div className={`flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl text-[11px] sm:text-xs border transition-all ${
+          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs border transition-all ${
             isLiveSync 
               ? 'bg-slate-800/90 border-slate-700/80' 
               : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
           }`}>
-            <Calendar className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${isLiveSync ? 'text-blue-400' : 'text-amber-400'}`} />
+            <Calendar className={`w-3.5 h-3.5 shrink-0 ${isLiveSync ? 'text-blue-400' : 'text-amber-400'}`} />
+            <span className="text-slate-400 text-[11px] hidden sm:inline">
+              {isLiveSync ? 'कट-ऑफ:' : 'कस्टम कट-ऑफ:'}
+            </span>
             <input
               type="date"
               value={asOfDate}
               onChange={(e) => setAsOfDate(e.target.value)}
-              className="bg-transparent text-white text-[11px] sm:text-xs outline-none cursor-pointer font-bold font-mono"
+              className="bg-transparent text-white text-xs outline-none cursor-pointer font-bold font-mono"
               title="सोशल ऑडिट की संदर्भ तिथि बदलें"
             />
             {!isLiveSync && (
@@ -149,11 +152,11 @@ export default function SocialAuditHeader() {
                   setLiveSync(true);
                   syncWithDelhiTime(true);
                 }}
-                className="ml-1 text-[9px] font-bold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40 px-1.5 py-0.2 rounded flex items-center gap-1 transition-all"
+                className="ml-1 text-[10px] font-bold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40 px-2 py-0.5 rounded-md flex items-center gap-1 transition-all"
                 title="आज की लाइव दिल्ली तिथि पर वापस जाएं"
               >
                 <RefreshCw className="w-2.5 h-2.5" />
-                <span>लाइव</span>
+                <span>लाइव करें</span>
               </button>
             )}
           </div>
@@ -166,7 +169,7 @@ export default function SocialAuditHeader() {
               setSyncToast(ok ? 'सर्वर (Firebase) से पूर्णतः सिंक हो गया!' : 'सिंक में त्रुटि!');
               setTimeout(() => setSyncToast(null), 3000);
             }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-[10px] sm:text-xs border transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border transition-all ${
               firebaseSyncStatus === 'syncing' || firebaseSyncStatus === 'loading'
                 ? 'bg-amber-950/60 border-amber-500/50 text-amber-300 shadow-amber-950/40'
                 : firebaseSyncStatus === 'synced'
@@ -176,13 +179,13 @@ export default function SocialAuditHeader() {
             title="क्लिक करके फायरबेस सर्वर से तुरंत सिंक करें"
           >
             {firebaseSyncStatus === 'syncing' || firebaseSyncStatus === 'loading' ? (
-              <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 animate-spin" />
+              <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />
             ) : firebaseSyncStatus === 'synced' ? (
-              <Cloud className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
+              <Cloud className="w-3.5 h-3.5 text-emerald-400" />
             ) : (
-              <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-400" />
+              <RefreshCw className="w-3.5 h-3.5 text-rose-400" />
             )}
-            <span className="font-bold text-[10px] sm:text-[11px]">
+            <span className="font-bold text-[11px]">
               {firebaseSyncStatus === 'syncing'
                 ? 'सर्वर सेविंग...'
                 : firebaseSyncStatus === 'loading'
@@ -202,10 +205,10 @@ export default function SocialAuditHeader() {
           )}
 
           {/* Font View Mode Toggle (Unicode vs KrutiDev vs Dual) */}
-          <div className="flex items-center bg-slate-800/80 border border-slate-700/80 rounded-xl p-0.5 sm:p-1 text-[10px] sm:text-xs">
+          <div className="flex items-center bg-slate-800/80 border border-slate-700/80 rounded-xl p-1 text-xs">
             <button
               onClick={() => setFontViewMode('unicode')}
-              className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg font-medium transition-all ${
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
                 fontViewMode === 'unicode'
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
@@ -216,7 +219,7 @@ export default function SocialAuditHeader() {
             </button>
             <button
               onClick={() => setFontViewMode('krutidev')}
-              className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg font-medium transition-all ${
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
                 fontViewMode === 'krutidev'
                   ? 'bg-amber-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
@@ -228,7 +231,7 @@ export default function SocialAuditHeader() {
             </button>
             <button
               onClick={() => setFontViewMode('dual')}
-              className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg font-medium transition-all ${
+              className={`px-2 py-1 rounded-lg font-medium transition-all text-[11px] ${
                 fontViewMode === 'dual'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
@@ -242,18 +245,18 @@ export default function SocialAuditHeader() {
           {/* Prominent Button to Jump to Page Hindi Drafting Suite */}
           <button
             onClick={() => setSidebarPanel('dashboard')}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-[11px] sm:text-xs font-bold px-2.5 sm:px-3.5 py-1 sm:py-2 rounded-xl shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 group"
+            className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 group"
             title="पेज हिंदी शासकीय ड्राफ्टिंग सुइट खोलें"
           >
-            <Sparkles className="w-3.5 h-3.5 text-yellow-300 group-hover:rotate-12 transition-transform" />
+            <Sparkles className="w-4 h-4 text-yellow-300 group-hover:rotate-12 transition-transform" />
             <span>पेज हिंदी सुइट</span>
-            <ChevronRight className="w-3 h-3 text-white/70 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className="w-3.5 h-3.5 text-white/70 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
       </div>
 
       {/* Tabs Navigation Bar */}
-      <div className="flex items-center gap-1 sm:gap-1.5 mt-2 sm:mt-3 overflow-x-auto pb-1 scrollbar-none border-t border-white/5 pt-2 sm:pt-2.5">
+      <div className="flex items-center gap-1.5 mt-4 overflow-x-auto pb-1 scrollbar-none border-t border-white/5 pt-3">
         {/* TAB 1: आगामी सभाएं (FIRST) */}
         <button
           onClick={() => setActiveTab('upcoming')}
