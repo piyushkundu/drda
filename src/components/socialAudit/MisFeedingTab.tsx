@@ -1,18 +1,12 @@
 'use client';
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { MisAuditStatus, SocialAuditRecord } from '@/types/socialAudit';
 import { 
-  getMisBookmarkletHref, 
-  getMisBookmarkletScript, 
-  MisSyncPayload 
-} from '@/lib/misSyncBookmarklet';
-import { 
   CheckCircle2, Clock, XCircle, Search, Filter, 
-  Download, Sparkles, Building2, ShieldCheck, 
+  Download, Building2, ShieldCheck, 
   FileSpreadsheet, RefreshCw, Layers, Landmark, 
-  Zap, Copy, ExternalLink, HelpCircle, FileText,
   Calendar, Check, AlertTriangle, ArrowUpRight, Phone
 } from 'lucide-react';
 
@@ -22,7 +16,6 @@ export default function MisFeedingTab() {
     asOfDate, 
     fontViewMode, 
     updateMisStatus,
-    syncMisFromPayload,
     openEditModal 
   } = useSocialAuditStore();
 
@@ -35,14 +28,6 @@ export default function MisFeedingTab() {
   const [pendingViewScope, setPendingViewScope] = useState<'due' | 'all'>('due');
   const [pendingBlockFilter, setPendingBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
   const [showUpcomingList, setShowUpcomingList] = useState(false);
-
-  // 1-Click Bookmarklet & Sync Tool States
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const [isQuickPasteOpen, setIsQuickPasteOpen] = useState(false);
-  const [quickPasteText, setQuickPasteText] = useState('');
-  const [copiedBookmarklet, setCopiedBookmarklet] = useState(false);
-  const [syncToastMessage, setSyncToastMessage] = useState<string | null>(null);
-  const [lastSyncTimestamp, setLastSyncTimestamp] = useState<string | null>(null);
 
   // Helper to format date
   const formatDateHi = (dateStr?: string) => {
@@ -72,54 +57,6 @@ export default function MisFeedingTab() {
     }
     return <span>{unicodeText}</span>;
   };
-
-  // =========================================================================
-  // BACKGROUND AUTO-SYNC LISTENER (Bookmarklet & API Polling)
-  // =========================================================================
-  useEffect(() => {
-    // 1. Check URL parameters for ?misSync=...
-    if (typeof window !== 'undefined') {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const syncParam = urlParams.get('misSync');
-        if (syncParam) {
-          const decoded = decodeURIComponent(syncParam).trim();
-          if (decoded.startsWith('{') && decoded.endsWith('}')) {
-            const payload: MisSyncPayload = JSON.parse(decoded);
-            const res = syncMisFromPayload(payload);
-            setSyncToastMessage(`🎉 MIS लाइव सिंक सफल! ${res.blockMatched} की ${res.updatedCount} ग्राम पंचायतें अद्यतन हुईं।`);
-          }
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-      } catch (e) {
-        console.warn('Failed to parse misSync URL param', e);
-        try { window.history.replaceState({}, document.title, window.location.pathname); } catch {}
-      }
-    }
-
-    // 2. Poll /api/social-audit/sync-mis every 3 seconds for live bookmarklet updates
-    const pollInterval = setInterval(async () => {
-      try {
-        const res = await fetch('/api/social-audit/sync-mis');
-        if (!res.ok) return;
-        const json = await res.json();
-        if (json && json.data && json.data.timestamp !== lastSyncTimestamp) {
-          setLastSyncTimestamp(json.data.timestamp);
-          const syncRes = syncMisFromPayload(json.data);
-          if (syncRes.updatedCount > 0) {
-            setSyncToastMessage(
-              `🎉 सरकारी पोर्टल से लाइव MIS सिंक सफल! ${syncRes.blockMatched} की ${syncRes.updatedCount} ग्राम पंचायतें अद्यतन हुईं (${syncRes.updatedNames.slice(0, 3).join(', ')}${syncRes.updatedNames.length > 3 ? '...' : ''})`
-            );
-            setTimeout(() => setSyncToastMessage(null), 8000);
-          }
-        }
-      } catch (err) {
-        // silent
-      }
-    }, 3000);
-
-    return () => clearInterval(pollInterval);
-  }, [lastSyncTimestamp, syncMisFromPayload]);
 
   // Detailed Metrics computation strictly respecting asOfDate
   const metrics = useMemo(() => {
@@ -263,29 +200,6 @@ export default function MisFeedingTab() {
     setTimeout(() => setJustUpdatedId(null), 1500);
   };
 
-  // Copy Bookmarklet Code
-  const handleCopyBookmarklet = () => {
-    const code = getMisBookmarkletHref();
-    navigator.clipboard.writeText(code);
-    setCopiedBookmarklet(true);
-    setTimeout(() => setCopiedBookmarklet(false), 2500);
-  };
-
-  // Handle Quick Paste JSON
-  const handleQuickPasteSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload: MisSyncPayload = JSON.parse(quickPasteText);
-      const res = syncMisFromPayload(payload);
-      setSyncToastMessage(`🎉 पेस्ट सिंक सफल! ${res.blockMatched} की ${res.updatedCount} ग्राम पंचायतें अद्यतन हुईं।`);
-      setIsQuickPasteOpen(false);
-      setQuickPasteText('');
-      setTimeout(() => setSyncToastMessage(null), 8000);
-    } catch (err) {
-      alert('अमान्य JSON प्रारूप! कृपया बुकमार्कलेट द्वारा कॉपी किया गया कोड ही पेस्ट करें।');
-    }
-  };
-
   // CSV Export
   const handleExportCSV = () => {
     const headers = ['क्र०सं०', 'ब्लॉक', 'ग्राम पंचायत (यूनिकोड)', 'बैठक तिथि', 'MIS फीडिंग स्थिति', 'पोर्टल स्थिति (कॉलम 8)', 'BRP नाम एवं फोन'];
@@ -317,24 +231,6 @@ export default function MisFeedingTab() {
 
   return (
     <div className="space-y-6">
-      {/* ========================================================================= */}
-      {/* LIVE SYNC CELEBRATION TOAST */}
-      {/* ========================================================================= */}
-      {syncToastMessage && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-600 text-white font-bold flex items-center justify-between shadow-2xl animate-bounce border border-blue-300/40">
-          <div className="flex items-center gap-3">
-            <Sparkles className="w-6 h-6 text-yellow-300 animate-spin" />
-            <span className="text-sm md:text-base">{syncToastMessage}</span>
-          </div>
-          <button
-            onClick={() => setSyncToastMessage(null)}
-            className="text-white hover:text-slate-200 text-sm font-bold bg-white/20 px-3 py-1 rounded-xl"
-          >
-            ✕ बंद करें
-          </button>
-        </div>
-      )}
-
       {/* ========================================================================= */}
       {/* 1. OFFICIAL REPORT HEADER BANNER (R 9.1.3) */}
       {/* ========================================================================= */}
@@ -387,181 +283,7 @@ export default function MisFeedingTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. ⚡ 1-CLICK BOOKMARKLET SYNC TOOL (R 9.1.3 AUTO-SYNC) */}
-      {/* ========================================================================= */}
-      <div className="rounded-3xl bg-gradient-to-br from-indigo-950/60 via-slate-900 to-blue-950/40 border-2 border-blue-500/40 p-5 md:p-6 shadow-2xl space-y-4">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500 to-cyan-400 p-0.5 shadow-lg shadow-blue-500/20 flex items-center justify-center shrink-0">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                <Zap className="w-6 h-6 text-blue-400 animate-pulse" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base md:text-lg font-black text-white">
-                  1-क्लिक MIS पोर्टल ऑटो सिंक टूल (Bookmarklet Sync)
-                </h3>
-                <span className="text-[10px] font-black bg-blue-500/30 text-blue-300 border border-blue-400/40 px-2 py-0.5 rounded-full uppercase">
-                  R 9.1.3 सक्रिय
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                सरकारी वेबसाइट पर जाकर सिर्फ 1 क्लिक करें — R 9.1.3 रिपोर्ट तालिका का सारा डेटा स्वतः फेच होकर आपके पेज हिंदी में बिना टाइप किए अपडेट हो जाएगा!
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setIsGuideOpen(!isGuideOpen)}
-              className="text-xs text-blue-400 hover:text-white bg-blue-950/60 hover:bg-blue-900/60 px-3 py-1.5 rounded-xl border border-blue-800/40 flex items-center gap-1.5 transition-colors font-semibold"
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span>{isGuideOpen ? 'गाइड छुपाएं' : 'कैसे उपयोग करें?'}</span>
-            </button>
-            <button
-              onClick={() => setIsQuickPasteOpen(true)}
-              className="text-xs text-amber-300 hover:text-white bg-amber-950/60 hover:bg-amber-900/60 px-3 py-1.5 rounded-xl border border-amber-800/40 flex items-center gap-1.5 transition-colors font-semibold"
-            >
-              <FileText className="w-4 h-4" />
-              <span>त्वरित पेस्ट (Quick Paste)</span>
-            </button>
-          </div>
-        </div>
-
-        {/* The Actionable Draggable Bookmarklet Link */}
-        <div className="p-4 rounded-2xl bg-slate-950/80 border border-blue-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-slate-400">बुकमार्क बार पर ड्रैग करें:</span>
-            {/* Draggable Anchor Tag without persistent javascript: in JSX/DOM */}
-            <a
-              href="#mis-sync"
-              draggable="true"
-              onDragStart={(e) => {
-                const href = getMisBookmarkletHref();
-                e.currentTarget.setAttribute('href', href);
-                e.dataTransfer.setData('text/uri-list', href);
-                e.dataTransfer.setData('text/plain', href);
-              }}
-              onDragEnd={(e) => {
-                e.currentTarget.setAttribute('href', '#mis-sync');
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                handleCopyBookmarklet();
-              }}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs shadow-xl shadow-blue-600/30 border border-blue-300 flex items-center gap-2 cursor-grab active:cursor-grabbing hover:scale-105 transition-all select-none"
-              title="इस बटन को खींचकर (Drag & Drop) अपने ब्राउज़र के बुकमार्क बार पर छोड़ें या क्लिक करके कोड कॉपी करें"
-            >
-              <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
-              <span>⚡ MIS सिंक (R 9.1.3)</span>
-            </a>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCopyBookmarklet}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-all"
-              title="यदि ड्रैग न कर सकें तो बुकमार्क URL कॉपी करें"
-            >
-              <Copy className="w-3.5 h-3.5" />
-              <span>{copiedBookmarklet ? '✓ कोड कॉपी हो गया!' : 'बुकमार्क कोड कॉपी करें'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 3-Step Interactive Visual Guide */}
-        {isGuideOpen && (
-          <div className="p-4 rounded-2xl bg-slate-950/90 border border-blue-500/30 text-xs space-y-3">
-            <h4 className="font-bold text-white text-sm flex items-center gap-2 text-blue-300">
-              <span>सरल 3-चरणीय उपयोग विधि:</span>
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                <div className="text-[10px] font-black uppercase text-blue-400">चरण 1</div>
-                <div className="font-bold text-white">बुकमार्क बार में जोड़ें</div>
-                <div className="text-slate-400 text-[11px] leading-relaxed">
-                  ऊपर दिए गए नीले बटन <strong>&apos;⚡ MIS सिंक (R 9.1.3)&apos;</strong> को माउस से खींचकर अपने ब्राउज़र के बुकमार्क बार पर छोड़ दें। (<code>Ctrl+Shift+B</code> से बुकमार्क बार दिखेगा)।
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                <div className="text-[10px] font-black uppercase text-emerald-400">चरण 2</div>
-                <div className="font-bold text-white">R 9.1.3 रिपोर्ट खोलें</div>
-                <div className="text-slate-400 text-[11px] leading-relaxed">
-                  मनरेगा पोर्टल पर <strong>R 9.1.3 Social Audit Calendar Vs Audits Completed</strong> रिपोर्ट (बागपत या बड़ौत ब्लॉक) खोलें।
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-                <div className="text-[10px] font-black uppercase text-amber-400">चरण 3</div>
-                <div className="font-bold text-white">1 क्लिक करें और सिंक!</div>
-                <div className="text-slate-400 text-[11px] leading-relaxed">
-                  सरकारी पेज पर रहते हुए अपने बुकमार्क बार के <strong>&apos;⚡ MIS सिंक (R 9.1.3)&apos;</strong> पर क्लिक करें। पूरा डेटा 1 सेकंड में एक्सट्रैक्ट होकर आपके पेज हिंदी पर स्वतः लाइव अपडेट हो जाएगा!
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 3. QUICK PASTE MODAL */}
-      {/* ========================================================================= */}
-      {isQuickPasteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-blue-400 font-bold text-base">
-                <FileText className="w-5 h-5" />
-                <span>त्वरित पेस्ट (Quick Paste - R 9.1.3)</span>
-              </div>
-              <button
-                onClick={() => setIsQuickPasteOpen(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-300">
-              यदि सरकारी पोर्टल पर क्लिक करने पर डायरेक्ट API कनेक्ट न हो, तो बुकमार्कलेट द्वारा क्लिपबोर्ड पर कॉपी किया गया कोड यहाँ पेस्ट करके सिंक करें:
-            </p>
-
-            <form onSubmit={handleQuickPasteSubmit} className="space-y-4">
-              <textarea
-                value={quickPasteText}
-                onChange={(e) => setQuickPasteText(e.target.value)}
-                placeholder='यहाँ JSON कोड पेस्ट करें {"source":"bookmarklet_r913", ...}'
-                rows={5}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500"
-                required
-              />
-
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsQuickPasteOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold"
-                >
-                  रद्द करें
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5"
-                >
-                  <Sparkles className="w-4 h-4 text-yellow-300" />
-                  <span>सिंक लागू करें</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 4. SUMMARY METRIC CARDS (4 PILLARS) */}
+      {/* 2. SUMMARY METRIC CARDS (4 PILLARS) */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: कुल ग्राम पंचायतें */}
