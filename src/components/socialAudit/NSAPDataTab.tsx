@@ -123,8 +123,8 @@ export default function NSAPDataTab() {
     if (fontViewMode === 'dual' && krutiText) {
       return (
         <span className="flex flex-col">
-          <span>{unicodeText}</span>
-          <span className="text-[11px] text-emerald-300 font-mono" style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>
+          <span className="text-slate-900 font-semibold">{unicodeText}</span>
+          <span className="text-[11px] text-emerald-700 font-mono" style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>
             {krutiText}
           </span>
         </span>
@@ -640,30 +640,27 @@ export default function NSAPDataTab() {
       {/* ========================================================================= */}
       {/* 1. OFFICIAL BANNER */}
       {/* ========================================================================= */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/40 p-6 md:p-8 shadow-2xl">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="relative overflow-hidden rounded-3xl bg-white/95 backdrop-blur-md border border-slate-200/90 p-6 md:p-8 shadow-sm">
         <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                <Users className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <Users className="w-3.5 h-3.5 text-emerald-600" />
                 राष्ट्रीय सामाजिक सहायता कार्यक्रम (NSAP)
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
                 वृद्धावस्था पेंशन योजना • वित्तीय वर्ष 2026-2027
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                 जनपद: बागपत (बागपत एवं बड़ौत)
               </span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
               राष्ट्रीय वृद्धावस्था पेंशन सोशल ऑडिट डेटा एवं मासिक प्रगति रिपोर्ट
             </h1>
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              निदेशालय द्वारा निर्धारित मासिक प्रगति प्रारूप के अनुसार लाभार्थियों का सत्यापन, अपात्रों एवं मृतकों का पंजीकरण-वार डेटा, एवं कट-ऑफ तिथि (<strong className="text-white">{formatDateHi(asOfDate)}</strong>) तक अवशेष/लंबित ग्राम पंचायतों की मॉनिटरिंग।
+            <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
+              निदेशालय द्वारा निर्धारित मासिक प्रगति प्रारूप के अनुसार लाभार्थियों का सत्यापन, अपात्रों एवं मृतकों का पंजीकरण-वार डेटा, एवं कट-ऑफ तिथि (<strong className="text-slate-900">{formatDateHi(asOfDate)}</strong>) तक अवशेष/लंबित ग्राम पंचायतों की मॉनिटरिंग।
             </p>
           </div>
 
@@ -672,7 +669,7 @@ export default function NSAPDataTab() {
             {/* Direct Excel Paste Button */}
             <button
               onClick={() => handleOpenExcelPaste()}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-black text-xs shadow-lg shadow-teal-600/30 border border-teal-400/40 flex items-center gap-2 transition-all transform active:scale-95"
+              className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm flex items-center gap-2 transition-all transform active:scale-95"
               title="एक्सेल से सीधे कॉपी-पेस्ट करें"
             >
               <ClipboardPaste className="w-4 h-4 stroke-[2.5]" />
@@ -682,7 +679,7 @@ export default function NSAPDataTab() {
             {/* Add Record Button */}
             <button
               onClick={() => { setSelectedGpForAdd(''); setIsAddModalOpen(true); }}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 border border-emerald-400/30 flex items-center gap-2 transition-all transform active:scale-95"
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center gap-2 transition-all transform active:scale-95"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span>नया NSAP डेटा जोड़ें</span>
@@ -690,114 +687,114 @@ export default function NSAPDataTab() {
 
             <button
               onClick={() => window.print()}
-              className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-2 transition-all"
+              className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 font-bold text-xs border border-slate-200 flex items-center gap-2 transition-all"
             >
-              <Printer className="w-4 h-4 text-slate-400" />
+              <Printer className="w-4 h-4 text-slate-500" />
               <span>प्रिंट प्रारूप</span>
             </button>
 
             <button
               onClick={handleExportCSV}
-              className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-xs border border-slate-700 flex items-center gap-2 transition-all"
+              className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 font-bold text-xs border border-slate-200 flex items-center gap-2 transition-all"
             >
-              <Download className="w-4 h-4 text-slate-400" />
+              <Download className="w-4 h-4 text-slate-500" />
               <span>एक्सपोर्ट CSV</span>
             </button>
           </div>
         </div>
 
         {/* Top 4 Interactive KPI Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-200">
           <div 
             onClick={() => setActiveSection('completed')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-1 shadow-lg group select-none ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-1 shadow-sm group select-none ${
               activeSection === 'completed' 
-                ? 'bg-emerald-950/80 border-emerald-400 ring-2 ring-emerald-500/50' 
-                : 'bg-emerald-950/30 border-emerald-500/30 hover:border-emerald-400/80'
+                ? 'bg-emerald-50/90 border-emerald-300 ring-2 ring-emerald-500/40 text-slate-900' 
+                : 'bg-white border-slate-200 hover:border-emerald-300 text-slate-900'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-emerald-300 font-bold">
+            <div className="flex items-center justify-between text-xs text-emerald-800 font-bold">
               <span>सम्पन्न (डेटा रिकॉर्डेड)</span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
             </div>
-            <div className="text-2xl font-black text-white font-mono">
-              {nsapRecords.length} <span className="text-xs font-normal text-slate-400">/ 47</span>
+            <div className="text-2xl font-black text-slate-900 font-mono">
+              {nsapRecords.length} <span className="text-xs font-normal text-slate-500">/ 47</span>
             </div>
-            <div className="text-[11px] text-emerald-400/90 font-medium">
+            <div className="text-[11px] text-emerald-700 font-medium">
               बागपत: {monthlyReportStats.baghpatRecorded} • बड़ौत: {monthlyReportStats.barautRecorded}
             </div>
           </div>
 
           <div 
             onClick={() => setActiveSection('pending')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-1 shadow-lg group select-none ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-1 shadow-sm group select-none ${
               activeSection === 'pending' 
-                ? 'bg-amber-950/80 border-amber-400 ring-2 ring-amber-500/50' 
-                : 'bg-amber-950/30 border-amber-500/30 hover:border-amber-400/80'
+                ? 'bg-amber-50/90 border-amber-300 ring-2 ring-amber-500/40 text-slate-900' 
+                : 'bg-white border-slate-200 hover:border-amber-300 text-slate-900'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-amber-300 font-bold">
+            <div className="flex items-center justify-between text-xs text-amber-800 font-bold">
               <span>आज तक लंबित (Due)</span>
-              <AlertTriangle className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+              <AlertTriangle className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" />
             </div>
-            <div className="text-2xl font-black text-amber-300 font-mono">
-              {duePendingNsapGps.length} <span className="text-xs font-normal text-slate-400">पंचायतें</span>
+            <div className="text-2xl font-black text-amber-700 font-mono">
+              {duePendingNsapGps.length} <span className="text-xs font-normal text-slate-500">पंचायतें</span>
             </div>
-            <div className="text-[11px] text-amber-400/90 font-medium">
+            <div className="text-[11px] text-amber-700 font-medium">
               कट-ऑफ {formatDateHi(asOfDate)} तक बैठक सम्पन्न
             </div>
           </div>
 
           <div 
             onClick={() => setActiveSection('upcoming')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-1 shadow-lg group select-none ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-1 shadow-sm group select-none ${
               activeSection === 'upcoming' 
-                ? 'bg-blue-950/80 border-blue-400 ring-2 ring-blue-500/50' 
-                : 'bg-blue-950/30 border-blue-500/30 hover:border-blue-400/80'
+                ? 'bg-blue-50/90 border-blue-300 ring-2 ring-blue-500/40 text-slate-900' 
+                : 'bg-white border-slate-200 hover:border-blue-300 text-slate-900'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-blue-300 font-bold">
+            <div className="flex items-center justify-between text-xs text-blue-800 font-bold">
               <span>आगामी प्रस्तावित</span>
-              <Clock className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+              <Clock className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
             </div>
-            <div className="text-2xl font-black text-white font-mono">
-              {upcomingNsapGps.length} <span className="text-xs font-normal text-slate-400">पंचायतें</span>
+            <div className="text-2xl font-black text-slate-900 font-mono">
+              {upcomingNsapGps.length} <span className="text-xs font-normal text-slate-500">पंचायतें</span>
             </div>
-            <div className="text-[11px] text-blue-300/90 font-medium">
+            <div className="text-[11px] text-blue-700 font-medium">
               नवम्बर एवं दिसम्बर 2026 में बैठक
             </div>
           </div>
 
           <div 
             onClick={() => setActiveSection('report')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-1 shadow-lg group select-none ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-1 shadow-sm group select-none ${
               activeSection === 'report' 
-                ? 'bg-purple-950/80 border-purple-400 ring-2 ring-purple-500/50' 
-                : 'bg-purple-950/30 border-purple-500/30 hover:border-purple-400/80'
+                ? 'bg-purple-50/90 border-purple-300 ring-2 ring-purple-500/40 text-slate-900' 
+                : 'bg-white border-slate-200 hover:border-purple-300 text-slate-900'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-purple-300 font-bold">
+            <div className="flex items-center justify-between text-xs text-purple-800 font-bold">
               <span>कुल NSAP योजना</span>
-              <Users className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+              <Users className="w-4 h-4 text-purple-600 group-hover:scale-110 transition-transform" />
             </div>
-            <div className="text-2xl font-black text-white font-mono">
-              47 <span className="text-xs font-normal text-slate-400">पंचायतें</span>
+            <div className="text-2xl font-black text-slate-900 font-mono">
+              47 <span className="text-xs font-normal text-slate-500">पंचायतें</span>
             </div>
-            <div className="text-[11px] text-purple-300/90 font-medium">
+            <div className="text-[11px] text-purple-700 font-medium">
               बागपत: 24 • बड़ौत: 23
             </div>
           </div>
         </div>
 
         {/* Section Navigation Pills */}
-        <div className="mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center gap-2">
+        <div className="mt-5 pt-4 border-t border-slate-200 flex flex-wrap items-center gap-2">
           {/* Tab 1: सम्पन्न ग्राम पंचायतें */}
           <button
             onClick={() => setActiveSection('completed')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
               activeSection === 'completed'
-                ? 'bg-emerald-500 text-slate-950 shadow-md font-black ring-2 ring-emerald-400'
-                : 'bg-slate-950/60 text-slate-300 hover:text-white border border-slate-800'
+                ? 'bg-emerald-600 text-white shadow-sm font-black'
+                : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
             }`}
           >
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -809,11 +806,11 @@ export default function NSAPDataTab() {
             onClick={() => setActiveSection('pending')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
               activeSection === 'pending'
-                ? 'bg-amber-500 text-slate-950 shadow-md font-black ring-2 ring-amber-400'
-                : 'bg-slate-950/60 text-slate-300 hover:text-white border border-slate-800'
+                ? 'bg-amber-600 text-white shadow-sm font-black'
+                : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
             }`}
           >
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
             <span>2. आज तक लंबित ({duePendingNsapGps.length})</span>
           </button>
 
@@ -822,11 +819,11 @@ export default function NSAPDataTab() {
             onClick={() => setActiveSection('report')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
               activeSection === 'report'
-                ? 'bg-blue-600 text-white shadow-md font-black ring-2 ring-blue-400'
-                : 'bg-slate-950/60 text-slate-300 hover:text-white border border-slate-800'
+                ? 'bg-blue-600 text-white shadow-sm font-black'
+                : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
             }`}
           >
-            <FileSpreadsheet className="w-4 h-4 text-blue-300" />
+            <FileSpreadsheet className="w-4 h-4 text-blue-500" />
             <span>3. मासिक प्रगति रिपोर्ट (प्रारूप 1 से 9)</span>
           </button>
 
@@ -835,11 +832,11 @@ export default function NSAPDataTab() {
             onClick={() => setActiveSection('beneficiaries')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
               activeSection === 'beneficiaries'
-                ? 'bg-purple-600 text-white shadow-md font-black ring-2 ring-purple-400'
-                : 'bg-slate-950/60 text-slate-300 hover:text-white border border-slate-800'
+                ? 'bg-purple-600 text-white shadow-sm font-black'
+                : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
             }`}
           >
-            <Users className="w-4 h-4 text-purple-300" />
+            <Users className="w-4 h-4 text-purple-500" />
             <span>4. अपात्र / मृतक लाभार्थी ({allBeneficiaries.length})</span>
           </button>
 
@@ -848,11 +845,11 @@ export default function NSAPDataTab() {
             onClick={() => setActiveSection('upcoming')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
               activeSection === 'upcoming'
-                ? 'bg-teal-600 text-white shadow-md font-black ring-2 ring-teal-400'
-                : 'bg-slate-950/60 text-slate-300 hover:text-white border border-slate-800'
+                ? 'bg-teal-600 text-white shadow-sm font-black'
+                : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
             }`}
           >
-            <Calendar className="w-4 h-4 text-teal-300" />
+            <Calendar className="w-4 h-4 text-teal-500" />
             <span>5. आगामी ग्राम पंचायतें ({upcomingNsapGps.length})</span>
           </button>
         </div>
@@ -862,30 +859,30 @@ export default function NSAPDataTab() {
       {/* SECTION 1: RECORDED / COMPLETED GRAM PANCHAYATS (16 GPs) */}
       {/* ========================================================================= */}
       {(activeSection === 'completed') && (
-        <div className="rounded-3xl bg-slate-900/90 border border-emerald-500/30 p-5 md:p-6 shadow-2xl space-y-4">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="rounded-3xl bg-white/95 border border-slate-200/90 p-5 md:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
                   सम्पन्न (डेटा रिकॉर्डेड)
                 </span>
-                <h3 className="text-lg md:text-xl font-black text-white">
+                <h3 className="text-lg md:text-xl font-black text-slate-900">
                   सम्पन्न ग्राम पंचायतें • पेंशन ऑडिट डेटा रिकॉर्डेड ({filteredRecordedGps.length})
                 </h3>
               </div>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className="text-xs text-slate-600 mt-1">
                 प्रत्येक ग्राम पंचायत का डेटा एडिट करने का विकल्प, एक्सेल से सीधे मृतक/अपात्र कॉपी-पेस्ट आयात, एवं बिना मृतक वाली पंचायतों का कलर हाइलाइट उपलब्ध है।
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               {/* Deceased Status Alert Quick Filter */}
-              <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs">
+              <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl p-1 text-xs">
                 <button
                   onClick={() => setDeceasedFilter('all')}
                   className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                    deceasedFilter === 'all' ? 'bg-slate-700 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                    deceasedFilter === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   सभी ({nsapRecords.length})
@@ -894,10 +891,10 @@ export default function NSAPDataTab() {
                   onClick={() => setDeceasedFilter('zero')}
                   className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                     deceasedFilter === 'zero' 
-                      ? 'bg-amber-500 text-slate-950 font-black shadow-md' 
+                      ? 'bg-amber-500 text-white font-black shadow-sm' 
                       : zeroDeceasedGpsCount > 0 
-                      ? 'text-amber-400 bg-amber-950/40 border border-amber-500/40' 
-                      : 'text-slate-500'
+                      ? 'text-amber-800 bg-amber-100 border border-amber-300 font-bold' 
+                      : 'text-slate-400'
                   }`}
                   title="जिन पंचायतों में कोई मृतक लाभार्थी दर्ज नहीं है"
                 >
@@ -907,7 +904,7 @@ export default function NSAPDataTab() {
                 <button
                   onClick={() => setDeceasedFilter('has')}
                   className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                    deceasedFilter === 'has' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                    deceasedFilter === 'has' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   मृतक दर्ज ({nsapRecords.length - zeroDeceasedGpsCount})
@@ -915,11 +912,11 @@ export default function NSAPDataTab() {
               </div>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs">
+              <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl p-1 text-xs">
                 <button
                   onClick={() => setRecordedViewMode('cards')}
                   className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                    recordedViewMode === 'cards' ? 'bg-emerald-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+                    recordedViewMode === 'cards' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   कार्ड दृश्य (Cards)
@@ -927,7 +924,7 @@ export default function NSAPDataTab() {
                 <button
                   onClick={() => setRecordedViewMode('table')}
                   className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                    recordedViewMode === 'table' ? 'bg-emerald-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+                    recordedViewMode === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   तालिका दृश्य (Table)
@@ -942,7 +939,7 @@ export default function NSAPDataTab() {
                   value={gpSearchQuery}
                   onChange={(e) => setGpSearchQuery(e.target.value)}
                   placeholder="पंचायत सर्च करें..."
-                  className="bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                  className="bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -950,7 +947,7 @@ export default function NSAPDataTab() {
               <select
                 value={gpBlockFilter}
                 onChange={(e) => setGpBlockFilter(e.target.value as any)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-semibold focus:outline-none focus:border-emerald-500"
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 font-semibold focus:outline-none focus:border-emerald-500"
               >
                 <option value="all">सभी ब्लॉक ({nsapRecords.length})</option>
                 <option value="Baghpat">विकास खण्ड बागपत ({nsapRecords.filter(r => r.block === 'Baghpat').length})</option>
@@ -970,33 +967,33 @@ export default function NSAPDataTab() {
                 return (
                   <div
                     key={gp.id}
-                    className={`p-4 rounded-2xl transition-all space-y-3 shadow-lg group relative ${
+                    className={`p-4 rounded-2xl transition-all space-y-3 shadow-sm group relative ${
                       !hasDeceased
-                        ? 'bg-gradient-to-b from-amber-950/40 via-slate-950 to-slate-950 border-2 border-amber-500/80 shadow-amber-500/10'
-                        : 'bg-slate-950/90 border border-emerald-500/40 hover:border-emerald-400'
+                        ? 'bg-amber-50/70 border-2 border-amber-400 shadow-sm'
+                        : 'bg-white border border-slate-200/90 hover:border-emerald-400'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                             SR# {gp.sno}
                           </span>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            gp.block === 'Baghpat' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                            gp.block === 'Baghpat' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                           }`}>
                             {gp.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                           </span>
 
                           {/* Zero Deceased Alert Pill on the Card */}
                           {!hasDeceased && (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1 animate-pulse">
-                              <AlertTriangle className="w-3 h-3 text-amber-400" />
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 animate-pulse">
+                              <AlertTriangle className="w-3 h-3 text-amber-600" />
                               0 मृतक (अलर्ट)
                             </span>
                           )}
                         </div>
-                        <div className="text-base font-black text-white pt-1">
+                        <div className="text-base font-black text-slate-900 pt-1">
                           {renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}
                         </div>
                       </div>
@@ -1005,53 +1002,53 @@ export default function NSAPDataTab() {
                         {/* Edit Button */}
                         <button
                           onClick={() => handleOpenEditForGp(gp)}
-                          className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs transition-all"
+                          className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs transition-all"
                           title="इस पंचायत का डेटा एडिट करें (Edit Data)"
                         >
-                          <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+                          <Edit3 className="w-3.5 h-3.5 text-blue-600" />
                         </button>
 
-                        <span className="text-[10px] font-black px-2.5 py-1 rounded-xl border text-emerald-300 bg-emerald-950/80 border-emerald-600/50 flex items-center gap-1 shrink-0">
+                        <span className="text-[10px] font-black px-2.5 py-1 rounded-xl border text-emerald-800 bg-emerald-50 border-emerald-200 flex items-center gap-1 shrink-0">
                           <Check className="w-3 h-3 stroke-[3]" />
                           <span>सम्पन्न</span>
                         </span>
                       </div>
                     </div>
 
-                    <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800">
+                    <div className="text-xs text-slate-500 flex items-center justify-between pt-1 border-t border-slate-100">
                       <span>बैठक संपन्न तिथि:</span>
-                      <strong className="text-white font-mono">{formatDateHi(gp.meetingDate)}</strong>
+                      <strong className="text-slate-800 font-mono">{formatDateHi(gp.meetingDate)}</strong>
                     </div>
 
                     {/* 4 Stat Boxes (With Warning Amber Highlight if Deceased === 0) */}
                     <div className="grid grid-cols-4 gap-1.5 text-center">
-                      <div className="p-2 rounded-xl bg-slate-900 border border-slate-800">
-                        <div className="text-[10px] text-slate-400">कुल पेंशनर</div>
-                        <div className="text-sm font-black text-white font-mono">{gp.totalBeneficiaries}</div>
+                      <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                        <div className="text-[10px] text-slate-500 font-medium">कुल पेंशनर</div>
+                        <div className="text-sm font-black text-slate-900 font-mono">{gp.totalBeneficiaries}</div>
                       </div>
-                      <div className="p-2 rounded-xl bg-teal-950/40 border border-teal-800/40">
-                        <div className="text-[10px] text-teal-300">सत्यापित</div>
-                        <div className="text-sm font-black text-teal-300 font-mono">{gp.verifiedTotal}</div>
+                      <div className="p-2 rounded-xl bg-teal-50 border border-teal-200">
+                        <div className="text-[10px] text-teal-700 font-medium">सत्यापित</div>
+                        <div className="text-sm font-black text-teal-800 font-mono">{gp.verifiedTotal}</div>
                       </div>
-                      <div className="p-2 rounded-xl bg-amber-950/40 border border-amber-800/40">
-                        <div className="text-[10px] text-amber-300">अपात्र</div>
-                        <div className="text-sm font-black text-amber-300 font-mono">{inelCount}</div>
+                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200">
+                        <div className="text-[10px] text-amber-700 font-medium">अपात्र</div>
+                        <div className="text-sm font-black text-amber-800 font-mono">{inelCount}</div>
                       </div>
 
                       {/* Deceased Stat Box: Glowing Warning if 0, Rose if > 0 */}
                       <div className={`p-2 rounded-xl transition-all ${
                         !hasDeceased
-                          ? 'bg-amber-500/25 border-2 border-amber-500 text-amber-300 ring-2 ring-amber-500/40 animate-pulse'
-                          : 'bg-rose-950/40 border border-rose-800/40 text-rose-300'
+                          ? 'bg-amber-100 border-2 border-amber-400 text-amber-900 ring-2 ring-amber-300 animate-pulse'
+                          : 'bg-rose-50 border border-rose-200 text-rose-800'
                       }`}>
                         <div className={`text-[10px] font-bold flex items-center justify-center gap-0.5 ${
-                          !hasDeceased ? 'text-amber-300' : 'text-rose-300'
+                          !hasDeceased ? 'text-amber-900' : 'text-rose-800'
                         }`}>
-                          {!hasDeceased && <AlertTriangle className="w-2.5 h-2.5 text-amber-400" />}
+                          {!hasDeceased && <AlertTriangle className="w-2.5 h-2.5 text-amber-600" />}
                           <span>मृतक</span>
                         </div>
                         <div className={`text-sm font-black font-mono ${
-                          !hasDeceased ? 'text-amber-300' : 'text-rose-300'
+                          !hasDeceased ? 'text-amber-900' : 'text-rose-800'
                         }`}>
                           {decCount} {!hasDeceased && '⚠️'}
                         </div>
@@ -1066,30 +1063,30 @@ export default function NSAPDataTab() {
                           setBenGpFilter(gp.gpNameUnicode);
                           setActiveSection('beneficiaries');
                         }}
-                        className="py-1.5 px-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-[11px] font-bold flex items-center justify-center gap-1 border border-slate-800 transition-all"
+                        className="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 border border-slate-200 transition-all"
                         title="लाभार्थी विवरण देखें"
                       >
-                        <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                        <Eye className="w-3.5 h-3.5 text-emerald-600" />
                         <span>विवरण ({gp.beneficiaries.length})</span>
                       </button>
 
                       {/* Excel Paste directly into this GP */}
                       <button
                         onClick={() => handleOpenExcelPaste(gp.id)}
-                        className="py-1.5 px-2 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/50 text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
+                        className="py-1.5 px-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
                         title="एक्सेल से सीधे कॉपी-पेस्ट करें"
                       >
-                        <ClipboardPaste className="w-3.5 h-3.5 text-cyan-400" />
+                        <ClipboardPaste className="w-3.5 h-3.5 text-cyan-600" />
                         <span>एक्सेल पेस्ट</span>
                       </button>
 
                       {/* Edit GP Data */}
                       <button
                         onClick={() => handleOpenEditForGp(gp)}
-                        className="py-1.5 px-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 text-blue-300 border border-blue-700/50 text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
+                        className="py-1.5 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
                         title="संख्या व बैठक डेटा एडिट करें"
                       >
-                        <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+                        <Edit3 className="w-3.5 h-3.5 text-blue-600" />
                         <span>एडिट</span>
                       </button>
                     </div>
@@ -1101,9 +1098,9 @@ export default function NSAPDataTab() {
 
           {/* Master GP Table View */}
           {recordedViewMode === 'table' && (
-            <div className="overflow-x-auto rounded-2xl border border-slate-800">
-              <table className="w-full text-left text-xs text-slate-200">
-                <thead className="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-800">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+              <table className="w-full text-left text-xs text-slate-700">
+                <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
                   <tr>
                     <th className="py-3 px-3 text-center">क्र०सं०</th>
                     <th className="py-3 px-3">ब्लॉक</th>
@@ -1112,14 +1109,14 @@ export default function NSAPDataTab() {
                     <th className="py-3 px-3 text-center">कुल लाभार्थी</th>
                     <th className="py-3 px-3 text-center">प्रत्यक्ष सत्यापित</th>
                     <th className="py-3 px-3 text-center">परिवार से</th>
-                    <th className="py-3 px-3 text-center font-bold text-emerald-300">कुल सत्यापित</th>
-                    <th className="py-3 px-3 text-center font-bold text-amber-300">अपात्र</th>
-                    <th className="py-3 px-3 text-center font-bold text-rose-300">मृतक</th>
+                    <th className="py-3 px-3 text-center font-bold text-emerald-700">कुल सत्यापित</th>
+                    <th className="py-3 px-3 text-center font-bold text-amber-700">अपात्र</th>
+                    <th className="py-3 px-3 text-center font-bold text-rose-700">मृतक</th>
                     <th className="py-3 px-3 text-center">असत्यापित</th>
                     <th className="py-3 px-4 text-center">एक्शन</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-medium">
+                <tbody className="divide-y divide-slate-100 font-medium">
                   {filteredRecordedGps.map(gp => {
                     const inelCount = gp.beneficiaries.filter(b => b.category === 'ineligible').length;
                     const decCount = gp.beneficiaries.filter(b => b.category === 'deceased').length;
@@ -1129,58 +1126,58 @@ export default function NSAPDataTab() {
 
                     return (
                       <React.Fragment key={gp.id}>
-                        <tr className={`hover:bg-slate-800/40 transition-colors ${
-                          !hasDeceased ? 'bg-amber-950/20 border-l-4 border-l-amber-500' : ''
+                        <tr className={`hover:bg-slate-50 transition-colors ${
+                          !hasDeceased ? 'bg-amber-50/60 border-l-4 border-l-amber-500' : ''
                         }`}>
-                          <td className="py-3 px-3 text-center font-mono text-slate-400 font-bold">{gp.sno}</td>
+                          <td className="py-3 px-3 text-center font-mono text-slate-500 font-bold">{gp.sno}</td>
                           <td className="py-3 px-3">
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              gp.block === 'Baghpat' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                              gp.block === 'Baghpat' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                             }`}>
                               {gp.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-bold text-white text-sm">
+                          <td className="py-3 px-4 font-bold text-slate-900 text-sm">
                             <div className="flex items-center gap-2">
                               <span>{renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}</span>
                               {!hasDeceased && (
-                                <span className="text-[10px] px-2 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 font-bold">
                                   0 मृतक
                                 </span>
                               )}
                             </div>
                           </td>
-                          <td className="py-3 px-3 text-center font-mono text-slate-300">{formatDateHi(gp.meetingDate)}</td>
-                          <td className="py-3 px-3 text-center font-mono font-bold text-white">{gp.totalBeneficiaries}</td>
-                          <td className="py-3 px-3 text-center font-mono text-teal-300">{gp.verifiedDirect || '—'}</td>
-                          <td className="py-3 px-3 text-center font-mono text-indigo-300">{gp.verifiedFamily || '—'}</td>
-                          <td className="py-3 px-3 text-center font-mono font-bold text-emerald-300">{gp.verifiedTotal}</td>
+                          <td className="py-3 px-3 text-center font-mono text-slate-600">{formatDateHi(gp.meetingDate)}</td>
+                          <td className="py-3 px-3 text-center font-mono font-bold text-slate-900">{gp.totalBeneficiaries}</td>
+                          <td className="py-3 px-3 text-center font-mono text-teal-700 font-semibold">{gp.verifiedDirect || '—'}</td>
+                          <td className="py-3 px-3 text-center font-mono text-indigo-700 font-semibold">{gp.verifiedFamily || '—'}</td>
+                          <td className="py-3 px-3 text-center font-mono font-bold text-emerald-700">{gp.verifiedTotal}</td>
                           <td className="py-3 px-3 text-center">
                             {inelCount > 0 ? (
-                              <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">
+                              <span className="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
                                 {inelCount}
                               </span>
-                            ) : <span className="text-slate-500">0</span>}
+                            ) : <span className="text-slate-400">0</span>}
                           </td>
                           <td className="py-3 px-3 text-center">
                             {hasDeceased ? (
-                              <span className="bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-bold">
+                              <span className="bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-full font-bold">
                                 {decCount}
                               </span>
                             ) : (
-                              <span className="bg-amber-500/25 text-amber-300 border border-amber-500/60 px-2.5 py-0.5 rounded-full font-black text-[11px] inline-flex items-center gap-1 animate-pulse">
-                                <AlertTriangle className="w-3 h-3 text-amber-400" />
+                              <span className="bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full font-black text-[11px] inline-flex items-center gap-1 animate-pulse">
+                                <AlertTriangle className="w-3 h-3 text-amber-600" />
                                 0 मृतक शेष
                               </span>
                             )}
                           </td>
-                          <td className="py-3 px-3 text-center font-mono text-slate-400">{unverCount || gp.unverifiedCount || 0}</td>
+                          <td className="py-3 px-3 text-center font-mono text-slate-500">{unverCount || gp.unverifiedCount || 0}</td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-1">
                               {/* Edit GP Button */}
                               <button
                                 onClick={() => handleOpenEditForGp(gp)}
-                                className="p-1.5 rounded-lg bg-blue-950/80 hover:bg-blue-900 text-blue-300 border border-blue-700/50"
+                                className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200"
                                 title="डेटा एडिट करें"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
@@ -1189,7 +1186,7 @@ export default function NSAPDataTab() {
                               {/* Excel Paste Button */}
                               <button
                                 onClick={() => handleOpenExcelPaste(gp.id)}
-                                className="p-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/50"
+                                className="p-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200"
                                 title="एक्सेल से सीधे कॉपी-पेस्ट करें"
                               >
                                 <ClipboardPaste className="w-3.5 h-3.5" />
@@ -1198,10 +1195,10 @@ export default function NSAPDataTab() {
                               {/* Expand / View Beneficiaries */}
                               <button
                                 onClick={() => setExpandedGpId(isExpanded ? null : gp.id)}
-                                className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1"
+                                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 border border-slate-200"
                                 title="लाभार्थी विवरण देखें"
                               >
-                                <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                                <Eye className="w-3.5 h-3.5 text-emerald-600" />
                                 <span>{isExpanded ? 'छुपाएं' : `सूची (${gp.beneficiaries.length})`}</span>
                               </button>
 
@@ -1211,7 +1208,7 @@ export default function NSAPDataTab() {
                                   setTargetGpIdForBen(gp.id);
                                   setIsBenModalOpen(true);
                                 }}
-                                className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 hover:bg-emerald-900 border border-emerald-700/50"
+                                className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
                                 title="इस पंचायत में लाभार्थी जोड़ें"
                               >
                                 <Plus className="w-3.5 h-3.5" />
@@ -1223,16 +1220,16 @@ export default function NSAPDataTab() {
                         {/* Expandable Beneficiaries Row */}
                         {isExpanded && (
                           <tr>
-                            <td colSpan={12} className="p-4 bg-slate-950/90 border-y border-emerald-500/30">
+                            <td colSpan={12} className="p-4 bg-slate-50/90 border-y border-emerald-200">
                               <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                  <h4 className="text-xs font-black text-emerald-300 uppercase tracking-wider flex items-center gap-2">
+                                  <h4 className="text-xs font-black text-emerald-800 uppercase tracking-wider flex items-center gap-2">
                                     <span>{gp.gpNameUnicode} • कुल {gp.beneficiaries.length} दर्ज लाभार्थी (अपात्र, मृतक एवं असत्यापित)</span>
                                   </h4>
                                   <div className="flex items-center gap-2">
                                     <button
                                       onClick={() => handleOpenExcelPaste(gp.id)}
-                                      className="text-xs font-bold bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1 rounded-lg flex items-center gap-1.5"
+                                      className="text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm"
                                     >
                                       <ClipboardPaste className="w-3.5 h-3.5" />
                                       <span>एक्सेल से पेस्ट करें</span>
@@ -1242,7 +1239,7 @@ export default function NSAPDataTab() {
                                         setTargetGpIdForBen(gp.id);
                                         setIsBenModalOpen(true);
                                       }}
-                                      className="text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg flex items-center gap-1"
+                                      className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg flex items-center gap-1 shadow-sm"
                                     >
                                       <Plus className="w-3.5 h-3.5" />
                                       <span>लाभार्थी जोड़ें</span>
@@ -1255,43 +1252,43 @@ export default function NSAPDataTab() {
                                     {gp.beneficiaries.map(b => (
                                       <div
                                         key={b.id}
-                                        className={`p-3 rounded-xl border text-xs space-y-1.5 relative group/ben ${
+                                        className={`p-3 rounded-xl border text-xs space-y-1.5 relative group/ben shadow-sm ${
                                           b.category === 'ineligible' 
-                                            ? 'bg-amber-950/30 border-amber-500/30 text-amber-200' 
+                                            ? 'bg-amber-50/70 border-amber-200 text-amber-900' 
                                             : b.category === 'deceased'
-                                            ? 'bg-rose-950/30 border-rose-500/30 text-rose-200'
-                                            : 'bg-slate-900 border-slate-800 text-slate-300'
+                                            ? 'bg-rose-50/70 border-rose-200 text-rose-900'
+                                            : 'bg-white border-slate-200 text-slate-800'
                                         }`}
                                       >
                                         <div className="flex items-center justify-between">
-                                          <span className="font-bold text-white text-sm">
+                                          <span className="font-bold text-slate-900 text-sm">
                                             {renderText(b.nameUnicode, b.nameKrutiDev)}
                                           </span>
                                           <div className="flex items-center gap-1">
                                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                              b.category === 'ineligible' ? 'bg-amber-500/20 text-amber-300' : b.category === 'deceased' ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-400'
+                                              b.category === 'ineligible' ? 'bg-amber-100 text-amber-800' : b.category === 'deceased' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-600'
                                             }`}>
                                               {b.categoryHindi}
                                             </span>
                                             <button
                                               onClick={() => deleteNsapBeneficiary(gp.id, b.id)}
-                                              className="opacity-0 group-hover/ben:opacity-100 p-1 text-slate-400 hover:text-rose-400 transition-opacity"
+                                              className="opacity-0 group-hover/ben:opacity-100 p-1 text-slate-400 hover:text-rose-600 transition-opacity"
                                               title="हटाएं"
                                             >
                                               <Trash2 className="w-3 h-3" />
                                             </button>
                                           </div>
                                         </div>
-                                        <div className="font-mono text-[11px] text-slate-400">
-                                          पंजीकरण: <strong className="text-slate-200">{b.registrationId}</strong>
+                                        <div className="font-mono text-[11px] text-slate-500">
+                                          पंजीकरण: <strong className="text-slate-800">{b.registrationId}</strong>
                                         </div>
                                         {b.reason && (
-                                          <div className="text-[11px] text-amber-300/90 italic">
+                                          <div className="text-[11px] text-amber-800 italic">
                                             कारण: {b.reason}
                                           </div>
                                         )}
                                         {b.deathDate && (
-                                          <div className="text-[11px] text-rose-300 font-mono">
+                                          <div className="text-[11px] text-rose-700 font-mono">
                                             मृत्यु तिथि: {formatDateHi(b.deathDate)}
                                           </div>
                                         )}
@@ -1299,11 +1296,11 @@ export default function NSAPDataTab() {
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-xs text-amber-300 bg-amber-950/30 border border-amber-500/30 p-3 rounded-xl flex items-center justify-between">
+                                  <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center justify-between">
                                     <span>⚠️ इस ग्राम पंचायत में अभी कोई अपात्र या मृतक लाभार्थी दर्ज नहीं है। आप सीधे एक्सेल से कॉपी-पेस्ट करके जोड़ सकते हैं।</span>
                                     <button
                                       onClick={() => handleOpenExcelPaste(gp.id)}
-                                      className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs"
+                                      className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shadow-sm"
                                     >
                                       एक्सेल पेस्ट करें
                                     </button>
@@ -1327,24 +1324,22 @@ export default function NSAPDataTab() {
       {/* SECTION 2: DEDICATED "आज तक लंबित पुष्टि बॉक्स" (PENDING ACTION BOX) */}
       {/* ========================================================================= */}
       {activeSection === 'pending' && (
-        <div className="rounded-3xl bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-950 border-2 border-amber-500/50 p-6 shadow-2xl space-y-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-amber-500/30 pb-4">
+        <div className="rounded-3xl bg-white/95 border-2 border-amber-300 p-6 shadow-sm space-y-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-amber-200 pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 p-0.5 shadow-lg shadow-amber-500/20 flex items-center justify-center shrink-0">
-                <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-amber-400 animate-pulse" />
-                </div>
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-amber-600 animate-pulse" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg md:text-xl font-black text-white">
+                  <h3 className="text-lg md:text-xl font-black text-slate-900">
                     आज तक लंबित NSAP ग्राम पंचायतें (Pending Action Box)
                   </h3>
-                  <span className="text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full">
+                  <span className="text-xs font-black bg-amber-100 text-amber-800 border border-amber-300 px-2.5 py-0.5 rounded-full">
                     {filteredPendingBoxGps.length} लंबित
                   </span>
                 </div>
-                <p className="text-xs text-slate-300 mt-1">
+                <p className="text-xs text-slate-600 mt-1">
                   {pendingScope === 'due'
                     ? `कट-ऑफ तिथि (${formatDateHi(asOfDate)}) तक जिन ${duePendingNsapGps.length} NSAP ग्राम पंचायतों की बैठक संपन्न हो चुकी है परंतु डेटा अभी एक्सेल/पोर्टल से दर्ज होना शेष है।`
                     : 'समस्त ग्राम पंचायतें जिनका NSAP सोशल ऑडिट डेटा अभी दर्ज नहीं हुआ है।'}
@@ -1354,11 +1349,11 @@ export default function NSAPDataTab() {
 
             <div className="flex flex-wrap items-center gap-2">
               {/* Scope toggle */}
-              <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs">
+              <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl p-1 text-xs">
                 <button
                   onClick={() => setPendingScope('due')}
                   className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                    pendingScope === 'due' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+                    pendingScope === 'due' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   आज तक लंबित ({duePendingNsapGps.length})
@@ -1366,7 +1361,7 @@ export default function NSAPDataTab() {
                 <button
                   onClick={() => setPendingScope('all')}
                   className={`px-3 py-1 rounded-lg font-bold transition-all ${
-                    pendingScope === 'all' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
+                    pendingScope === 'all' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   समस्त लंबित ({allPendingNsapGps.length})
@@ -1374,22 +1369,22 @@ export default function NSAPDataTab() {
               </div>
 
               {/* Block filter */}
-              <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs">
+              <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl p-1 text-xs">
                 <button
                   onClick={() => setPendingBlockFilter('all')}
-                  className={`px-2.5 py-1 rounded-lg font-bold ${pendingBlockFilter === 'all' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
+                  className={`px-2.5 py-1 rounded-lg font-bold ${pendingBlockFilter === 'all' ? 'bg-slate-700 text-white' : 'text-slate-600 hover:text-slate-900'}`}
                 >
                   सभी ({pendingScope === 'due' ? duePendingNsapGps.length : allPendingNsapGps.length})
                 </button>
                 <button
                   onClick={() => setPendingBlockFilter('Baghpat')}
-                  className={`px-2.5 py-1 rounded-lg font-bold ${pendingBlockFilter === 'Baghpat' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                  className={`px-2.5 py-1 rounded-lg font-bold ${pendingBlockFilter === 'Baghpat' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
                 >
                   बागपत ({pendingScope === 'due' ? duePendingNsapGps.filter(r => r.block === 'Baghpat').length : allPendingNsapGps.filter(r => r.block === 'Baghpat').length})
                 </button>
                 <button
                   onClick={() => setPendingBlockFilter('Baraut')}
-                  className={`px-2.5 py-1 rounded-lg font-bold ${pendingBlockFilter === 'Baraut' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                  className={`px-2.5 py-1 rounded-lg font-bold ${pendingBlockFilter === 'Baraut' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
                 >
                   बड़ौत ({pendingScope === 'due' ? duePendingNsapGps.filter(r => r.block === 'Baraut').length : allPendingNsapGps.filter(r => r.block === 'Baraut').length})
                 </button>
@@ -1404,47 +1399,47 @@ export default function NSAPDataTab() {
                 return (
                   <div
                     key={r.id}
-                    className="p-4 rounded-2xl bg-slate-950/90 border border-amber-500/40 hover:border-amber-400 transition-all space-y-3 shadow-lg"
+                    className="p-4 rounded-2xl bg-white border border-amber-300 hover:border-amber-400 transition-all space-y-3 shadow-sm"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                             SR# {r.sno}
                           </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
                             {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                           </span>
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
                             NSAP पेंशन
                           </span>
                         </div>
-                        <div className="text-base font-black text-white pt-1">
+                        <div className="text-base font-black text-slate-900 pt-1">
                           {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
                         </div>
                       </div>
 
-                      <span className="text-[11px] font-bold px-2 py-1 rounded-xl border text-amber-400 bg-amber-950/80 border-amber-700/50 flex items-center gap-1">
+                      <span className="text-[11px] font-bold px-2 py-1 rounded-xl border text-amber-800 bg-amber-50 border-amber-200 flex items-center gap-1">
                         <Clock className="w-3 h-3 animate-spin" />
                         <span>लंबित</span>
                       </span>
                     </div>
 
-                    <div className="text-xs text-slate-400 space-y-1.5 pt-1 border-t border-slate-800">
+                    <div className="text-xs text-slate-500 space-y-1.5 pt-1 border-t border-slate-100">
                       <div className="flex items-center justify-between">
                         <span>बैठक संपन्न तिथि:</span>
-                        <strong className="text-white font-mono">{formatDateHi(r.meetingDate)}</strong>
+                        <strong className="text-slate-800 font-mono">{formatDateHi(r.meetingDate)}</strong>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>BRP:</span>
-                        <span className="text-slate-300">{r.brpName} ({r.brpPhone})</span>
+                        <span className="text-slate-700">{r.brpName} ({r.brpPhone})</span>
                       </div>
                     </div>
 
                     {/* Action Button */}
                     <button
                       onClick={() => handleOpenAddForGp(r.gpNameUnicode)}
-                      className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 transition-all transform active:scale-95"
+                      className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all transform active:scale-95"
                     >
                       <Plus className="w-4 h-4 stroke-[3]" />
                       <span>डेटा दर्ज करें (Record NSAP Data)</span>
@@ -1454,12 +1449,12 @@ export default function NSAPDataTab() {
               })}
             </div>
           ) : (
-            <div className="p-8 rounded-2xl bg-slate-950/60 border border-slate-800 text-center space-y-2">
-              <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-              <h4 className="text-base font-bold text-white">
+            <div className="p-8 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+              <h4 className="text-base font-bold text-slate-900">
                 शाबाश! इस फ़िल्टर में कोई भी NSAP ग्राम पंचायत लंबित नहीं है।
               </h4>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
+              <p className="text-xs text-slate-600 max-w-md mx-auto">
                 सभी लक्षित पंचायतों का डेटा सिस्टम में सुरक्षित रूप से दर्ज है।
               </p>
             </div>
@@ -1471,157 +1466,157 @@ export default function NSAPDataTab() {
       {/* SECTION 3: OFFICIAL MONTHLY PROGRESS REPORT (IMAGE FORMAT - BINDU 1 TO 9) */}
       {/* ========================================================================= */}
       {activeSection === 'report' && (
-        <div className="rounded-3xl bg-slate-900/90 border border-emerald-500/30 p-6 md:p-8 shadow-2xl space-y-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+        <div className="rounded-3xl bg-white/95 border border-slate-200/90 p-6 md:p-8 shadow-sm space-y-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
                   प्रारूप - क
                 </span>
-                <h2 className="text-lg md:text-xl font-black text-white">
+                <h2 className="text-lg md:text-xl font-black text-slate-900">
                   राष्ट्रीय वृद्धावस्था पेंशन योजनान्तर्गत माह अक्टूबर तक सोशल ऑडिट की मासिक प्रगति रिपोर्ट हेतु प्रारूप
                 </h2>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 आधिकारिक निदेशालय प्रारूप के अनुरूप बिंदुवार सारांश (कट-ऑफ तिथि: {formatDateHi(asOfDate)})
               </p>
             </div>
 
             <button
               onClick={() => window.print()}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-2 border border-slate-700 shadow-md"
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-2 border border-slate-200 shadow-sm"
             >
-              <Printer className="w-4 h-4 text-emerald-400" />
+              <Printer className="w-4 h-4 text-emerald-600" />
               <span>रिपोर्ट प्रिंट करें</span>
             </button>
           </div>
 
           {/* Official 9 Points Directorate Table */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-800">
-            <table className="w-full text-left text-xs text-slate-200">
-              <thead className="bg-slate-950 text-slate-300 font-bold uppercase tracking-wider text-[11px] border-b border-slate-800">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3 text-center w-12">क्र०</th>
                   <th className="py-3 px-6">विवरण (सूचक)</th>
                   <th className="py-3 px-4 text-center">विकास खण्ड बागपत</th>
                   <th className="py-3 px-4 text-center">विकास खण्ड बड़ौत</th>
-                  <th className="py-3 px-4 text-center font-bold text-emerald-300 bg-emerald-950/30">जनपद बागपत (योग)</th>
+                  <th className="py-3 px-4 text-center font-bold text-emerald-800 bg-emerald-50">जनपद बागपत (योग)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 font-medium">
+              <tbody className="divide-y divide-slate-100 font-medium">
                 {/* 1. क */}
-                <tr className="hover:bg-slate-800/40">
-                  <td className="py-3.5 px-3 text-center font-bold text-slate-400">(क)</td>
-                  <td className="py-3.5 px-6 font-semibold text-white">
+                <tr className="hover:bg-slate-50">
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-500">(क)</td>
+                  <td className="py-3.5 px-6 font-semibold text-slate-900">
                     वित्तीय वर्ष 2026-27 में राष्ट्रीय वृद्धावस्था पेंशन योजनान्तर्गत कुल प्रस्तावित ग्राम पंचायतों की संख्या
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">{monthlyReportStats.baghpatProposed}</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">{monthlyReportStats.barautProposed}</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-black text-emerald-400 bg-emerald-950/20 text-sm">
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">{monthlyReportStats.baghpatProposed}</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">{monthlyReportStats.barautProposed}</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-black text-emerald-700 bg-emerald-50 text-sm">
                     {monthlyReportStats.point1_totalProposed}
                   </td>
                 </tr>
 
                 {/* 2. ख */}
-                <tr className="hover:bg-slate-800/40">
-                  <td className="py-3.5 px-3 text-center font-bold text-slate-400">(ख)</td>
-                  <td className="py-3.5 px-6 font-semibold text-white">
+                <tr className="hover:bg-slate-50">
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-500">(ख)</td>
+                  <td className="py-3.5 px-6 font-semibold text-slate-900">
                     माह अक्टूबर तक कुल प्रस्तावित ग्राम पंचायतों की संख्या (कट-ऑफ तिथि तक)
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">{monthlyReportStats.baghpatProposedUpToDate}</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">{monthlyReportStats.barautProposedUpToDate}</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-black text-emerald-400 bg-emerald-950/20 text-sm">
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">{monthlyReportStats.baghpatProposedUpToDate}</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">{monthlyReportStats.barautProposedUpToDate}</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-black text-emerald-700 bg-emerald-50 text-sm">
                     {monthlyReportStats.point2_proposedUpToDate}
                   </td>
                 </tr>
 
                 {/* 3. ग */}
-                <tr className="hover:bg-slate-800/40 bg-emerald-950/10">
-                  <td className="py-3.5 px-3 text-center font-bold text-slate-400">(ग)</td>
-                  <td className="py-3.5 px-6 font-bold text-emerald-300">
+                <tr className="hover:bg-slate-50 bg-emerald-50/50">
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-500">(ग)</td>
+                  <td className="py-3.5 px-6 font-bold text-emerald-800">
                     माह तक सम्पन्न सोशल ऑडिट ग्राम पंचायतों की संख्या (डेटा रिकॉर्डेड)
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold text-emerald-300">{monthlyReportStats.baghpatRecorded}</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold text-emerald-300">{monthlyReportStats.barautRecorded}</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-black text-emerald-300 bg-emerald-950/40 text-base">
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-emerald-700">{monthlyReportStats.baghpatRecorded}</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-emerald-700">{monthlyReportStats.barautRecorded}</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-black text-emerald-800 bg-emerald-100 text-base">
                     {monthlyReportStats.point3_recordedCount}
                   </td>
                 </tr>
 
                 {/* 4. घ */}
-                <tr className="hover:bg-slate-800/40">
-                  <td className="py-3.5 px-3 text-center font-bold text-slate-400">(घ)</td>
-                  <td className="py-3.5 px-6 font-semibold text-white">
+                <tr className="hover:bg-slate-50">
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-500">(घ)</td>
+                  <td className="py-3.5 px-6 font-semibold text-slate-900">
                     ग्राम पंचायत में पेंशन लाभार्थियों की संख्या
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">1,207</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">1,027</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-black text-white bg-emerald-950/20 text-sm">
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">1,207</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">1,027</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-black text-slate-900 bg-emerald-50 text-sm">
                     {monthlyReportStats.point4_totalBeneficiaries.toLocaleString('en-IN')}
                   </td>
                 </tr>
 
                 {/* 5. ङ */}
-                <tr className="hover:bg-slate-800/40">
-                  <td className="py-3.5 px-3 text-center font-bold text-slate-400">(ङ)</td>
-                  <td className="py-3.5 px-6 font-semibold text-white">
+                <tr className="hover:bg-slate-50">
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-500">(ङ)</td>
+                  <td className="py-3.5 px-6 font-semibold text-slate-900">
                     सत्यापित पेंशन लाभार्थियों की संख्या जिनसे मुलाकात हुई (प्रत्यक्ष रूप से)
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">816</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">674</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-black text-teal-300 bg-emerald-950/20 text-sm">
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">816</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">674</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-black text-teal-700 bg-emerald-50 text-sm">
                     {monthlyReportStats.point5_verifiedDirect.toLocaleString('en-IN')}
                   </td>
                 </tr>
 
                 {/* 6. च */}
-                <tr className="hover:bg-slate-800/40">
-                  <td className="py-3.5 px-3 text-center font-bold text-slate-400">(च)</td>
-                  <td className="py-3.5 px-6 font-semibold text-white">
+                <tr className="hover:bg-slate-50">
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-500">(च)</td>
+                  <td className="py-3.5 px-6 font-semibold text-slate-900">
                     पेंशन लाभार्थी के उपलब्ध न होने पर पारिवारिक सदस्यों के माध्यम से सत्यापन की संख्या
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">256</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">76</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-black text-indigo-300 bg-emerald-950/20 text-sm">
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">256</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">76</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-black text-indigo-700 bg-emerald-50 text-sm">
                     {monthlyReportStats.point6_verifiedFamily.toLocaleString('en-IN')}
                   </td>
                 </tr>
 
                 {/* 7. छ */}
-                <tr className="hover:bg-slate-800/40 bg-amber-950/10">
-                  <td className="py-3.5 px-3 text-center font-bold text-slate-400">(छ)</td>
-                  <td className="py-3.5 px-6 font-bold text-amber-300">
+                <tr className="hover:bg-slate-50 bg-amber-50/50">
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-500">(छ)</td>
+                  <td className="py-3.5 px-6 font-bold text-amber-800">
                     अपात्र लाभार्थियों की संख्या (विस्तृत विवरण संलग्न)
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold text-amber-300">50</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold text-amber-300">4</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-black text-amber-300 bg-amber-950/30 text-base">
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-amber-700">50</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-amber-700">4</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-black text-amber-800 bg-amber-100 text-base">
                     {monthlyReportStats.point7_ineligible}
                   </td>
                 </tr>
 
                 {/* 8. ज */}
-                <tr className="hover:bg-slate-800/40 bg-rose-950/10">
-                  <td className="py-3.5 px-3 text-center font-bold text-slate-400">(ज)</td>
-                  <td className="py-3.5 px-6 font-bold text-rose-300">
+                <tr className="hover:bg-slate-50 bg-rose-50/50">
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-500">(ज)</td>
+                  <td className="py-3.5 px-6 font-bold text-rose-800">
                     सत्यापित लाभार्थियों में मृतक की संख्या
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold text-rose-300">104</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold text-rose-300">90</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-black text-rose-300 bg-rose-950/30 text-base">
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-rose-700">104</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-rose-700">90</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-black text-rose-800 bg-rose-100 text-base">
                     {monthlyReportStats.point8_deceased}
                   </td>
                 </tr>
 
                 {/* 9. झ */}
-                <tr className="hover:bg-slate-800/40">
-                  <td className="py-3.5 px-3 text-center font-bold text-slate-400">(झ)</td>
-                  <td className="py-3.5 px-6 font-semibold text-white">
+                <tr className="hover:bg-slate-50">
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-500">(झ)</td>
+                  <td className="py-3.5 px-6 font-semibold text-slate-900">
                     वित्तीय अनियमितता की धनराशि (₹)
                   </td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">₹ 0.00</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-bold">₹ 0.00</td>
-                  <td className="py-3.5 px-4 text-center font-mono font-black text-emerald-400 bg-emerald-950/20 text-sm">
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">₹ 0.00</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">₹ 0.00</td>
+                  <td className="py-3.5 px-4 text-center font-mono font-black text-emerald-700 bg-emerald-50 text-sm">
                     ₹ 0.00
                   </td>
                 </tr>
@@ -1635,19 +1630,19 @@ export default function NSAPDataTab() {
       {/* SECTION 4: INELIGIBLE & DECEASED BENEFICIARIES MASTER DIRECTORY */}
       {/* ========================================================================= */}
       {activeSection === 'beneficiaries' && (
-        <div className="rounded-3xl bg-slate-900/90 border border-purple-500/30 p-5 md:p-6 shadow-2xl space-y-4">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="rounded-3xl bg-white/95 border border-slate-200/90 p-5 md:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-purple-600" />
                   विस्तृत सूची
                 </span>
-                <h3 className="text-lg md:text-xl font-black text-white">
+                <h3 className="text-lg md:text-xl font-black text-slate-900">
                   अपात्र एवं मृतक पेंशन लाभार्थी मास्टर सूची ({filteredBeneficiaries.length})
                 </h3>
               </div>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className="text-xs text-slate-600 mt-1">
                 एक्सेल एवं सोशल ऑडिट निष्कर्षों के आधार पर दर्ज सभी अपात्र (54) एवं मृतक (194) लाभार्थियों का विवरण।
               </p>
             </div>
@@ -1656,7 +1651,7 @@ export default function NSAPDataTab() {
               {/* Batch Paste from Excel */}
               <button
                 onClick={() => handleOpenExcelPaste()}
-                className="px-3.5 py-1.5 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-cyan-600/30"
+                className="px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
               >
                 <ClipboardPaste className="w-3.5 h-3.5" />
                 <span>एक्सेल से पेस्ट करें</span>
@@ -1666,7 +1661,7 @@ export default function NSAPDataTab() {
               <select
                 value={benCategoryFilter}
                 onChange={(e) => setBenCategoryFilter(e.target.value as any)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-semibold focus:outline-none focus:border-purple-500"
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 font-semibold focus:outline-none focus:border-purple-500"
               >
                 <option value="all">सभी श्रेणियाँ ({allBeneficiaries.length})</option>
                 <option value="ineligible">अपात्र लाभार्थी ({monthlyReportStats.point7_ineligible})</option>
@@ -1678,7 +1673,7 @@ export default function NSAPDataTab() {
               <select
                 value={benGpFilter}
                 onChange={(e) => setBenGpFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-semibold focus:outline-none focus:border-purple-500"
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 font-semibold focus:outline-none focus:border-purple-500"
               >
                 <option value="all">सभी ग्राम पंचायतें</option>
                 {nsapRecords.map(gp => (
@@ -1696,24 +1691,24 @@ export default function NSAPDataTab() {
                   value={benSearchQuery}
                   onChange={(e) => setBenSearchQuery(e.target.value)}
                   placeholder="नाम / पंजीकरण सर्च..."
-                  className="bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                  className="bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-purple-500"
                 />
               </div>
 
               <button
                 onClick={handleExportCSV}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 border border-slate-700"
+                className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 border border-slate-200 shadow-sm"
               >
-                <Download className="w-3.5 h-3.5 text-purple-400" />
+                <Download className="w-3.5 h-3.5 text-purple-600" />
                 <span>CSV</span>
               </button>
             </div>
           </div>
 
           {/* Master Table of Beneficiaries */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-800">
-            <table className="w-full text-left text-xs text-slate-200">
-              <thead className="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-800">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3 text-center w-12">क्र०</th>
                   <th className="py-3 px-3">ब्लॉक</th>
@@ -1725,46 +1720,46 @@ export default function NSAPDataTab() {
                   <th className="py-3 px-3 text-center">एक्शन</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-medium">
+              <tbody className="divide-y divide-slate-100 font-medium">
                 {filteredBeneficiaries.slice(0, 150).map((b, idx) => (
-                  <tr key={b.id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={b.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-2.5 px-3 text-center font-mono text-slate-400">{idx + 1}</td>
                     <td className="py-2.5 px-3">
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        b.block === 'Baghpat' ? 'bg-blue-500/20 text-blue-300' : 'bg-indigo-500/20 text-indigo-300'
+                        b.block === 'Baghpat' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                       }`}>
                         {b.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                       </span>
                     </td>
-                    <td className="py-2.5 px-4 font-bold text-white">{b.gpNameUnicode}</td>
-                    <td className="py-2.5 px-4 font-bold text-white text-sm">
+                    <td className="py-2.5 px-4 font-bold text-slate-900">{b.gpNameUnicode}</td>
+                    <td className="py-2.5 px-4 font-bold text-slate-900 text-sm">
                       {renderText(b.nameUnicode, b.nameKrutiDev)}
                     </td>
-                    <td className="py-2.5 px-3 font-mono text-slate-300 font-semibold">{b.registrationId}</td>
+                    <td className="py-2.5 px-3 font-mono text-slate-600 font-semibold">{b.registrationId}</td>
                     <td className="py-2.5 px-3 text-center">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         b.category === 'ineligible' 
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200' 
                           : b.category === 'deceased'
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : 'bg-slate-800 text-slate-300 border border-slate-700'
+                          ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                          : 'bg-slate-100 text-slate-700 border border-slate-200'
                       }`}>
                         {b.categoryHindi}
                       </span>
                     </td>
-                    <td className="py-2.5 px-4 text-slate-300">
+                    <td className="py-2.5 px-4 text-slate-700">
                       {b.reason ? (
                         <span className="italic">{b.reason}</span>
                       ) : b.deathDate ? (
-                        <span className="font-mono text-rose-300">मृत्यु: {formatDateHi(b.deathDate)}</span>
+                        <span className="font-mono text-rose-700">मृत्यु: {formatDateHi(b.deathDate)}</span>
                       ) : (
-                        <span className="text-slate-500">—</span>
+                        <span className="text-slate-400">—</span>
                       )}
                     </td>
                     <td className="py-2.5 px-3 text-center">
                       <button
                         onClick={() => deleteNsapBeneficiary(b.gpId, b.id)}
-                        className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
                         title="हटाएं"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1776,7 +1771,7 @@ export default function NSAPDataTab() {
             </table>
           </div>
           {filteredBeneficiaries.length > 150 && (
-            <p className="text-center text-xs text-slate-400 italic">
+            <p className="text-center text-xs text-slate-500 italic">
               नोट: प्रथम 150 रिकॉर्ड प्रदर्शित हैं। संपूर्ण सूची देखने के लिए ऊपर दिए गए "CSV" बटन से एक्सपोर्ट करें।
             </p>
           )}
@@ -1787,38 +1782,38 @@ export default function NSAPDataTab() {
       {/* SECTION 5: UPCOMING GRAM PANCHAYATS (24 GPs) */}
       {/* ========================================================================= */}
       {activeSection === 'upcoming' && (
-        <div className="rounded-3xl bg-slate-900/90 border border-teal-500/30 p-6 shadow-2xl space-y-5">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="rounded-3xl bg-white/95 border border-slate-200/90 p-6 shadow-sm space-y-5">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                <span className="text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
                   आगामी योजना
                 </span>
-                <h3 className="text-lg md:text-xl font-black text-white">
+                <h3 className="text-lg md:text-xl font-black text-slate-900">
                   आगामी प्रस्तावित NSAP सोशल ऑडिट ग्राम पंचायतें ({filteredUpcomingGps.length})
                 </h3>
               </div>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className="text-xs text-slate-600 mt-1">
                 माह नवम्बर एवं दिसम्बर 2026 में सोशल ऑडिट रोस्टर अनुसार निर्धारित ग्राम पंचायतें।
               </p>
             </div>
 
-            <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs">
+            <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl p-1 text-xs">
               <button
                 onClick={() => setPendingBlockFilter('all')}
-                className={`px-3 py-1 rounded-lg font-bold ${pendingBlockFilter === 'all' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1 rounded-lg font-bold ${pendingBlockFilter === 'all' ? 'bg-teal-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 सभी ({upcomingNsapGps.length})
               </button>
               <button
                 onClick={() => setPendingBlockFilter('Baghpat')}
-                className={`px-3 py-1 rounded-lg font-bold ${pendingBlockFilter === 'Baghpat' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1 rounded-lg font-bold ${pendingBlockFilter === 'Baghpat' ? 'bg-teal-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 बागपत ({upcomingNsapGps.filter(r => r.block === 'Baghpat').length})
               </button>
               <button
                 onClick={() => setPendingBlockFilter('Baraut')}
-                className={`px-3 py-1 rounded-lg font-bold ${pendingBlockFilter === 'Baraut' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`px-3 py-1 rounded-lg font-bold ${pendingBlockFilter === 'Baraut' ? 'bg-teal-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 बड़ौत ({upcomingNsapGps.filter(r => r.block === 'Baraut').length})
               </button>
@@ -1829,44 +1824,44 @@ export default function NSAPDataTab() {
             {filteredUpcomingGps.map(r => (
               <div
                 key={r.id}
-                className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-teal-500/50 transition-all space-y-2.5"
+                className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-teal-400 transition-all space-y-2.5 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                         SR# {r.sno}
                       </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
                         {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                       </span>
                     </div>
-                    <div className="text-base font-black text-white pt-1">
+                    <div className="text-base font-black text-slate-900 pt-1">
                       {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
                     </div>
                   </div>
 
-                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
                     आगामी
                   </span>
                 </div>
 
-                <div className="text-xs text-slate-400 space-y-1 pt-1 border-t border-slate-800">
+                <div className="text-xs text-slate-500 space-y-1 pt-1 border-t border-slate-100">
                   <div className="flex items-center justify-between">
                     <span>प्रस्तावित बैठक:</span>
-                    <strong className="text-teal-300 font-mono">{formatDateHi(r.meetingDate)}</strong>
+                    <strong className="text-teal-700 font-mono">{formatDateHi(r.meetingDate)}</strong>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>BRP:</span>
-                    <span className="text-slate-300">{r.brpName} ({r.brpPhone})</span>
+                    <span className="text-slate-700">{r.brpName} ({r.brpPhone})</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => handleOpenAddForGp(r.gpNameUnicode)}
-                  className="w-full py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-xs border border-slate-700 flex items-center justify-center gap-1.5 transition-all"
+                  className="w-full py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 font-bold text-xs border border-slate-200 flex items-center justify-center gap-1.5 transition-all shadow-sm"
                 >
-                  <Plus className="w-3.5 h-3.5 text-teal-400" />
+                  <Plus className="w-3.5 h-3.5 text-teal-600" />
                   <span>अग्रिम डेटा दर्ज करें</span>
                 </button>
               </div>
@@ -1879,16 +1874,16 @@ export default function NSAPDataTab() {
       {/* 6. MODAL: ADD RECORD FOR PENDING GP */}
       {/* ========================================================================= */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold text-base">
-                <Plus className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="flex items-center gap-2 text-emerald-800 font-bold text-base">
+                <Plus className="w-5 h-5 text-emerald-600" />
                 <span>नया NSAP सोशल ऑडिट डेटा दर्ज करें</span>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-white text-lg font-bold"
+                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
               >
                 ✕
               </button>
@@ -1896,11 +1891,11 @@ export default function NSAPDataTab() {
 
             <form onSubmit={handleSaveGpRecord} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">ग्राम पंचायत चुनें (47 NSAP में से):</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">ग्राम पंचायत चुनें (47 NSAP में से):</label>
                 <select
                   value={selectedGpForAdd}
                   onChange={(e) => setSelectedGpForAdd(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                   required
                 >
                   <option value="">-- ग्राम पंचायत चुनें --</option>
@@ -1914,69 +1909,69 @@ export default function NSAPDataTab() {
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">कुल पेंशन लाभार्थी:</label>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">कुल पेंशन लाभार्थी:</label>
                   <input
                     type="number"
                     value={modalTotalBens}
                     onChange={(e) => setModalTotalBens(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">प्रत्यक्ष सत्यापित:</label>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">प्रत्यक्ष सत्यापित:</label>
                   <input
                     type="number"
                     value={modalVerDirect}
                     onChange={(e) => setModalVerDirect(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">परिवार के माध्यम से:</label>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">परिवार के माध्यम से:</label>
                   <input
                     type="number"
                     value={modalVerFamily}
                     onChange={(e) => setModalVerFamily(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">असत्यापित संख्या:</label>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">असत्यापित संख्या:</label>
                   <input
                     type="number"
                     value={modalUnverCount}
                     onChange={(e) => setModalUnverCount(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">असत्यापित का कारण:</label>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">असत्यापित का कारण:</label>
                   <input
                     type="text"
                     value={modalUnverReason}
                     onChange={(e) => setModalUnverReason(e.target.value)}
                     placeholder="उदा० घर पर ताला बंद मिला"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
                 >
                   रद्द करें
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm"
                 >
                   डेटा सुरक्षित करें
                 </button>
@@ -1990,16 +1985,16 @@ export default function NSAPDataTab() {
       {/* 7. MODAL: EDIT GP DATA (FEATURE REQUEST 1) */}
       {/* ========================================================================= */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-blue-500/40 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-blue-400 font-bold text-base">
-                <Edit3 className="w-5 h-5 text-blue-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="flex items-center gap-2 text-blue-800 font-bold text-base">
+                <Edit3 className="w-5 h-5 text-blue-600" />
                 <span>ग्राम पंचायत सोशल ऑडिट डेटा एडिट करें: {editingGpName}</span>
               </div>
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="text-slate-400 hover:text-white text-lg font-bold"
+                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
               >
                 ✕
               </button>
@@ -2007,131 +2002,131 @@ export default function NSAPDataTab() {
 
             <form onSubmit={handleSaveEditGp} className="space-y-4">
               <div className="flex items-center gap-2 text-xs">
-                <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-xl">
+                <span className="font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1 rounded-xl">
                   ब्लॉक: {editingBlock === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                 </span>
-                <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-xl">
+                <span className="font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1 rounded-xl">
                   पंचायत: {editingGpName}
                 </span>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-300 mb-1">बैठक सम्पन्न तिथि:</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">बैठक सम्पन्न तिथि:</label>
                 <input
                   type="date"
                   value={editMeetingDate}
                   onChange={(e) => setEditMeetingDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">कुल पेंशनर:</label>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">कुल पेंशनर:</label>
                   <input
                     type="number"
                     value={editTotalBens}
                     onChange={(e) => setEditTotalBens(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-mono"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-teal-300 mb-1">प्रत्यक्ष सत्यापित:</label>
+                  <label className="block text-[11px] font-semibold text-teal-800 mb-1">प्रत्यक्ष सत्यापित:</label>
                   <input
                     type="number"
                     value={editVerDirect}
                     onChange={(e) => setEditVerDirect(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-mono"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-indigo-300 mb-1">परिवार से सत्यापित:</label>
+                  <label className="block text-[11px] font-semibold text-indigo-800 mb-1">परिवार से सत्यापित:</label>
                   <input
                     type="number"
                     value={editVerFamily}
                     onChange={(e) => setEditVerFamily(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-mono"
                   />
                 </div>
               </div>
 
               {/* Auto calculated total verified display */}
-              <div className="p-3 rounded-xl bg-slate-950 border border-emerald-500/30 flex items-center justify-between text-xs">
-                <span className="text-slate-300 font-medium">कुल सत्यापित (प्रत्यक्ष + परिवार):</span>
-                <span className="font-mono font-bold text-emerald-400 text-sm">
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
+                <span className="text-emerald-900 font-medium">कुल सत्यापित (प्रत्यक्ष + परिवार):</span>
+                <span className="font-mono font-bold text-emerald-800 text-sm">
                   {editVerDirect + editVerFamily}
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">असत्यापित संख्या:</label>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">असत्यापित संख्या:</label>
                   <input
                     type="number"
                     value={editUnverCount}
                     onChange={(e) => setEditUnverCount(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">असत्यापित का कारण:</label>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">असत्यापित का कारण:</label>
                   <input
                     type="text"
                     value={editUnverReason}
                     onChange={(e) => setEditUnverReason(e.target.value)}
                     placeholder="उदा० घर पर ताला बंद मिला"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">वित्तीय अनियमितता धनराशि (₹):</label>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">वित्तीय अनियमितता धनराशि (₹):</label>
                   <input
                     type="number"
                     value={editFinIrreg}
                     onChange={(e) => setEditFinIrreg(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">उत्तरदायी व्यक्ति:</label>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">उत्तरदायी व्यक्ति:</label>
                   <input
                     type="text"
                     value={editRespPersons}
                     onChange={(e) => setEditRespPersons(e.target.value)}
                     placeholder="उदा० ग्राम प्रधान / सचिव"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">अनियमितता / ऑडिट टिप्पणी:</label>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">अनियमितता / ऑडिट टिप्पणी:</label>
                 <textarea
                   value={editIrregNotes}
                   onChange={(e) => setEditIrregNotes(e.target.value)}
                   placeholder="अतिरिक्त विवरण या बैठक की विशेष टिप्पणी..."
                   rows={2}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
                 >
                   रद्द करें
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm"
                 >
                   डेटा अपडेट करें
                 </button>
@@ -2145,16 +2140,16 @@ export default function NSAPDataTab() {
       {/* 8. MODAL: BATCH EXCEL COPY-PASTE BENEFICIARIES (FEATURE REQUEST 2) */}
       {/* ========================================================================= */}
       {isExcelPasteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-          <div className="bg-slate-900 border-2 border-cyan-500/50 rounded-3xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2.5 text-cyan-400 font-bold text-base">
-                <ClipboardPaste className="w-5 h-5 text-cyan-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="flex items-center gap-2.5 text-teal-800 font-bold text-base">
+                <ClipboardPaste className="w-5 h-5 text-teal-600" />
                 <span>एक्सेल से सीधे कॉपी-पेस्ट आयात करें (Batch Import)</span>
               </div>
               <button
                 onClick={() => setIsExcelPasteModalOpen(false)}
-                className="text-slate-400 hover:text-white text-lg font-bold"
+                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
               >
                 ✕
               </button>
@@ -2163,13 +2158,13 @@ export default function NSAPDataTab() {
             <div className="space-y-4">
               {/* Target GP selection */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   1. किस ग्राम पंचायत में लाभार्थी जोड़ने हैं?
                 </label>
                 <select
                   value={excelTargetGpId}
                   onChange={(e) => setExcelTargetGpId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-semibold focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-semibold focus:outline-none focus:border-teal-500"
                   required
                 >
                   {nsapRecords.map(gp => (
@@ -2182,7 +2177,7 @@ export default function NSAPDataTab() {
 
               {/* Category Mode Selector */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   2. आयात श्रेणी (Import Category):
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -2194,8 +2189,8 @@ export default function NSAPDataTab() {
                     }}
                     className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
                       excelCategoryMode === 'auto'
-                        ? 'bg-cyan-600 text-white border-cyan-400 shadow-md ring-2 ring-cyan-500/40'
-                        : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                        ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
                     }`}
                   >
                     ⚡ ऑटो-डिटेक्ट
@@ -2209,8 +2204,8 @@ export default function NSAPDataTab() {
                     }}
                     className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
                       excelCategoryMode === 'deceased'
-                        ? 'bg-rose-600 text-white border-rose-400 shadow-md ring-2 ring-rose-500/40'
-                        : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
                     }`}
                   >
                     💀 सभी को 'मृतक' बनाएं
@@ -2224,8 +2219,8 @@ export default function NSAPDataTab() {
                     }}
                     className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
                       excelCategoryMode === 'ineligible'
-                        ? 'bg-amber-600 text-white border-amber-400 shadow-md ring-2 ring-amber-500/40'
-                        : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
                     }`}
                   >
                     ⚠️ सभी को 'अपात्र' बनाएं
@@ -2239,8 +2234,8 @@ export default function NSAPDataTab() {
                     }}
                     className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
                       excelCategoryMode === 'unverified'
-                        ? 'bg-purple-600 text-white border-purple-400 shadow-md ring-2 ring-purple-500/40'
-                        : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
                     }`}
                   >
                     🔒 सभी को 'असत्यापित'
@@ -2250,7 +2245,7 @@ export default function NSAPDataTab() {
 
               {/* Default Reason Input */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   डिफ़ॉल्ट कारण (यदि एक्सेल पंक्ति में कारण न हो):
                 </label>
                 <div className="flex items-center gap-2">
@@ -2262,7 +2257,7 @@ export default function NSAPDataTab() {
                       handleRawTextChange(excelRawText);
                     }}
                     placeholder="उदा० सत्यापित में मृतक / एक से अधिक पेंशन प्राप्त कर रहे हैं"
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                   />
                   <button
                     type="button"
@@ -2270,7 +2265,7 @@ export default function NSAPDataTab() {
                       setExcelDefaultReason('सत्यापित में मृतक');
                       handleRawTextChange(excelRawText);
                     }}
-                    className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-rose-300 border border-slate-700 shrink-0"
+                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[11px] text-rose-700 border border-slate-200 shrink-0 font-bold"
                   >
                     मृतक कारण
                   </button>
@@ -2280,7 +2275,7 @@ export default function NSAPDataTab() {
                       setExcelDefaultReason('लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं');
                       handleRawTextChange(excelRawText);
                     }}
-                    className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-amber-300 border border-slate-700 shrink-0"
+                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[11px] text-amber-700 border border-slate-200 shrink-0 font-bold"
                   >
                     अपात्र कारण
                   </button>
@@ -2290,10 +2285,10 @@ export default function NSAPDataTab() {
               {/* Paste Box */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-slate-300">
+                  <label className="block text-xs font-bold text-slate-700">
                     3. एक्सेल से कॉपी किया गया डेटा यहाँ पेस्ट करें (Ctrl + V):
                   </label>
-                  <span className="text-[11px] text-cyan-300 font-mono">
+                  <span className="text-[11px] text-teal-700 font-mono font-bold">
                     {parsedBeneficiaries.length} पंक्तियाँ डिटेक्ट हुईं
                   </span>
                 </div>
@@ -2302,18 +2297,18 @@ export default function NSAPDataTab() {
                   onChange={(e) => handleRawTextChange(e.target.value)}
                   placeholder="यहाँ एक्सेल से सेलेक्ट करके कॉपी (Ctrl+C) करें और पेस्ट (Ctrl+V) करें...&#10;उदा०:&#10;राम सिंह	316510001	सत्यापित में मृतक&#10;सुनीता देवी	316510002	अन्य पेंशन पा रहे हैं"
                   rows={6}
-                  className="w-full bg-slate-950 border-2 border-cyan-500/40 rounded-2xl p-3 text-xs text-white font-mono placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-slate-50 border-2 border-teal-300 rounded-2xl p-3 text-xs text-slate-900 font-mono placeholder:text-slate-400 focus:outline-none focus:border-teal-500"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-500 mt-1">
                   💡 एक्सेल में नाम, पंजीकरण संख्या, कारण या मृत्यु तिथि वाले स्तम्भों को एक साथ सेलेक्ट करके कॉपी करें।
                 </p>
               </div>
 
               {/* Live Preview Table */}
               {parsedBeneficiaries.length > 0 && (
-                <div className="space-y-2 border border-slate-800 rounded-2xl p-3 bg-slate-950/70">
+                <div className="space-y-2 border border-slate-200 rounded-2xl p-3 bg-slate-50">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" />
                       <span>डेटा पूर्वावलोकन (Preview: कुल {parsedBeneficiaries.length} लाभार्थी)</span>
                     </span>
@@ -2323,15 +2318,15 @@ export default function NSAPDataTab() {
                         setExcelRawText('');
                         setParsedBeneficiaries([]);
                       }}
-                      className="text-[11px] text-rose-400 hover:underline"
+                      className="text-[11px] text-rose-600 hover:underline font-bold"
                     >
                       साफ़ करें (Clear)
                     </button>
                   </div>
 
-                  <div className="max-h-44 overflow-y-auto rounded-xl border border-slate-800">
-                    <table className="w-full text-left text-xs text-slate-200">
-                      <thead className="bg-slate-900 text-slate-400 text-[10px] uppercase font-bold sticky top-0">
+                  <div className="max-h-44 overflow-y-auto rounded-xl border border-slate-200 bg-white">
+                    <table className="w-full text-left text-xs text-slate-700">
+                      <thead className="bg-slate-100 text-slate-700 text-[10px] uppercase font-bold sticky top-0 border-b border-slate-200">
                         <tr>
                           <th className="py-2 px-2 text-center w-8">#</th>
                           <th className="py-2 px-3">लाभार्थी का नाम</th>
@@ -2341,24 +2336,24 @@ export default function NSAPDataTab() {
                           <th className="py-2 px-2 text-center w-8"></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800 font-medium text-[11px]">
+                      <tbody className="divide-y divide-slate-100 font-medium text-[11px]">
                         {parsedBeneficiaries.map((b, idx) => (
-                          <tr key={idx} className="hover:bg-slate-800/50">
-                            <td className="py-1.5 px-2 text-center text-slate-500 font-mono">{idx + 1}</td>
-                            <td className="py-1.5 px-3 font-bold text-white">{b.nameUnicode}</td>
-                            <td className="py-1.5 px-3 font-mono text-cyan-300">{b.registrationId}</td>
+                          <tr key={idx} className="hover:bg-slate-50">
+                            <td className="py-1.5 px-2 text-center text-slate-400 font-mono">{idx + 1}</td>
+                            <td className="py-1.5 px-3 font-bold text-slate-900">{b.nameUnicode}</td>
+                            <td className="py-1.5 px-3 font-mono text-teal-700">{b.registrationId}</td>
                             <td className="py-1.5 px-2 text-center">
                               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                                 b.category === 'deceased'
-                                  ? 'bg-rose-500/20 text-rose-300'
+                                  ? 'bg-rose-100 text-rose-800'
                                   : b.category === 'ineligible'
-                                  ? 'bg-amber-500/20 text-amber-300'
-                                  : 'bg-purple-500/20 text-purple-300'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-purple-100 text-purple-800'
                               }`}>
                                 {b.categoryHindi}
                               </span>
                             </td>
-                            <td className="py-1.5 px-3 text-slate-400 text-[10px]">
+                            <td className="py-1.5 px-3 text-slate-600 text-[10px]">
                               {b.reason || b.deathDate || '—'}
                             </td>
                             <td className="py-1.5 px-2 text-center">
@@ -2367,7 +2362,7 @@ export default function NSAPDataTab() {
                                 onClick={() => {
                                   setParsedBeneficiaries(prev => prev.filter((_, i) => i !== idx));
                                 }}
-                                className="text-slate-500 hover:text-rose-400"
+                                className="text-slate-400 hover:text-rose-600"
                                 title="हटाएं"
                               >
                                 ✕
@@ -2382,11 +2377,11 @@ export default function NSAPDataTab() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsExcelPasteModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
                 >
                   रद्द करें
                 </button>
@@ -2394,7 +2389,7 @@ export default function NSAPDataTab() {
                   type="button"
                   disabled={parsedBeneficiaries.length === 0}
                   onClick={handleSaveExcelBatch}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black shadow-lg shadow-cyan-600/30 flex items-center gap-1.5"
+                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black shadow-sm flex items-center gap-1.5"
                 >
                   <Check className="w-4 h-4 stroke-[3]" />
                   <span>सुरक्षित करें (कुल {parsedBeneficiaries.length} लाभार्थी आयात करें)</span>
@@ -2409,16 +2404,16 @@ export default function NSAPDataTab() {
       {/* 9. MODAL: ADD BENEFICIARY TO GP */}
       {/* ========================================================================= */}
       {isBenModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold text-base">
-                <Plus className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="flex items-center gap-2 text-emerald-800 font-bold text-base">
+                <Plus className="w-5 h-5 text-emerald-600" />
                 <span>लाभार्थी जोड़ें (कारण सहित)</span>
               </div>
               <button
                 onClick={() => setIsBenModalOpen(false)}
-                className="text-slate-400 hover:text-white text-lg font-bold"
+                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
               >
                 ✕
               </button>
@@ -2426,36 +2421,36 @@ export default function NSAPDataTab() {
 
             <form onSubmit={handleSaveSingleBeneficiary} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">लाभार्थी का नाम:</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">लाभार्थी का नाम:</label>
                 <input
                   type="text"
                   value={newBenName}
                   onChange={(e) => setNewBenName(e.target.value)}
                   placeholder="उदा० अनीता शर्मा"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">पंजीकरण संख्या (Registration ID):</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">पंजीकरण संख्या (Registration ID):</label>
                 <input
                   type="text"
                   value={newBenRegId}
                   onChange={(e) => setNewBenRegId(e.target.value)}
                   placeholder="उदा० 316510599211"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-emerald-500"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">श्रेणी:</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">श्रेणी:</label>
                   <select
                     value={newBenCategory}
                     onChange={(e) => setNewBenCategory(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                   >
                     <option value="ineligible">अपात्र लाभार्थी</option>
                     <option value="deceased">सत्यापित में मृतक</option>
@@ -2465,40 +2460,40 @@ export default function NSAPDataTab() {
 
                 {newBenCategory === 'deceased' && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">मृत्यु तिथि (यदि ज्ञात हो):</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">मृत्यु तिथि (यदि ज्ञात हो):</label>
                     <input
                       type="date"
                       value={newBenDeathDate}
                       onChange={(e) => setNewBenDeathDate(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs text-white"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
                     />
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">कारण (Reason):</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">कारण (Reason):</label>
                 <input
                   type="text"
                   value={newBenReason}
                   onChange={(e) => setNewBenReason(e.target.value)}
                   placeholder="उदा० एक से अधिक पेंशन प्राप्त कर रहे हैं / गाँव से बाहर"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                   required
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsBenModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
                 >
                   रद्द करें
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm"
                 >
                   लाभार्थी जोड़ें
                 </button>

@@ -257,11 +257,11 @@ export default function ExecutiveDashboardTab() {
     <div className="bg-slate-50 text-slate-800 rounded-3xl p-4 sm:p-6 md:p-8 space-y-6 border border-slate-200/90 shadow-sm font-sans">
       
       {/* ========================================================================= */}
-      {/* SECTION A: DASHBOARD HEADER (Premium Light Government Enterprise) */}
+      {/* SECTION A: DASHBOARD HEADER (Compact & Elegant Government Enterprise Banner) */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-900 border border-blue-200">
               <Landmark className="w-3.5 h-3.5 text-blue-800" />
               उत्तर प्रदेश शासन • जिला विकास अधिकारी (DDO)
@@ -277,42 +277,33 @@ export default function ExecutiveDashboardTab() {
               (जनपद बागपत, उत्तर प्रदेश)
             </span>
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            विकास खण्ड बागपत एवं बड़ौत की समस्त 88 ग्राम पंचायतों का एकीकृत सोशल ऑडिट प्रशासनिक अनुश्रवण पोर्टल
+          <p className="text-xs text-slate-600 mt-0.5 font-medium">
+            विकास खंड बागपत एवं बड़ौत की ग्राम पंचायतों का प्रशासनिक अनुश्रवण।
           </p>
         </div>
 
-        {/* Status Indicators & Safe Refresh Button */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end text-xs">
-          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-            <Calendar className="w-4 h-4 text-blue-700" />
-            <div className="text-[11px] text-slate-600">
-              कट-ऑफ तिथि: <strong className="text-slate-900 font-bold">{formatDateHi(asOfDate)}</strong>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-            <Clock className="w-4 h-4 text-emerald-700" />
-            <div className="text-[11px] text-slate-600">
-              दिल्ली समय: <strong className="text-slate-900 font-mono font-bold">{liveDelhiTime || 'सक्रिय'}</strong>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-xl border border-emerald-200 font-medium text-[11px]">
-            <Cloud className="w-3.5 h-3.5 text-emerald-700" />
-            <span>
-              {firebaseSyncStatus === 'syncing' ? 'सर्वर सिंकिंग...' : 'सर्वर सुरक्षित'}
+        {/* Quick Block Scope Indicators */}
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end text-xs">
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700">
+            <Layers className="w-4 h-4 text-blue-700" />
+            <span className="text-[11px] font-bold">
+              कुल 88 ग्राम पंचायतें
             </span>
           </div>
 
+          <div className="flex items-center gap-1.5 bg-blue-50 text-blue-900 px-3 py-1.5 rounded-xl border border-blue-200 text-[11px] font-bold">
+            <span>बागपत: 44</span>
+            <span className="text-blue-300">|</span>
+            <span>बड़ौत: 44</span>
+          </div>
+
           <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex items-center gap-1.5 bg-blue-900 hover:bg-blue-800 text-white font-bold px-3 py-1.5 rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-60 text-xs"
-            title="डेटा रिफ्रेश करें"
+            onClick={() => setActiveTab('upcoming')}
+            className="flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold px-3 py-1.5 rounded-xl transition-all shadow-sm active:scale-95 text-xs"
+            title="आगामी सभाएं देखें"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>रिफ्रेश</span>
+            <span>आगामी सभाएं देखें</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>

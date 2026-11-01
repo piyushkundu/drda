@@ -197,48 +197,43 @@ export default function PanchayatNirnayTab() {
       {/* ========================================================================= */}
       {/* 1. OFFICIAL REPORT HEADER BANNER (R 9.6.2) */}
       {/* ========================================================================= */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 border border-emerald-500/30 p-6 md:p-8 shadow-2xl">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200/90 p-6 md:p-8 shadow-sm">
         <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <Smartphone className="w-3.5 h-3.5 text-emerald-700" />
                 R 9.6.2 पंचायत निर्णय ऐप अपलोड प्रपत्र रिपोर्ट
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
                 वित्तीय वर्ष 2026-2027 • उत्तर प्रदेश
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                 जनपद: बागपत
               </span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
               ग्राम पंचायत सोशल ऑडिट • पंचायत निर्णय ऐप ट्रैकर
             </h1>
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              पंचायत निर्णय ऐप (R 9.6.2) के अनुसार वर्तमान में बागपत में <strong className="text-emerald-400 font-bold">{metrics.capturedBaghpatCount}</strong> एवं बड़ौत में <strong className="text-emerald-400 font-bold">{metrics.capturedBarautCount}</strong> ग्राम पंचायतें अपलोड हैं (कुल <strong className="text-emerald-400 font-bold">{metrics.capturedTotalCount}</strong>)।
-              आज (<strong className="text-white">{formatDateHi(asOfDate)}</strong>) तक की सभी बैठकें पूरी तरह अद्यतन हैं। आगामी सभाएं अपने बैठक दिवस पर स्वतः नीचे दिए गए <strong className="text-amber-300 font-bold">&apos;लंबित पुष्टि बॉक्स&apos;</strong> में निर्णय हेतु सक्रिय होंगी।
+            <p className="text-xs md:text-sm text-slate-600 leading-relaxed font-medium">
+              पंचायत निर्णय ऐप (R 9.6.2) के अनुसार वर्तमान में बागपत में <strong className="text-emerald-700 font-bold">{metrics.capturedBaghpatCount}</strong> एवं बड़ौत में <strong className="text-emerald-700 font-bold">{metrics.capturedBarautCount}</strong> ग्राम पंचायतें अपलोड हैं (कुल <strong className="text-emerald-700 font-bold">{metrics.capturedTotalCount}</strong>)।
+              आज (<strong className="text-slate-900">{formatDateHi(asOfDate)}</strong>) तक की सभी बैठकें पूरी तरह अद्यतन हैं। आगामी सभाएं अपने बैठक दिवस पर स्वतः नीचे दिए गए <strong className="text-amber-800 font-bold">&apos;लंबित पुष्टि बॉक्स&apos;</strong> में निर्णय हेतु सक्रिय होंगी।
             </p>
           </div>
 
           {/* Quick Counter Highlight */}
-          <div className="flex items-center gap-3 bg-slate-950/80 p-4 rounded-2xl border border-emerald-500/30 shadow-xl shrink-0">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/20 flex items-center justify-center">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                <ShieldCheck className="w-8 h-8 text-emerald-400" />
-              </div>
+          <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-emerald-200 shadow-sm shrink-0">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center shadow-inner">
+              <ShieldCheck className="w-8 h-8 text-emerald-700" />
             </div>
             <div>
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">कुल ऐप अपलोड सत्यापित</div>
-              <div className="text-3xl font-black text-emerald-400 tracking-tight">
-                {metrics.capturedTotalCount} <span className="text-sm font-semibold text-slate-400">/ {metrics.totalMapped} मैप्ड</span>
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">कुल ऐप अपलोड सत्यापित</div>
+              <div className="text-3xl font-black text-emerald-700 tracking-tight">
+                {metrics.capturedTotalCount} <span className="text-sm font-semibold text-slate-500">/ {metrics.totalMapped} मैप्ड</span>
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">
-                बागपत: <strong className="text-blue-400">{metrics.capturedBaghpatCount}</strong> | बड़ौत: <strong className="text-indigo-400">{metrics.capturedBarautCount}</strong>
+              <div className="text-[11px] text-slate-600 mt-0.5 font-medium">
+                बागपत: <strong className="text-blue-700 font-bold">{metrics.capturedBaghpatCount}</strong> | बड़ौत: <strong className="text-indigo-700 font-bold">{metrics.capturedBarautCount}</strong>
               </div>
             </div>
           </div>
@@ -250,55 +245,55 @@ export default function PanchayatNirnayTab() {
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Card 1: Total Captured in App */}
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/30 shadow-lg">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold mb-1">
             <span>कुल अपलोड (Captured)</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-white">{metrics.capturedTotalCount} <span className="text-xs font-normal text-slate-400">GPs</span></div>
-          <div className="mt-2 text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+          <div className="text-2xl font-black text-slate-900">{metrics.capturedTotalCount} <span className="text-xs font-normal text-slate-500">GPs</span></div>
+          <div className="mt-2 text-[11px] text-emerald-700 font-bold flex items-center gap-1">
             <span>सत्यापित दर: {metrics.districtPercentage}%</span>
           </div>
         </div>
 
         {/* Card 2: Past Not Captured (Missed) */}
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-rose-500/30 shadow-lg">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold mb-1">
             <span>विगत बैठकें (अपलोड नहीं हुआ)</span>
-            <XCircle className="w-4 h-4 text-rose-400" />
+            <XCircle className="w-4 h-4 text-rose-500" />
           </div>
-          <div className="text-2xl font-black text-rose-300">
-            {metrics.notCapturedTotalCount} <span className="text-xs font-normal text-slate-400">GPs</span>
+          <div className="text-2xl font-black text-rose-600">
+            {metrics.notCapturedTotalCount} <span className="text-xs font-normal text-slate-500">GPs</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[11px] text-slate-500 font-medium">
             विगत बैठकें (पोर्टल पर अब संभव नहीं)
           </div>
         </div>
 
-        {/* Card 3: Due for Confirmation (Actionable Pending - Currently 0!) */}
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-emerald-500/40 shadow-lg ring-1 ring-emerald-500/20">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
+        {/* Card 3: Due for Confirmation (Actionable Pending) */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold mb-1">
             <span>आज तक लंबित (Due Pending)</span>
-            <Clock className="w-4 h-4 text-emerald-400" />
+            <Clock className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-black text-emerald-300">
-            {metrics.duePendingTotalCount} <span className="text-xs font-normal text-slate-400">GPs</span>
+          <div className="text-2xl font-black text-slate-900">
+            {metrics.duePendingTotalCount} <span className="text-xs font-normal text-slate-500">GPs</span>
           </div>
-          <div className="mt-2 text-[11px] text-emerald-400 font-bold">
+          <div className="mt-2 text-[11px] text-emerald-700 font-bold">
             {metrics.duePendingTotalCount === 0 ? '✓ आज तक सब क्लियर है' : 'सत्यापन प्रतीक्षित'}
           </div>
         </div>
 
         {/* Card 4: Upcoming Scheduled Meetings */}
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-blue-500/30 shadow-lg">
-          <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
+        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-bold mb-1">
             <span>आगामी प्रस्तावित बैठकें</span>
-            <Calendar className="w-4 h-4 text-blue-400" />
+            <Calendar className="w-4 h-4 text-blue-600" />
           </div>
-          <div className="text-2xl font-black text-blue-400">
-            {metrics.upcomingTotalCount} <span className="text-xs font-normal text-slate-400">GPs</span>
+          <div className="text-2xl font-black text-blue-700">
+            {metrics.upcomingTotalCount} <span className="text-xs font-normal text-slate-500">GPs</span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
+          <div className="mt-2 text-[11px] text-slate-500 font-medium">
             31/10 से बैठक दिवस पर स्वतः सक्रिय
           </div>
         </div>
@@ -307,64 +302,64 @@ export default function PanchayatNirnayTab() {
       {/* ========================================================================= */}
       {/* 3. CAPTURED HIGHLIGHT BADGES: DYNAMICALLY SYNCED WITH ALL USER ACCEPTED GPs */}
       {/* ========================================================================= */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-blue-950/40 border border-emerald-500/20 shadow-xl">
+      <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <span className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400">
+            <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
               <CheckCircle2 className="w-4 h-4" />
             </span>
-            <h3 className="text-sm font-bold text-white">
+            <h3 className="text-sm font-bold text-slate-900">
               सत्यापित एवं अपलोड {metrics.capturedTotalCount} ग्राम पंचायतें (Live Captured)
             </h3>
           </div>
-          <span className="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30">
+          <span className="text-xs text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
             {metrics.capturedBaghpatCount} बागपत + {metrics.capturedBarautCount} बड़ौत = {metrics.capturedTotalCount} पूर्ण
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Baghpat */}
-          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-blue-500/20 space-y-2">
-            <div className="text-xs font-bold text-blue-400 flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="text-xs font-bold text-blue-900 flex items-center justify-between">
               <span>विकास खण्ड बागपत ({metrics.capturedBaghpatCount} ग्राम पंचायतें):</span>
-              <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">
+              <span className="text-[10px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded-full border border-blue-200">
                 {metrics.baghpatPercentage}% पूर्ण
               </span>
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
               {capturedBaghpatRecords.length > 0 ? (
                 capturedBaghpatRecords.map(gp => (
-                  <span key={gp.id} className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-medium flex items-center gap-1.5 transition-all">
-                    <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-                    <span>{renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">({formatDateHi(gp.meetingDate)})</span>
+                  <span key={gp.id} className="px-2.5 py-1 rounded-lg bg-white border border-emerald-200 text-emerald-800 font-medium flex items-center gap-1.5 shadow-sm">
+                    <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                    <span className="font-bold">{renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">({formatDateHi(gp.meetingDate)})</span>
                   </span>
                 ))
               ) : (
-                <span className="text-xs text-slate-500 italic">कोई ग्राम पंचायत अपलोड नहीं है</span>
+                <span className="text-xs text-slate-400 italic">कोई ग्राम पंचायत अपलोड नहीं है</span>
               )}
             </div>
           </div>
 
           {/* Baraut */}
-          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-indigo-500/20 space-y-2">
-            <div className="text-xs font-bold text-indigo-400 flex items-center justify-between">
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="text-xs font-bold text-indigo-900 flex items-center justify-between">
               <span>विकास खण्ड बड़ौत ({metrics.capturedBarautCount} ग्राम पंचायतें):</span>
-              <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+              <span className="text-[10px] bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded-full border border-indigo-200">
                 {metrics.barautPercentageTotal}% पूर्ण (मैप्ड में {metrics.barautPercentageMapped}%)
               </span>
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
               {capturedBarautRecords.length > 0 ? (
                 capturedBarautRecords.map(gp => (
-                  <span key={gp.id} className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-medium flex items-center gap-1.5 transition-all">
-                    <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-                    <span>{renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">({formatDateHi(gp.meetingDate)})</span>
+                  <span key={gp.id} className="px-2.5 py-1 rounded-lg bg-white border border-emerald-200 text-emerald-800 font-medium flex items-center gap-1.5 shadow-sm">
+                    <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                    <span className="font-bold">{renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">({formatDateHi(gp.meetingDate)})</span>
                   </span>
                 ))
               ) : (
-                <span className="text-xs text-slate-500 italic">कोई ग्राम पंचायत अपलोड नहीं है</span>
+                <span className="text-xs text-slate-400 italic">कोई ग्राम पंचायत अपलोड नहीं है</span>
               )}
             </div>
           </div>
@@ -374,35 +369,35 @@ export default function PanchayatNirnayTab() {
       {/* ========================================================================= */}
       {/* 6. DEDICATED PENDING CONFIRMATION BOX (DATE-AWARE ACTION QUEUE) */}
       {/* ========================================================================= */}
-      <div className="rounded-3xl bg-gradient-to-br from-slate-900/90 via-slate-900 to-slate-950 border-2 border-amber-500/30 p-5 md:p-6 shadow-2xl space-y-4">
+      <div className="rounded-3xl bg-white border border-slate-200 p-5 md:p-6 shadow-sm space-y-4">
         {/* Header of Pending Box */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg ${
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm ${
               duePendingRecords.length > 0 
-                ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-amber-500/20' 
-                : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 shadow-emerald-500/20'
+                ? 'bg-amber-50 border border-amber-200 text-amber-700' 
+                : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
             }`}>
               {duePendingRecords.length > 0 ? (
                 <Clock className="w-6 h-6 animate-pulse" />
               ) : (
-                <ShieldCheck className="w-6 h-6 text-emerald-400" />
+                <ShieldCheck className="w-6 h-6 text-emerald-600" />
               )}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base md:text-lg font-black text-white">
+                <h2 className="text-base md:text-lg font-black text-slate-900">
                   पंचायत निर्णय ऐप • लंबित पुष्टि बॉक्स (Pending Confirmation Box)
                 </h2>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-black shadow-md ${
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
                   duePendingRecords.length > 0 
-                    ? 'bg-amber-500 text-slate-950' 
-                    : 'bg-emerald-500 text-slate-950'
+                    ? 'bg-amber-100 text-amber-800 border border-amber-300' 
+                    : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                 }`}>
                   {duePendingRecords.length} आज तक लंबित
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5 font-medium">
                 बैठक तिथि के अनुसार सत्यापन — सभा संपन्न होने के दिन ही पुष्टि हेतु यहाँ प्रदर्शित होगी।
               </p>
             </div>
@@ -410,13 +405,13 @@ export default function PanchayatNirnayTab() {
 
           {/* If there are due records, show block filter */}
           {duePendingRecords.length > 0 && (
-            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
               <button
                 onClick={() => setPendingBlockFilter('all')}
                 className={`px-3 py-1 rounded-lg font-bold transition-all ${
                   pendingBlockFilter === 'all'
-                    ? 'bg-amber-600 text-white'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 सभी ({duePendingRecords.length})
@@ -425,8 +420,8 @@ export default function PanchayatNirnayTab() {
                 onClick={() => setPendingBlockFilter('Baghpat')}
                 className={`px-3 py-1 rounded-lg font-bold transition-all ${
                   pendingBlockFilter === 'Baghpat'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-blue-700 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 बागपत ({duePendingRecords.filter(r => r.block === 'Baghpat').length})
@@ -435,8 +430,8 @@ export default function PanchayatNirnayTab() {
                 onClick={() => setPendingBlockFilter('Baraut')}
                 className={`px-3 py-1 rounded-lg font-bold transition-all ${
                   pendingBlockFilter === 'Baraut'
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-indigo-700 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 बड़ौत ({duePendingRecords.filter(r => r.block === 'Baraut').length})
@@ -447,26 +442,26 @@ export default function PanchayatNirnayTab() {
 
         {/* When 0 Due Records (All clear today) */}
         {duePendingRecords.length === 0 ? (
-          <div className="py-8 px-6 text-center rounded-2xl bg-slate-950/60 border border-emerald-500/20 space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto">
+          <div className="py-8 px-6 text-center rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mx-auto">
               <CheckCircle2 className="w-7 h-7" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-emerald-300">
+              <h4 className="text-base font-bold text-emerald-800">
                 आज ({formatDateHi(asOfDate)}) की तिथि तक कोई भी सभा निर्णय ऐप पर लंबित नहीं है!
               </h4>
-              <p className="text-xs text-slate-400 max-w-xl mx-auto mt-1 leading-relaxed">
-                आज तक की सभी विगत बैठकें पूरी तरह स्पष्ट हैं (9 ऐप पर अपलोड, 39 विगत में छूट गईं)।
-                आगामी बैठकें (31/10/2026 से) अपने निर्धारित बैठक दिवस पर स्वतः यहाँ पुष्टि हेतु प्रदर्शित होंगी। आप ऊपर दिए गए 1-क्लिक बुकमार्कलेट से भी सिंक कर सकते हैं।
+              <p className="text-xs text-slate-600 max-w-xl mx-auto mt-1 leading-relaxed font-medium">
+                आज तक की सभी विगत बैठकें पूरी तरह स्पष्ट हैं (14 ऐप पर अपलोड, 38 विगत में छूट गईं)।
+                आगामी बैठकें (31/10/2026 से) अपने निर्धारित बैठक दिवस पर स्वतः यहाँ पुष्टि हेतु प्रदर्शित होंगी।
               </p>
             </div>
 
-            {/* Quick expandable view for 40 upcoming meetings */}
+            {/* Quick expandable view for upcoming meetings */}
             <div className="pt-2 flex items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={() => setShowUpcomingList(!showUpcomingList)}
-                className="text-xs font-bold text-blue-400 hover:text-blue-300 bg-blue-950/60 hover:bg-blue-900/60 px-4 py-2 rounded-xl border border-blue-800/50 flex items-center gap-1.5 transition-all shadow-md"
+                className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl border border-blue-200 flex items-center gap-1.5 transition-all shadow-sm"
               >
                 <Calendar className="w-3.5 h-3.5" />
                 <span>{showUpcomingList ? 'आगामी सूची संक्षेप करें' : `आगामी निर्धारित बैठकें देखें (${upcomingScheduledRecords.length} सभाएं • 31/10 से शुरू)`}</span>
@@ -476,23 +471,23 @@ export default function PanchayatNirnayTab() {
 
             {/* If user clicks to view upcoming scheduled */}
             {showUpcomingList && (
-              <div className="mt-4 pt-4 border-t border-slate-800 text-left space-y-3">
-                <div className="flex items-center justify-between text-xs text-slate-400 font-semibold px-1">
+              <div className="mt-4 pt-4 border-t border-slate-200 text-left space-y-3">
+                <div className="flex items-center justify-between text-xs text-slate-500 font-bold px-1">
                   <span>भविष्य की प्रस्तावित बैठकें (बैठक दिवस पर स्वतः सक्रिय होंगी):</span>
-                  <span className="text-blue-400">कुल {upcomingScheduledRecords.length} ग्राम पंचायतें</span>
+                  <span className="text-blue-700">कुल {upcomingScheduledRecords.length} ग्राम पंचायतें</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 max-h-[300px] overflow-y-auto pr-1">
                   {upcomingScheduledRecords.map((r) => (
-                    <div key={r.id} className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs">
+                    <div key={r.id} className="p-2.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between text-xs shadow-sm">
                       <div>
-                        <div className="font-bold text-white">{renderText(gpNameUnicode(r), r.gpNameKrutiDev)}</div>
-                        <div className="text-[10px] text-slate-400">{r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'} • BRP: {r.brpName || '—'}</div>
+                        <div className="font-bold text-slate-900">{renderText(gpNameUnicode(r), r.gpNameKrutiDev)}</div>
+                        <div className="text-[10px] text-slate-500 font-medium">{r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'} • BRP: {r.brpName || '—'}</div>
                       </div>
                       <div className="text-right">
-                        <span className="text-[11px] font-mono font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30 block">
+                        <span className="text-[11px] font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 block">
                           {formatDateHi(r.meetingDate)}
                         </span>
-                        <span className="text-[9px] text-slate-400 mt-0.5 block">आगामी</span>
+                        <span className="text-[9px] text-slate-500 mt-0.5 block font-medium">आगामी</span>
                       </div>
                     </div>
                   ))}
@@ -501,7 +496,7 @@ export default function PanchayatNirnayTab() {
             )}
           </div>
         ) : (
-          /* When duePendingRecords > 0 (e.g. on 31-Oct-2026 or when date changes) */
+          /* When duePendingRecords > 0 */
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 max-h-[520px] overflow-y-auto pr-1">
             {filteredDuePendingRecords.map((gp) => {
               const isJustUpdated = justUpdatedId === gp.id;
@@ -509,38 +504,38 @@ export default function PanchayatNirnayTab() {
               return (
                 <div
                   key={gp.id}
-                  className={`p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 transition-all space-y-3 shadow-md ${
-                    isJustUpdated ? 'ring-2 ring-emerald-400 bg-emerald-950/20' : ''
+                  className={`p-4 rounded-2xl bg-white border border-slate-200 hover:border-amber-400 transition-all space-y-3 shadow-sm ${
+                    isJustUpdated ? 'ring-2 ring-emerald-400 bg-emerald-50/30' : ''
                   }`}
                 >
                   {/* Top: Date & Block */}
                   <div className="flex items-center justify-between text-xs">
                     <span className={`px-2.5 py-0.5 rounded-full font-bold border text-[11px] ${
                       gp.block === 'Baghpat'
-                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                        : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                        ? 'bg-blue-50 text-blue-800 border-blue-200'
+                        : 'bg-indigo-50 text-indigo-800 border-indigo-200'
                     }`}>
                       {gp.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                     </span>
 
-                    <div className="flex items-center gap-1.5 font-mono text-amber-300 font-bold bg-amber-950/50 px-2.5 py-0.5 rounded-lg border border-amber-500/30">
-                      <Calendar className="w-3 h-3 text-amber-400" />
+                    <div className="flex items-center gap-1.5 font-mono text-amber-800 font-bold bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200">
+                      <Calendar className="w-3 h-3 text-amber-600" />
                       <span>{formatDateHi(gp.meetingDate)}</span>
                     </div>
                   </div>
 
                   {/* Center: GP Name & BRP */}
                   <div>
-                    <h4 className="text-base font-black text-white">
+                    <h4 className="text-base font-black text-slate-900">
                       {renderText(gpNameUnicode(gp), gp.gpNameKrutiDev)}
                     </h4>
-                    <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+                    <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
                       <span className="flex items-center gap-1 truncate">
-                        <Phone className="w-3 h-3 text-slate-500" />
-                        <span>BRP: <strong className="text-slate-300">{gp.brpName || '—'}</strong></span>
+                        <Phone className="w-3 h-3 text-slate-400" />
+                        <span>BRP: <strong className="text-slate-800 font-bold">{gp.brpName || '—'}</strong></span>
                       </span>
                       {gp.isAmended && (
-                        <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-bold border border-amber-500/30">
+                        <span className="text-[10px] bg-amber-50 text-amber-800 px-1.5 py-0.2 rounded font-bold border border-amber-200">
                           संशोधित
                         </span>
                       )}
@@ -548,10 +543,10 @@ export default function PanchayatNirnayTab() {
                   </div>
 
                   {/* 1-Click Action Buttons */}
-                  <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                     <button
                       onClick={() => handleStatusChange(gp.id, 'captured')}
-                      className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition-all flex items-center justify-center gap-1 active:scale-95"
+                      className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95"
                       title="पुष्टि करें: यह ग्राम सभा पंचायत निर्णय ऐप पर अपलोड हो चुकी है"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 text-white" />
@@ -560,7 +555,7 @@ export default function PanchayatNirnayTab() {
 
                     <button
                       onClick={() => handleStatusChange(gp.id, 'not_captured')}
-                      className="py-1.5 px-2.5 rounded-xl bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 text-xs font-bold border border-slate-800 hover:border-rose-500/40 transition-all flex items-center gap-1"
+                      className="py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-bold border border-slate-200 hover:border-rose-200 transition-all flex items-center gap-1"
                       title="चिह्नित करें: ऐप पर नहीं हुआ"
                     >
                       <XCircle className="w-3.5 h-3.5" />
@@ -569,7 +564,7 @@ export default function PanchayatNirnayTab() {
 
                     <button
                       onClick={() => openEditModal(gp)}
-                      className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs"
+                      className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 text-xs font-bold"
                       title="विवरण संपादित करें"
                     >
                       संपादित
@@ -585,15 +580,15 @@ export default function PanchayatNirnayTab() {
       {/* ========================================================================= */}
       {/* 7. FILTER & SEARCH TOOLBAR FOR MASTER TABLE */}
       {/* ========================================================================= */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-md">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         {/* Block Filters */}
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={() => setSelectedBlockFilter('all')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
               selectedBlockFilter === 'all'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white bg-slate-800'
+                ? 'bg-blue-700 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 bg-slate-100'
             }`}
           >
             सभी ब्लॉक ({metrics.totalGps})
@@ -602,8 +597,8 @@ export default function PanchayatNirnayTab() {
             onClick={() => setSelectedBlockFilter('Baghpat')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
               selectedBlockFilter === 'Baghpat'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white bg-slate-800'
+                ? 'bg-blue-700 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 bg-slate-100'
             }`}
           >
             बागपत ({metrics.capturedBaghpatCount}/44)
@@ -612,8 +607,8 @@ export default function PanchayatNirnayTab() {
             onClick={() => setSelectedBlockFilter('Baraut')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
               selectedBlockFilter === 'Baraut'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white bg-slate-800'
+                ? 'bg-indigo-700 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 bg-slate-100'
             }`}
           >
             बड़ौत ({metrics.capturedBarautCount}/44)
@@ -623,23 +618,23 @@ export default function PanchayatNirnayTab() {
         {/* Status Filters & Search */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Status Tabs */}
-          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
             <button
               onClick={() => setSelectedStatusFilter('all')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
                 selectedStatusFilter === 'all'
-                  ? 'bg-slate-700 text-white'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-slate-700 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               सभी ({records.length})
             </button>
             <button
               onClick={() => setSelectedStatusFilter('captured')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                 selectedStatusFilter === 'captured'
-                  ? 'bg-emerald-600 text-white'
-                  : 'text-emerald-400 hover:bg-emerald-950/40'
+                  ? 'bg-emerald-700 text-white shadow-sm'
+                  : 'text-emerald-800 hover:bg-emerald-50'
               }`}
             >
               <Check className="w-3 h-3" />
@@ -647,10 +642,10 @@ export default function PanchayatNirnayTab() {
             </button>
             <button
               onClick={() => setSelectedStatusFilter('due_pending')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                 selectedStatusFilter === 'due_pending'
-                  ? 'bg-amber-600 text-white'
-                  : 'text-amber-400 hover:bg-amber-950/40'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-amber-800 hover:bg-amber-50'
               }`}
             >
               <Clock className="w-3 h-3" />
@@ -658,10 +653,10 @@ export default function PanchayatNirnayTab() {
             </button>
             <button
               onClick={() => setSelectedStatusFilter('upcoming')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                 selectedStatusFilter === 'upcoming'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-blue-400 hover:bg-blue-950/40'
+                  ? 'bg-blue-700 text-white shadow-sm'
+                  : 'text-blue-800 hover:bg-blue-50'
               }`}
             >
               <Calendar className="w-3 h-3" />
@@ -669,10 +664,10 @@ export default function PanchayatNirnayTab() {
             </button>
             <button
               onClick={() => setSelectedStatusFilter('not_captured')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
                 selectedStatusFilter === 'not_captured'
-                  ? 'bg-rose-600 text-white'
-                  : 'text-rose-400 hover:bg-rose-950/40'
+                  ? 'bg-rose-600 text-white shadow-sm'
+                  : 'text-rose-700 hover:bg-rose-50'
               }`}
             >
               <XCircle className="w-3 h-3" />
@@ -688,7 +683,7 @@ export default function PanchayatNirnayTab() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="ग्राम पंचायत खोजें..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 font-medium"
             />
           </div>
         </div>
@@ -697,10 +692,10 @@ export default function PanchayatNirnayTab() {
       {/* ========================================================================= */}
       {/* 8. INTERACTIVE MASTER TABLE WITH 1-CLICK CONFIRMATION BUTTONS */}
       {/* ========================================================================= */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden shadow-xl">
+      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/90 text-slate-400 uppercase text-[11px] font-bold border-b border-slate-800">
+          <table className="w-full text-left text-xs text-slate-700">
+            <thead className="bg-slate-100/90 text-slate-700 uppercase text-[11px] font-bold border-b border-slate-200">
               <tr>
                 <th className="py-3 px-3 w-12 text-center">क्र०</th>
                 <th className="py-3 px-3">विकास खण्ड</th>
@@ -714,10 +709,10 @@ export default function PanchayatNirnayTab() {
                 <th className="py-3 px-3 text-center">कार्रवाई</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-medium">
+            <tbody className="divide-y divide-slate-100 font-medium">
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500 text-sm">
+                  <td colSpan={8} className="py-8 text-center text-slate-400 text-sm">
                     कोई रिकॉर्ड नहीं मिला।
                   </td>
                 </tr>
@@ -730,10 +725,10 @@ export default function PanchayatNirnayTab() {
                   return (
                     <tr
                       key={r.id}
-                      className={`hover:bg-slate-800/40 transition-colors ${
-                        status === 'captured' ? 'bg-emerald-950/10' : ''
-                      } ${status === 'not_captured' ? 'bg-rose-950/5' : ''} ${
-                        isJustUpdated ? 'ring-2 ring-emerald-500/80 bg-emerald-950/30' : ''
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        status === 'captured' ? 'bg-emerald-50/30' : ''
+                      } ${status === 'not_captured' ? 'bg-rose-50/20' : ''} ${
+                        isJustUpdated ? 'ring-2 ring-emerald-500 bg-emerald-50/50' : ''
                       }`}
                     >
                       {/* S.No */}
@@ -745,8 +740,8 @@ export default function PanchayatNirnayTab() {
                       <td className="py-3 px-3">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                           r.block === 'Baghpat'
-                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                            : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                            ? 'bg-blue-50 text-blue-800 border-blue-200'
+                            : 'bg-indigo-50 text-indigo-800 border-indigo-200'
                         }`}>
                           {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                         </span>
@@ -754,27 +749,27 @@ export default function PanchayatNirnayTab() {
 
                       {/* GP Name */}
                       <td className="py-3 px-4">
-                        <div className="font-bold text-white text-sm">
+                        <div className="font-bold text-slate-900 text-sm">
                           {renderText(gpNameUnicode(r), r.gpNameKrutiDev)}
                         </div>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-[11px] text-slate-500">
                           BRP: {r.brpName || '—'} • पर्यवेक्षक: {r.supervisorOfficerUnicode || '—'}
                         </div>
                       </td>
 
                       {/* Meeting Date */}
-                      <td className="py-3 px-3 text-center font-mono font-bold text-slate-200">
+                      <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
                         {formatDateHi(r.meetingDate)}
                       </td>
 
                       {/* Mapping Status */}
                       <td className="py-3 px-3 text-center">
                         {r.isMappedInPanchayatNirnay ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
                             मैप्ड (100%)
                           </span>
                         ) : (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
                             गैर-मैप्ड
                           </span>
                         )}
@@ -783,37 +778,37 @@ export default function PanchayatNirnayTab() {
                       {/* Status / Interactive Buttons */}
                       <td className="py-3 px-4 text-center">
                         {status === 'captured' ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold shadow-sm">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold shadow-sm">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             <span>सत्यापित (Captured)</span>
                           </span>
                         ) : status === 'not_captured' ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30 text-xs font-semibold">
-                            <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold">
+                            <XCircle className="w-3.5 h-3.5 text-rose-500" />
                             <span>नहीं हुआ (Not Captured)</span>
                           </span>
                         ) : isFuture ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-950/40 text-blue-300 border border-blue-500/30 text-xs font-medium">
-                            <Clock className="w-3.5 h-3.5 text-blue-400" />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 text-xs font-bold">
+                            <Clock className="w-3.5 h-3.5 text-blue-600" />
                             <span>आगामी ({formatDateHi(r.meetingDate)} को सक्रिय)</span>
                           </span>
                         ) : (
                           /* Due Pending (meetingDate <= asOfDate) */
-                          <div className="inline-flex items-center bg-slate-950 p-1 rounded-xl border border-amber-500/40 gap-1 shadow-inner">
+                          <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-amber-300 gap-1 shadow-inner">
                             <button
                               onClick={() => handleStatusChange(r.id, 'captured')}
-                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-md flex items-center gap-1"
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1"
                               title="सत्यापित करें"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                               <span>सत्यापित</span>
                             </button>
                             <button
                               onClick={() => handleStatusChange(r.id, 'not_captured')}
-                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 text-white shadow-md flex items-center gap-1"
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center gap-1"
                               title="नहीं हुआ"
                             >
-                              <XCircle className="w-3.5 h-3.5" />
+                              <XCircle className="w-3.5 h-3.5 text-white" />
                               <span>नहीं हुआ</span>
                             </button>
                           </div>
@@ -823,15 +818,15 @@ export default function PanchayatNirnayTab() {
                       {/* Captured / Upload Date / Status Detail */}
                       <td className="py-3 px-3 text-center text-xs font-mono">
                         {status === 'captured' ? (
-                          <span className="text-emerald-400 font-bold">
+                          <span className="text-emerald-700 font-bold">
                             {formatDateHi(r.panchayatNirnayCapturedDate || r.meetingDate)}
                           </span>
                         ) : status === 'not_captured' ? (
-                          <span className="text-rose-400/80 text-[11px]">छूट गई (विगत)</span>
+                          <span className="text-rose-600 font-medium text-[11px]">छूट गई (विगत)</span>
                         ) : isFuture ? (
-                          <span className="text-slate-400 text-[11px]">बैठक प्रतीक्षित</span>
+                          <span className="text-slate-500 text-[11px] font-medium">बैठक प्रतीक्षित</span>
                         ) : (
-                          <span className="text-amber-400 font-bold text-[11px]">पुष्टि प्रतीक्षित</span>
+                          <span className="text-amber-700 font-bold text-[11px]">पुष्टि प्रतीक्षित</span>
                         )}
                       </td>
 
@@ -839,7 +834,7 @@ export default function PanchayatNirnayTab() {
                       <td className="py-3 px-3 text-center">
                         <button
                           onClick={() => openEditModal(r)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-all"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition-all"
                           title="विवरण संपादित करें"
                         >
                           संपादित

@@ -119,26 +119,26 @@ export default function EditRecordModal() {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden my-8">
         {/* Header */}
-        <div className="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
               #{selectedRecordForEdit.sno}
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-base font-bold text-slate-900">
                 सोशल ऑडिट रोस्टर संशोधन: {selectedRecordForEdit.gpNameUnicode}
               </h3>
-              <p className="text-xs text-slate-400">
-                {selectedRecordForEdit.blockHindi} (District Baghpat)
+              <p className="text-xs text-slate-500">
+                {selectedRecordForEdit.blockHindi} (जनपद बागपत)
               </p>
             </div>
           </div>
           <button
             onClick={closeEditModal}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -149,27 +149,27 @@ export default function EditRecordModal() {
           {/* GP Name & Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-slate-400 font-semibold mb-1">ग्राम पंचायत का नाम</label>
+              <label className="block text-slate-700 font-semibold mb-1">ग्राम पंचायत का नाम</label>
               <input
                 type="text"
                 value={gpName}
                 onChange={(e) => setGpName(e.target.value)}
                 required
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold outline-none focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
             <div>
-              <label className="block text-slate-400 font-semibold mb-1">सोशल ऑडिट प्रारम्भ तिथि</label>
+              <label className="block text-slate-700 font-semibold mb-1">सोशल ऑडिट प्रारम्भ तिथि</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 required
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
             <div>
-              <label className="block text-amber-300 font-bold mb-1">
+              <label className="block text-amber-800 font-bold mb-1">
                 बैठक की तिथि (Meeting Date)
               </label>
               <input
@@ -177,19 +177,19 @@ export default function EditRecordModal() {
                 value={meetingDate}
                 onChange={(e) => setMeetingDate(e.target.value)}
                 required
-                className="w-full bg-slate-800 border-2 border-amber-500/50 rounded-xl px-3 py-2 text-amber-300 font-bold outline-none focus:border-amber-400"
+                className="w-full bg-amber-50/80 border-2 border-amber-400 rounded-xl px-3 py-2 text-amber-950 font-bold outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
               />
             </div>
           </div>
 
           {/* BRP Quick Selection */}
-          <div className="p-3 bg-slate-950/60 rounded-2xl border border-slate-800 space-y-2">
-            <div className="flex items-center justify-between text-slate-300 font-semibold">
+          <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between text-slate-800 font-semibold">
               <span className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-amber-400" />
+                <Users className="w-3.5 h-3.5 text-amber-600" />
                 <span>आवंटित बी०आर०पी० (BRP)</span>
               </span>
-              <span className="text-[10px] text-slate-400">त्वरित चयन करें:</span>
+              <span className="text-[10px] text-slate-500">त्वरित चयन करें:</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
@@ -203,33 +203,33 @@ export default function EditRecordModal() {
                   }}
                   className={`p-2 rounded-xl text-left border transition-all ${
                     brpName.includes(opt.name)
-                      ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
-                      : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700'
+                      ? 'bg-amber-100 border-2 border-amber-500 text-amber-950 font-bold shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
-                  <div className="truncate">{opt.name}</div>
-                  <div className="text-[10px] text-slate-400 font-mono">{opt.phone}</div>
+                  <div className="truncate font-semibold">{opt.name}</div>
+                  <div className="text-[10px] text-slate-500 font-mono">{opt.phone}</div>
                 </button>
               ))}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
               <div>
-                <label className="block text-[10px] text-slate-400 mb-0.5">BRP का नाम</label>
+                <label className="block text-[10px] text-slate-600 mb-0.5">BRP का नाम</label>
                 <input
                   type="text"
                   value={brpName}
                   onChange={(e) => setBrpName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white outline-none"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:border-blue-400"
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-slate-400 mb-0.5">BRP मोबाइल नं०</label>
+                <label className="block text-[10px] text-slate-600 mb-0.5">BRP मोबाइल नं०</label>
                 <input
                   type="text"
                   value={brpPhone}
                   onChange={(e) => setBrpPhone(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono outline-none"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 font-mono outline-none focus:border-blue-400"
                 />
               </div>
             </div>
@@ -237,28 +237,28 @@ export default function EditRecordModal() {
 
           {/* Team Members */}
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">
+            <label className="block text-slate-700 font-semibold mb-1">
               सोशल ऑडिट टीम सदस्यों का नाम (सर्वश्री/श्रीमती)
             </label>
             <textarea
               rows={2}
               value={teamMembers}
               onChange={(e) => setTeamMembers(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-blue-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               placeholder="उदा० सुधीर कुमार (नेथला) बबली शर्मा (नेथला)..."
             />
           </div>
 
           {/* Supervisory Officer */}
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">
+            <label className="block text-slate-700 font-semibold mb-1">
               जनपद स्तरीय पर्यवेक्षक अधिकारी
             </label>
             <input
               type="text"
               value={supervisorOfficer}
               onChange={(e) => setSupervisorOfficer(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-blue-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               placeholder="उदा० अधिशासी अभियन्ता जल निगम बागपत।"
             />
           </div>
@@ -266,29 +266,29 @@ export default function EditRecordModal() {
           {/* Venue & Time & Status */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-slate-400 font-semibold mb-1">स्थान</label>
+              <label className="block text-slate-700 font-semibold mb-1">स्थान</label>
               <input
                 type="text"
                 value={venue}
                 onChange={(e) => setVenue(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500"
               />
             </div>
             <div>
-              <label className="block text-slate-400 font-semibold mb-1">समय</label>
+              <label className="block text-slate-700 font-semibold mb-1">समय</label>
               <input
                 type="text"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500"
               />
             </div>
             <div>
-              <label className="block text-slate-400 font-semibold mb-1">वर्तमान स्थिति</label>
+              <label className="block text-slate-700 font-semibold mb-1">वर्तमान स्थिति</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as AuditStatus)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 font-semibold"
               >
                 <option value="scheduled">प्रस्तावित (Scheduled)</option>
                 <option value="completed">सम्पन्न (Completed)</option>
@@ -299,19 +299,19 @@ export default function EditRecordModal() {
           </div>
 
           {/* Scheme Checkboxes */}
-          <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex flex-wrap items-center gap-4">
-            <span className="text-slate-400 font-semibold">ऑडिट योजनाएं:</span>
-            <label className="flex items-center gap-1.5 cursor-pointer text-slate-200">
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-wrap items-center gap-4">
+            <span className="text-slate-600 font-semibold">ऑडिट योजनाएं:</span>
+            <label className="flex items-center gap-1.5 cursor-pointer text-slate-800">
               <input
                 type="checkbox"
                 checked={hasMGNREGA}
                 onChange={(e) => setHasMGNREGA(e.target.checked)}
                 className="rounded accent-blue-600"
               />
-              <span>मनरेगा (MGNREGA)</span>
+              <span className="font-medium">मनरेगा (MGNREGA)</span>
             </label>
 
-            <label className="flex items-center gap-1.5 cursor-pointer text-emerald-300 font-bold">
+            <label className="flex items-center gap-1.5 cursor-pointer text-emerald-800 font-bold">
               <input
                 type="checkbox"
                 checked={hasNSAP}
@@ -321,25 +321,25 @@ export default function EditRecordModal() {
               <span>NSAP पेंशन (वृद्धावस्था/पारिवारिक)</span>
             </label>
 
-            <label className="flex items-center gap-1.5 cursor-pointer text-purple-300">
+            <label className="flex items-center gap-1.5 cursor-pointer text-indigo-800 font-medium">
               <input
                 type="checkbox"
                 checked={hasPMAYG}
                 onChange={(e) => setHasPMAYG(e.target.checked)}
-                className="rounded accent-purple-600"
+                className="rounded accent-indigo-600"
               />
               <span>प्र० आ० ग्रा० (PMAY-G)</span>
             </label>
           </div>
 
           {/* Panchayat Nirnay App Status (R 9.6.2) */}
-          <div className="p-3.5 bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-slate-900 rounded-xl border border-purple-500/30">
+          <div className="p-3.5 bg-purple-50/70 rounded-xl border border-purple-200">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-purple-400" />
-                <span className="text-sm font-bold text-purple-200">पंचायत निर्णय ऐप (R 9.6.2) स्थिति</span>
+                <Smartphone className="w-4 h-4 text-purple-700" />
+                <span className="text-sm font-bold text-purple-900">पंचायत निर्णय ऐप (R 9.6.2) स्थिति</span>
               </div>
-              <span className="text-xs text-purple-300/70 font-mono">पोर्टल सत्यापन</span>
+              <span className="text-xs text-purple-700 font-semibold font-mono">पोर्टल सत्यापन</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
@@ -347,11 +347,11 @@ export default function EditRecordModal() {
                 onClick={() => setNirnayStatus('captured')}
                 className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all border ${
                   nirnayStatus === 'captured'
-                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400/30'
-                    : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-emerald-500/50 hover:bg-emerald-950/20'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md ring-2 ring-emerald-300'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50'
                 }`}
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>अपलोड (Captured)</span>
               </button>
 
@@ -360,11 +360,11 @@ export default function EditRecordModal() {
                 onClick={() => setNirnayStatus('pending')}
                 className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all border ${
                   nirnayStatus === 'pending'
-                    ? 'bg-amber-600 text-white border-amber-400 shadow-md shadow-amber-600/30 ring-2 ring-amber-400/30'
-                    : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-amber-500/50 hover:bg-amber-950/20'
+                    ? 'bg-amber-600 text-white border-amber-500 shadow-md ring-2 ring-amber-300'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400 hover:bg-amber-50'
                 }`}
               >
-                <Clock className="w-3.5 h-3.5 text-amber-300" />
+                <Clock className="w-3.5 h-3.5" />
                 <span>लंबित (Pending)</span>
               </button>
 
@@ -373,23 +373,23 @@ export default function EditRecordModal() {
                 onClick={() => setNirnayStatus('not_captured')}
                 className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all border ${
                   nirnayStatus === 'not_captured'
-                    ? 'bg-rose-700 text-white border-rose-400 shadow-md shadow-rose-700/30 ring-2 ring-rose-400/30'
-                    : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-rose-500/50 hover:bg-rose-950/20'
+                    ? 'bg-rose-600 text-white border-rose-500 shadow-md ring-2 ring-rose-300'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-rose-400 hover:bg-rose-50'
                 }`}
               >
-                <XCircle className="w-3.5 h-3.5 text-rose-300" />
+                <XCircle className="w-3.5 h-3.5" />
                 <span>नहीं हुआ (No)</span>
               </button>
             </div>
 
             {nirnayStatus === 'captured' && (
-              <div className="mt-2.5 pt-2.5 border-t border-purple-500/20 flex items-center gap-2">
-                <span className="text-xs text-slate-400">अपलोड/सत्यापन तिथि:</span>
+              <div className="mt-2.5 pt-2.5 border-t border-purple-200 flex items-center gap-2">
+                <span className="text-xs text-purple-900 font-medium">अपलोड/सत्यापन तिथि:</span>
                 <input
                   type="date"
                   value={nirnayCapturedDate || meetingDate}
                   onChange={(e) => setNirnayCapturedDate(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none focus:border-purple-400"
+                  className="bg-white border border-purple-300 text-slate-900 text-xs rounded-lg px-2 py-1 outline-none focus:border-purple-500"
                 />
               </div>
             )}
@@ -397,7 +397,7 @@ export default function EditRecordModal() {
 
           {/* Amendment Reason */}
           <div>
-            <label className="block text-slate-400 font-semibold mb-1">
+            <label className="block text-slate-700 font-semibold mb-1">
               संशोधन का कारण (टिप्पणी / Reason for Amendment)
             </label>
             <input
@@ -405,16 +405,16 @@ export default function EditRecordModal() {
               value={amendmentReason}
               onChange={(e) => setAmendmentReason(e.target.value)}
               placeholder="उदा० बी०आर०पी० कार्यमुक्त होने एवं अन्य प्रशासनिक कारणों से संशोधित"
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500"
             />
           </div>
 
           {/* Actions Bar */}
-          <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+          <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
             <button
               type="button"
               onClick={handleDelete}
-              className="flex items-center gap-1 text-rose-400 hover:text-rose-300 font-semibold px-3 py-2 rounded-xl hover:bg-rose-500/10 transition-colors"
+              className="flex items-center gap-1 text-rose-600 hover:text-rose-700 font-semibold px-3 py-2 rounded-xl hover:bg-rose-50 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>हटाएं</span>
@@ -424,13 +424,13 @@ export default function EditRecordModal() {
               <button
                 type="button"
                 onClick={closeEditModal}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-colors"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-colors"
               >
                 रद्द करें
               </button>
               <button
                 type="submit"
-                className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-600/30 transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95"
               >
                 <Save className="w-4 h-4" />
                 <span>संशोधन सहेजें</span>

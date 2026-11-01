@@ -81,11 +81,11 @@ export default function TeamRosterTab() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-base md:text-lg font-black text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-amber-400" />
+            <h3 className="text-base md:text-lg font-black text-slate-900 flex items-center gap-2">
+              <Users className="w-5 h-5 text-amber-600" />
               <span>ब्लॉक रिसोर्स पर्सन (BRP) रोस्टर एवं संपर्क विवरण</span>
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-600">
               सोशल ऑडिट का संचालन करने वाले मुख्य बी०आर०पी० एवं उनकी आवंटित ग्राम पंचायतें
             </p>
           </div>
@@ -95,34 +95,34 @@ export default function TeamRosterTab() {
           {brpDirectory.map((brp) => (
             <div
               key={brp.phone || brp.name}
-              className={`p-5 rounded-2xl border shadow-xl flex flex-col justify-between ${
+              className={`p-5 rounded-2xl border shadow-sm flex flex-col justify-between ${
                 brp.isExBRP
-                  ? 'bg-slate-900/60 border-slate-800 opacity-75'
-                  : 'bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border-slate-800 hover:border-slate-700'
+                  ? 'bg-slate-50 border-slate-200 opacity-80'
+                  : 'bg-white border-slate-200 hover:border-slate-300'
               }`}
             >
               <div>
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-black text-base">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center font-black text-base">
                     {brp.name.charAt(0)}
                   </div>
 
                   {brp.isExBRP ? (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
                       कार्यमुक्त / स्थानांतरित
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
                       सक्रिय BRP
                     </span>
                   )}
                 </div>
 
-                <h4 className="text-base font-bold text-white">{brp.name}</h4>
+                <h4 className="text-base font-bold text-slate-900">{brp.name}</h4>
                 {brp.phone && (
                   <a
                     href={`tel:${brp.phone}`}
-                    className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-mono mt-1"
+                    className="inline-flex items-center gap-1.5 text-xs text-blue-700 hover:underline font-mono mt-1"
                   >
                     <Phone className="w-3.5 h-3.5" />
                     <span>{brp.phone}</span>
@@ -130,33 +130,33 @@ export default function TeamRosterTab() {
                 )}
 
                 {/* KPI numbers */}
-                <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800 text-center">
-                  <div className="bg-slate-950/60 p-2 rounded-xl">
-                    <div className="text-[10px] text-slate-400">कुल सभाएं</div>
-                    <div className="text-base font-bold text-white mt-0.5">{brp.allGPs.length}</div>
+                <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-100 text-center">
+                  <div className="bg-slate-50 p-2 rounded-xl border border-slate-100">
+                    <div className="text-[10px] text-slate-500 font-medium">कुल सभाएं</div>
+                    <div className="text-base font-bold text-slate-900 mt-0.5">{brp.allGPs.length}</div>
                   </div>
-                  <div className="bg-slate-950/60 p-2 rounded-xl">
-                    <div className="text-[10px] text-blue-400">आगामी</div>
-                    <div className="text-base font-bold text-blue-300 mt-0.5">{brp.upcomingGPs.length}</div>
+                  <div className="bg-blue-50/60 p-2 rounded-xl border border-blue-100">
+                    <div className="text-[10px] text-blue-700 font-medium">आगामी</div>
+                    <div className="text-base font-bold text-blue-800 mt-0.5">{brp.upcomingGPs.length}</div>
                   </div>
-                  <div className="bg-slate-950/60 p-2 rounded-xl">
-                    <div className="text-[10px] text-emerald-400">सम्पन्न</div>
-                    <div className="text-base font-bold text-emerald-300 mt-0.5">{brp.completedGPs.length}</div>
+                  <div className="bg-emerald-50/60 p-2 rounded-xl border border-emerald-100">
+                    <div className="text-[10px] text-emerald-700 font-medium">सम्पन्न</div>
+                    <div className="text-base font-bold text-emerald-800 mt-0.5">{brp.completedGPs.length}</div>
                   </div>
                 </div>
 
                 {/* Assigned GPs preview */}
                 <div className="mt-3">
-                  <div className="text-[11px] font-semibold text-slate-400 mb-1">आवंटित ग्राम पंचायतें:</div>
+                  <div className="text-[11px] font-semibold text-slate-600 mb-1">आवंटित ग्राम पंचायतें:</div>
                   <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto scrollbar-none">
                     {brp.allGPs.map((gp) => (
                       <span
                         key={gp.id}
                         onClick={() => openEditModal(gp)}
-                        className={`text-[10px] px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                        className={`text-[10px] px-2 py-0.5 rounded cursor-pointer transition-colors border ${
                           gp.isAmended
-                            ? 'bg-amber-950/70 text-amber-300 border border-amber-600/30'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
                         }`}
                         title={`${gp.gpNameUnicode} (${gp.blockHindi}) - ${gp.meetingDate}`}
                       >
@@ -172,18 +172,18 @@ export default function TeamRosterTab() {
       </div>
 
       {/* Section 2: District Level Supervisory Officers */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-        <h3 className="text-base md:text-lg font-black text-white mb-1 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-purple-400" />
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm">
+        <h3 className="text-base md:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-purple-600" />
           <span>जनपद स्तरीय पर्यवेक्षक अधिकारी सूची (Supervisory Officers)</span>
         </h3>
-        <p className="text-xs text-slate-400 mb-4">
+        <p className="text-xs text-slate-600 mb-4">
           सोशल ऑडिट बैठकों में जनपद स्तर से नामित नोडल/पर्यवेक्षक अधिकारी
         </p>
 
-        <div className="overflow-x-auto max-h-80 scrollbar-thin">
+        <div className="overflow-x-auto max-h-80 scrollbar-thin rounded-xl border border-slate-200">
           <table className="w-full text-left border-collapse text-xs">
-            <thead className="bg-slate-950 text-slate-400 sticky top-0 font-semibold border-b border-slate-800">
+            <thead className="bg-slate-100 text-slate-700 sticky top-0 font-semibold border-b border-slate-200">
               <tr>
                 <th className="py-2.5 px-3 w-12 text-center">क्र०</th>
                 <th className="py-2.5 px-3">पर्यवेक्षक अधिकारी का पदनाम / विभाग</th>
@@ -191,12 +191,12 @@ export default function TeamRosterTab() {
                 <th className="py-2.5 px-3">ग्राम पंचायतें</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-100 font-medium">
               {supervisorDirectory.map(([officer, gps], i) => (
-                <tr key={officer} className="hover:bg-slate-800/40">
+                <tr key={officer} className="hover:bg-slate-50">
                   <td className="py-2.5 px-3 text-center text-slate-400 font-mono">{i + 1}</td>
-                  <td className="py-2.5 px-3 font-semibold text-slate-200">{officer}</td>
-                  <td className="py-2.5 px-3 text-center font-bold text-purple-300 font-mono">
+                  <td className="py-2.5 px-3 font-semibold text-slate-800">{officer}</td>
+                  <td className="py-2.5 px-3 text-center font-bold text-purple-700 font-mono">
                     {gps.length}
                   </td>
                   <td className="py-2.5 px-3">
@@ -204,7 +204,7 @@ export default function TeamRosterTab() {
                       {gps.map((gp) => (
                         <span
                           key={gp.id}
-                          className="text-[10px] bg-slate-800/80 px-1.5 py-0.5 rounded text-slate-300"
+                          className="text-[10px] bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-slate-700"
                         >
                           {gp.gpNameUnicode} ({gp.meetingDate.slice(5)})
                         </span>
