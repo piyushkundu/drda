@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore, SocialAuditTab } from '@/stores/socialAuditStore';
 import { SocialAuditRecord, AuditBlock } from '@/types/socialAudit';
 import { DISTRICT_META } from '@/data/socialAuditInitialData';
+import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
 import { 
   Landmark, Building2, Calendar, CheckCircle2, Clock, 
   AlertTriangle, Smartphone, FileSpreadsheet, Users, 
@@ -196,6 +197,11 @@ export default function ExecutiveDashboardTab() {
     };
   }, [records, nsapRecords, asOfDate]);
 
+  // Dynamic NSAP Social Audit Progress Report (GPs calculation strictly matching NSAPReportTab)
+  const nsapReport = useMemo(() => {
+    return calculateNSAPReportSummary(records, asOfDate);
+  }, [records, asOfDate]);
+
   // Handle Safe Refresh Action
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -284,20 +290,20 @@ export default function ExecutiveDashboardTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* SECTION B: TOP 8 DYNAMIC KPI CARDS (Clickable for Detail Lists - 3D White Glass) */}
+      {/* SECTION B: TOP 6 DYNAMIC KPI CARDS (Clickable for Detail Lists - 3D White Glass) */}
       {/* ========================================================================= */}
       <div>
         <div className="flex items-center justify-between mb-3 px-1">
           <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
             <Layers className="w-4 h-4 text-blue-800" />
-            <span>मुख्य प्रगति संकेतक (Key Performance Indicators)</span>
+            <span>मुख्य सोशल ऑडिट प्रगति संकेतक</span>
           </h3>
           <span className="text-xs text-slate-500 font-medium hidden sm:inline">
             (सूची विवरण देखने हेतु कार्ड पर क्लिक करें)
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {/* KPI 1: Total GPs */}
           <div
             onClick={() => { setActiveModal('all'); setModalSearch(''); setModalBlockFilter('all'); }}
@@ -383,31 +389,7 @@ export default function ExecutiveDashboardTab() {
             </div>
           </div>
 
-          {/* KPI 5: Due Pending */}
-          <div
-            onClick={() => { setActiveModal('pending'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="social-audit-kpi bg-gradient-to-b from-white to-amber-50/20 p-4.5 rounded-2xl border border-amber-200 hover:border-amber-400 cursor-pointer group"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-950">आज तक देय लंबित बैठकें</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 group-hover:scale-105 transition-transform">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-slate-900 tracking-tight font-mono">
-                {metrics.duePendingCount}
-              </span>
-              <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold px-2 py-0.5 rounded-full">
-                {metrics.duePendingCount === 0 ? 'सब क्लियर' : 'कार्यवाही अपेक्षित'}
-              </span>
-            </div>
-            <div className="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
-              {metrics.duePendingCount === 0 ? 'कट-ऑफ तिथि तक समस्त बैठकें अद्यतन' : 'बैठक तिथि उपरांत शेष'}
-            </div>
-          </div>
-
-          {/* KPI 6: Panchayat Nirnay Status */}
+          {/* KPI 5: Panchayat Nirnay Status */}
           <div
             onClick={() => { setActiveModal('nirnay'); setModalSearch(''); setModalBlockFilter('all'); }}
             className="social-audit-kpi bg-gradient-to-b from-white to-teal-50/20 p-4.5 rounded-2xl border border-teal-200 hover:border-teal-400 cursor-pointer group"
@@ -432,7 +414,7 @@ export default function ExecutiveDashboardTab() {
             </div>
           </div>
 
-          {/* KPI 7: MIS Feeding Status */}
+          {/* KPI 6: MIS Feeding Status */}
           <div
             onClick={() => { setActiveModal('mis'); setModalSearch(''); setModalBlockFilter('all'); }}
             className="social-audit-kpi bg-gradient-to-b from-white to-indigo-50/20 p-4.5 rounded-2xl border border-indigo-200 hover:border-indigo-400 cursor-pointer group"
@@ -454,31 +436,6 @@ export default function ExecutiveDashboardTab() {
             <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>देय लंबित: <strong className="text-amber-700">{metrics.misDuePendingCount}</strong> ({metrics.misDuePendingNSAPCount} NSAP)</span>
               <span className="text-[11px] text-indigo-700 font-bold group-hover:underline">सूची देखें →</span>
-            </div>
-          </div>
-
-          {/* KPI 8: Total NSAP Beneficiaries */}
-          <div
-            onClick={() => { setActiveModal('nsap'); setModalSearch(''); }}
-            className="social-audit-kpi bg-gradient-to-b from-white to-purple-50/20 p-4.5 rounded-2xl border border-purple-200 hover:border-purple-400 cursor-pointer group"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-purple-950">NSAP पेंशन लाभार्थी संख्या</span>
-              <div className="w-8 h-8 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700 group-hover:scale-105 transition-transform">
-                <Users className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-purple-900 tracking-tight font-mono">
-                {metrics.totalBeneficiaries}
-              </span>
-              <span className="text-xs font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200">
-                {metrics.nsapRecordedCount} GP
-              </span>
-            </div>
-            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
-              <span>सत्यापित: <strong className="text-emerald-700">{metrics.totalVerified}</strong> | मृतक: <strong className="text-rose-700">{metrics.totalDeceased}</strong></span>
-              <span className="text-[11px] text-purple-700 font-bold group-hover:underline">सूची देखें →</span>
             </div>
           </div>
         </div>
@@ -663,7 +620,181 @@ export default function ExecutiveDashboardTab() {
       </div>
 
       {/* ========================================================================= */}
-      {/* SECTION D: IMPORTANT INFORMATION SECTIONS (Clean Government Data Tables) */}
+      {/* SECTION D: NSAP SOCIAL AUDIT REPORT SUMMARY (47 Gram Panchayats) */}
+      {/* ========================================================================= */}
+      <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                NSAP सामाजिक सहायता कार्यक्रम
+              </span>
+              <span className="text-[11px] font-semibold text-slate-500">
+                वृद्धावस्था पेंशन / राष्ट्रीय पारिवारिक लाभ योजना
+              </span>
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+              NSAP सोशल ऑडिट प्रगति रिपोर्ट (माह अक्टूबर तक मासिक प्रगति)
+            </h3>
+            <p className="text-xs text-slate-500">
+              कट-ऑफ तिथि ({formatDateHi(asOfDate)}) तक आधिकारिक प्रारूपानुसार सोशल ऑडिट बैठकों की प्रगति सारांश
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setActiveTab('nsap-report')}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-sm flex items-center gap-1.5 transition-all"
+            >
+              <span>पूरी NSAP रिपोर्ट देखें</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* 4 Dynamic Summary Cards for NSAP Social Audit (Strictly from nsapReport) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+              कुल प्रस्तावित पंचायतें (FY 26-27)
+            </div>
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
+              {nsapReport.totals.totalProposedFY}
+            </div>
+            <div className="text-[11px] text-slate-500 mt-1 font-medium">
+              बागपत: <strong className="text-blue-800">{nsapReport.rows[0]?.totalProposedFY || 24}</strong> | बड़ौत: <strong className="text-indigo-800">{nsapReport.rows[1]?.totalProposedFY || 23}</strong>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-50/50 to-white p-4 rounded-2xl border border-blue-200 shadow-sm">
+            <div className="text-[11px] font-bold text-blue-900 uppercase tracking-wider mb-1">
+              कट-ऑफ तक प्रस्तावित
+            </div>
+            <div className="text-2xl sm:text-3xl font-black text-blue-800 font-mono">
+              {nsapReport.totals.proposedUpToDate}
+            </div>
+            <div className="text-[11px] text-blue-700 mt-1 font-medium">
+              बागपत: <strong>{nsapReport.rows[0]?.proposedUpToDate || 0}</strong> | बड़ौत: <strong>{nsapReport.rows[1]?.proposedUpToDate || 0}</strong>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-emerald-50/50 to-white p-4 rounded-2xl border border-emerald-200 shadow-sm">
+            <div className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider mb-1">
+              कट-ऑफ तक सम्पन्न बैठकें
+            </div>
+            <div className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono">
+              {nsapReport.totals.completedUpToDate}
+            </div>
+            <div className="text-[11px] text-emerald-700 mt-1 font-medium">
+              बागपत: <strong>{nsapReport.rows[0]?.completedUpToDate || 0}</strong> | बड़ौत: <strong>{nsapReport.rows[1]?.completedUpToDate || 0}</strong>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-amber-50/50 to-white p-4 rounded-2xl border border-amber-200 shadow-sm">
+            <div className="text-[11px] font-bold text-amber-900 uppercase tracking-wider mb-1">
+              संशोधित / निरस्त बैठकें
+            </div>
+            <div className="text-2xl sm:text-3xl font-black text-amber-800 font-mono">
+              {nsapReport.totals.amendedOrCancelled}
+            </div>
+            <div className="text-[11px] text-amber-700 mt-1 font-medium">
+              (सत्र में कुल संशोधित: <strong>{nsapReport.totals.totalAmendedInFY}</strong>)
+            </div>
+          </div>
+        </div>
+
+        {/* Official Format Mini-Table comparing Baghpat & Baraut */}
+        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+              <tr>
+                <th className="py-2.5 px-3">विकास खंड का नाम</th>
+                <th className="py-2.5 px-3 text-center">वित्तीय वर्ष 2026-27 में प्रस्तावित कुल</th>
+                <th className="py-2.5 px-3 text-center text-blue-700">दिनांक {formatDateHi(asOfDate)} तक प्रस्तावित</th>
+                <th className="py-2.5 px-3 text-center text-emerald-700">दिनांक {formatDateHi(asOfDate)} तक सम्पन्न</th>
+                <th className="py-2.5 px-3 text-center text-amber-800">संशोधित या निरस्त</th>
+                <th className="py-2.5 px-3 text-right">सम्पन्नता दर</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-medium">
+              {nsapReport.rows.map((row) => {
+                const pct = row.proposedUpToDate > 0 ? Math.round((row.completedUpToDate / row.proposedUpToDate) * 100) : 0;
+                return (
+                  <tr key={row.sno} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-3 font-bold text-slate-900">
+                      विकास खण्ड {row.blockHindi}
+                    </td>
+                    <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                      {row.totalProposedFY} ग्राम पंचायतें
+                    </td>
+                    <td className="py-3 px-3 text-center font-bold text-blue-800 font-mono">
+                      {row.proposedUpToDate}
+                    </td>
+                    <td className="py-3 px-3 text-center font-bold text-emerald-700 font-mono">
+                      {row.completedUpToDate}
+                    </td>
+                    <td className="py-3 px-3 text-center font-bold text-amber-800 font-mono">
+                      {row.amendedOrCancelled}
+                      <span className="text-[10px] text-amber-700 block font-normal">(सत्र कुल: {row.totalAmendedInFY})</span>
+                    </td>
+                    <td className="py-3 px-3 text-right font-black text-slate-900 font-mono">
+                      {pct}%
+                    </td>
+                  </tr>
+                );
+              })}
+              {/* Total Row */}
+              <tr className="bg-slate-50/90 font-black border-t-2 border-slate-200">
+                <td className="py-2.5 px-3 text-slate-900">
+                  जनपद कुल योग
+                </td>
+                <td className="py-2.5 px-3 text-center text-slate-900 font-mono">
+                  {nsapReport.totals.totalProposedFY}
+                </td>
+                <td className="py-2.5 px-3 text-center text-blue-800 font-mono">
+                  {nsapReport.totals.proposedUpToDate}
+                </td>
+                <td className="py-2.5 px-3 text-center text-emerald-700 font-mono">
+                  {nsapReport.totals.completedUpToDate}
+                </td>
+                <td className="py-2.5 px-3 text-center text-amber-800 font-mono">
+                  {nsapReport.totals.amendedOrCancelled}
+                </td>
+                <td className="py-2.5 px-3 text-right text-emerald-800 font-mono">
+                  {nsapReport.totals.proposedUpToDate > 0 ? Math.round((nsapReport.totals.completedUpToDate / nsapReport.totals.proposedUpToDate) * 100) : 0}%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Separate Physical Verification Beneficiary Stream Bar */}
+        <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-purple-700 shrink-0" />
+              <span className="text-xs font-bold text-purple-950">
+                लाभार्थी भौतिक सत्यापन डेटा: 16 ग्राम पंचायतों के {metrics.totalBeneficiaries} पेंशनर्स दर्ज
+              </span>
+            </div>
+            <div className="text-[11px] text-purple-800 flex flex-wrap gap-x-4 gap-y-1">
+              <span>प्रत्यक्ष मुलाकात: <strong>{metrics.totalDirect}</strong></span>
+              <span>परिवार साक्ष्य: <strong>{metrics.totalFamily}</strong></span>
+              <span>सत्यापित में मृतक: <strong>{metrics.totalDeceased}</strong></span>
+              <span>अपात्र: <strong>{metrics.totalIneligible}</strong></span>
+              <span>अनियमितता: <strong>₹{metrics.totalFinancialIrreg}</strong></span>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab('nsap-data')}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-purple-800 border border-purple-300 hover:bg-purple-100 shadow-sm shrink-0 transition-colors"
+          >
+            लाभार्थी प्रविष्टि देखें →
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* SECTION E: IMPORTANT INFORMATION SECTIONS (Clean Government Data Tables) */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         
@@ -872,67 +1003,7 @@ export default function ExecutiveDashboardTab() {
           </div>
         </div>
 
-        {/* Card 5: NSAP Pension Summary */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3 lg:col-span-2">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-            <div>
-              <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-purple-700" />
-                <span>राष्ट्रीय सामाजिक सहायता कार्यक्रम (NSAP) पेंशन सोशल ऑडिट विवरण</span>
-              </h4>
-              <p className="text-xs text-slate-500 mt-0.5">
-                माह अक्टूबर तक मासिक प्रगति प्रारूपानुसार दर्ज 16 ग्राम पंचायतों का भौतिक सत्यापन डेटा
-              </p>
-            </div>
-            <button
-              onClick={() => setActiveTab('nsap-data')}
-              className="text-xs font-bold text-purple-900 hover:text-purple-700 flex items-center gap-1"
-            >
-              <span>View All NSAP Data</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <div className="text-[10px] text-slate-500 font-bold uppercase">दर्ज कुल पेंशनर्स</div>
-              <div className="text-xl font-black text-slate-900 mt-0.5">{metrics.totalBeneficiaries}</div>
-              <div className="text-[10px] text-purple-700 font-medium">16 ग्राम पंचायतों में</div>
-            </div>
-
-            <div className="bg-slate-50 p-3 rounded-xl border border-emerald-200">
-              <div className="text-[10px] text-emerald-800 font-bold uppercase">प्रत्यक्ष मुलाकात</div>
-              <div className="text-xl font-black text-emerald-800 mt-0.5">{metrics.totalDirect}</div>
-              <div className="text-[10px] text-slate-500">भौतिक उपस्थिति</div>
-            </div>
-
-            <div className="bg-slate-50 p-3 rounded-xl border border-blue-200">
-              <div className="text-[10px] text-blue-900 font-bold uppercase">परिवार द्वारा साक्ष्य</div>
-              <div className="text-xl font-black text-blue-900 mt-0.5">{metrics.totalFamily}</div>
-              <div className="text-[10px] text-slate-500">सत्यापित</div>
-            </div>
-
-            <div className="bg-slate-50 p-3 rounded-xl border border-rose-200">
-              <div className="text-[10px] text-rose-800 font-bold uppercase">सत्यापित में मृतक</div>
-              <div className="text-xl font-black text-rose-700 mt-0.5">{metrics.totalDeceased}</div>
-              <div className="text-[10px] text-rose-600 font-medium">मृत्यु हो चुकी है</div>
-            </div>
-
-            <div className="bg-slate-50 p-3 rounded-xl border border-amber-200">
-              <div className="text-[10px] text-amber-900 font-bold uppercase">अपात्र लाभार्थी</div>
-              <div className="text-xl font-black text-amber-800 mt-0.5">{metrics.totalIneligible}</div>
-              <div className="text-[10px] text-amber-700 font-medium">डुप्लीकेट / अपात्र</div>
-            </div>
-
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <div className="text-[10px] text-slate-500 font-bold uppercase">वित्तीय अनियमितता</div>
-              <div className="text-xl font-black text-slate-900 mt-0.5">₹{metrics.totalFinancialIrreg}</div>
-              <div className="text-[10px] text-slate-500">वसूली योग्य धनराशि</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 6: BRP Team Workload */}
+        {/* Card 5: BRP Team Workload */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3 lg:col-span-2">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">

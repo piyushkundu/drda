@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { NSAPReportSummary, NSAPReportRow, SocialAuditRecord } from '@/types/socialAudit';
 import { exportNSAPReportExcel } from '@/lib/exportSocialAuditExcel';
+import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
 import { getDelhiDateString, formatDelhiDateHindi } from '@/lib/delhiTime';
 import { 
   FileText, Calendar, Download, Printer, CheckCircle2, 
@@ -63,74 +64,7 @@ export default function NSAPReportTab() {
 
   // Generate dynamic NSAP Report calculations based on asOfDate
   const reportSummary: NSAPReportSummary = useMemo(() => {
-    const nsapRecords = records.filter((r) => r.hasNSAP);
-
-    // Calculate block-wise
-    const computeBlock = (blockName: 'Baghpat' | 'Baraut', sno: number, distHi: string, distKr: string, blkHi: string, blkKr: string): NSAPReportRow => {
-      const blockAll = nsapRecords.filter((r) => r.block === blockName);
-      
-      // Proposed up to asOfDate:
-      // Includes records whose original meeting date <= asOfDate OR whose current meeting date <= asOfDate
-      const proposedUpTo = blockAll.filter((r) => {
-        const origDate = r.amendmentDetails?.originalDate || r.originalMeetingDate || r.meetingDate;
-        return origDate <= asOfDate || r.meetingDate <= asOfDate;
-      });
-
-      // Amended up to asOfDate:
-      // A record that was amended, and either its original scheduled date <= asOfDate
-      // (meaning it was due by now, but got rescheduled) OR its new date <= asOfDate
-      const amendedUpTo = proposedUpTo.filter((r) => r.isAmended);
-
-      // Completed up to asOfDate:
-      // Must be physically completed on/before asOfDate. If it got amended to a future date > asOfDate, it's not completed yet!
-      const completedUpTo = proposedUpTo.filter((r) => {
-        if (r.isAmended && r.meetingDate > asOfDate) return false;
-        return r.meetingDate <= asOfDate || r.status === 'completed';
-      });
-
-      // All amended in the whole session for this block
-      const allAmendedInBlock = blockAll.filter((r) => r.isAmended);
-
-      return {
-        sno,
-        districtHindi: distHi,
-        districtKrutiDev: distKr,
-        blockHindi: blkHi,
-        blockKrutiDev: blkKr,
-        totalProposedFY: blockAll.length, // 24 for Baghpat, 23 for Baraut
-        proposedUpToDate: proposedUpTo.length,
-        completedUpToDate: completedUpTo.length,
-        amendedOrCancelled: amendedUpTo.length,
-        totalAmendedInFY: allAmendedInBlock.length,
-        amendedGramPanchayatsList: allAmendedInBlock,
-        gramPanchayatsList: proposedUpTo
-      };
-    };
-
-    const row1 = computeBlock('Baghpat', 1, 'बागपत', 'ckxir', 'बागपत', 'ckxir');
-    const row2 = computeBlock('Baraut', 2, 'बागपत', 'ckxir', 'बड़ौत', 'cM+kSr');
-
-    const rows = [row1, row2];
-
-    const totals = {
-      totalProposedFY: row1.totalProposedFY + row2.totalProposedFY, // 47
-      proposedUpToDate: row1.proposedUpToDate + row2.proposedUpToDate,
-      completedUpToDate: row1.completedUpToDate + row2.completedUpToDate,
-      amendedOrCancelled: row1.amendedOrCancelled + row2.amendedOrCancelled,
-      totalAmendedInFY: row1.totalAmendedInFY + row2.totalAmendedInFY // 7
-    };
-
-    const allAmendedNSAP = records.filter((r) => r.hasNSAP && r.isAmended);
-    const allAmendedOverall = records.filter((r) => r.isAmended);
-
-    return {
-      asOfDate,
-      asOfDateFormatted: formatDateHiShort(asOfDate),
-      rows,
-      totals,
-      allAmendedNSAP,
-      allAmendedOverall
-    };
+    return calculateNSAPReportSummary(records, asOfDate);
   }, [records, asOfDate]);
 
   // List of amended records to display based on user tab filter
