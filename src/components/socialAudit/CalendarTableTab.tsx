@@ -118,6 +118,51 @@ export default function CalendarTableTab() {
     }
   };
 
+  // Month order & Hindi mappings for navigation
+  const monthOrder = ['2026-09', '2026-10', '2026-11', '2026-12', '2027-01'];
+  const monthNames: Record<string, string> = {
+    '09': 'सितम्बर 2026',
+    '10': 'अक्टूबर 2026',
+    '11': 'नवम्बर 2026',
+    '12': 'दिसम्बर 2026',
+    '01': 'जनवरी 2027'
+  };
+
+  const getHindiDayName = (dateStr: string) => {
+    try {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      const hindiDays = ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+      return hindiDays[date.getDay()] || '';
+    } catch {
+      return '';
+    }
+  };
+
+  const formatDateHiLong = (dateStr: string) => {
+    try {
+      const [y, m, d] = dateStr.split('-');
+      const hindiMonths: Record<string, string> = {
+        '01': 'जनवरी', '02': 'फ़रवरी', '03': 'मार्च', '04': 'अप्रैल',
+        '05': 'मई', '06': 'जून', '07': 'जुलाई', '08': 'अगस्त',
+        '09': 'सितम्बर', '10': 'अक्टूबर', '11': 'नवम्बर', '12': 'दिसम्बर'
+      };
+      return `${parseInt(d, 10)} ${hindiMonths[m] || m} ${y}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const handlePrevMonth = () => {
+    const idx = monthOrder.indexOf(selectedMonth);
+    if (idx > 0) setSelectedMonth(monthOrder[idx - 1]);
+  };
+
+  const handleNextMonth = () => {
+    const idx = monthOrder.indexOf(selectedMonth);
+    if (idx < monthOrder.length - 1) setSelectedMonth(monthOrder[idx + 1]);
+  };
+
   // Calendar days generation for Monthly Calendar Grid view
   const calendarDays = useMemo(() => {
     const [yearStr, monthStr] = selectedMonth.split('-');
@@ -362,7 +407,8 @@ export default function CalendarTableTab() {
             </div>
           </div>
 
-          <div className="overflow-x-auto max-h-[650px] scrollbar-thin">
+          {/* Desktop & Large Tablet Detailed Table View (>=1024px) */}
+          <div className="hidden lg:block overflow-x-auto max-h-[650px] scrollbar-thin">
             <table className="w-full text-left border-collapse text-xs">
               <thead className="bg-slate-100 text-slate-700 sticky top-0 z-20 font-bold border-b border-slate-200 shadow-xs">
                 <tr>
@@ -546,27 +592,186 @@ export default function CalendarTableTab() {
               </tbody>
             </table>
           </div>
+
+          {/* Dedicated Mobile Meeting Cards View (<1024px) */}
+          <div className="lg:hidden p-3 space-y-3 bg-slate-50/60">
+            {filteredRecords.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200 p-6">
+                कोई ग्राम सभा बैठक नहीं मिली। कृपया अपने फ़िल्टर बदलें।
+              </div>
+            ) : (
+              filteredRecords.map((r) => {
+                const isUpcoming = r.meetingDate >= asOfDate;
+                const isPast = r.meetingDate < asOfDate;
+
+                return (
+                  <div
+                    key={r.id}
+                    className={`bg-white rounded-2xl border p-4 shadow-xs space-y-3 transition-all ${
+                      r.isAmended
+                        ? 'border-amber-300 bg-amber-50/30'
+                        : 'border-slate-200 hover:border-blue-300'
+                    }`}
+                  >
+                    {/* Top Row: S.No + GP Name + Status Badge */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                          #{r.sno}
+                        </span>
+                        <h4 className="font-black text-slate-900 text-sm leading-tight truncate">
+                          {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
+                        </h4>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="shrink-0">
+                        {r.isAmended ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                            <AlertTriangle className="w-3 h-3 text-amber-600" />
+                            संशोधित
+                          </span>
+                        ) : r.status === 'completed' || isPast ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                            सम्पन्न
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300">
+                            प्रस्तावित
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Second Row: Block & Meeting Date */}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
+                      <span className="text-slate-600 font-semibold">
+                        विकास खण्ड: <strong className="text-slate-900">{r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}</strong>
+                      </span>
+
+                      <div className="flex items-center gap-1 text-xs">
+                        <CalendarIcon className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+                        {r.isAmended && r.originalMeetingDate ? (
+                          <div className="flex items-center gap-1.5 font-mono">
+                            <span className="line-through text-slate-400 text-[11px]">
+                              {formatDate(r.originalMeetingDate)}
+                            </span>
+                            <span className="font-bold text-amber-900 bg-amber-100/90 px-1.5 py-0.5 rounded text-xs border border-amber-300">
+                              {formatDate(r.meetingDate)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className={`font-mono font-bold ${isUpcoming ? 'text-blue-800' : 'text-slate-800'}`}>
+                            {formatDate(r.meetingDate)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Third Row: BRP Details & Clickable Phone */}
+                    <div className="flex items-center justify-between text-xs bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
+                      <div className="min-w-0">
+                        <span className="text-[10px] text-slate-500 font-semibold uppercase block">बी०आर०पी०</span>
+                        <span className="font-bold text-slate-900 truncate block">
+                          {renderText(r.brpName || r.brpUnicode, r.brpKrutiDev)}
+                        </span>
+                      </div>
+
+                      {r.brpPhone && (
+                        <a
+                          href={`tel:${r.brpPhone}`}
+                          className="flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 shrink-0 hover:bg-blue-100 transition-colors font-mono"
+                        >
+                          <Phone className="w-3 h-3 text-blue-600" />
+                          <span>{r.brpPhone}</span>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Fourth Row: Team Members & Supervisor Preview */}
+                    <div className="space-y-1 text-[11px] text-slate-600">
+                      {r.supervisorOfficerUnicode && (
+                        <div className="truncate">
+                          <span className="text-slate-500 font-semibold">पर्यवेक्षक: </span>
+                          <span className="text-slate-800 font-medium">
+                            {renderText(r.supervisorOfficerUnicode, r.supervisorOfficerKrutiDev)}
+                          </span>
+                        </div>
+                      )}
+                      {r.teamMembersUnicode && (
+                        <div className="truncate">
+                          <span className="text-slate-500 font-semibold">टीम सदस्य: </span>
+                          <span className="text-slate-700 font-medium">
+                            {renderText(r.teamMembersUnicode, r.teamMembersKrutiDev)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Row: Schemes Badges & Actions */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                      <div className="flex flex-wrap items-center gap-1">
+                        {r.hasNSAP && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                            NSAP पेंशन
+                          </span>
+                        )}
+                        {r.hasMGNREGA && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            मनरेगा
+                          </span>
+                        )}
+                        {r.hasPMAYG && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                            PMAY-G
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => openEditModal(r)}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-800 border border-slate-200 hover:border-blue-200 flex items-center gap-1 transition-colors"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>विवरण / एडिट</span>
+                        </button>
+                        {isEditMode && (
+                          <button
+                            onClick={() => markCompleted(r.id, r.status !== 'completed')}
+                            className={`p-1.5 rounded-lg text-xs font-bold transition-colors ${
+                              r.status === 'completed'
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}
+                            title="सम्पन्न टॉगल करें"
+                          >
+                            <Check className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       ) : (
         /* Monthly Calendar Grid View */
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm space-y-4">
           {/* Month Selector Bar */}
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <CalendarIcon className="w-5 h-5 text-blue-700" />
               <span>मासिक कैलेंडर रोस्टर</span>
             </h3>
 
-            <div className="flex items-center gap-2">
-              {['2026-09', '2026-10', '2026-11', '2026-12', '2027-01'].map((m) => {
-                const [y, mm] = m.split('-');
-                const monthNames: Record<string, string> = {
-                  '09': 'सितम्बर 2026',
-                  '10': 'अक्टूबर 2026',
-                  '11': 'नवम्बर 2026',
-                  '12': 'दिसम्बर 2026',
-                  '01': 'जनवरी 2027'
-                };
+            {/* Desktop Month Tabs */}
+            <div className="hidden sm:flex items-center gap-2">
+              {monthOrder.map((m) => {
+                const mm = m.split('-')[1];
                 return (
                   <button
                     key={m}
@@ -582,71 +787,215 @@ export default function CalendarTableTab() {
                 );
               })}
             </div>
+
+            {/* Mobile Month Switcher Controls */}
+            <div className="sm:hidden flex items-center justify-between bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+              <button
+                onClick={handlePrevMonth}
+                disabled={monthOrder.indexOf(selectedMonth) === 0}
+                className="p-1.5 rounded-lg bg-white text-slate-700 disabled:opacity-40 shadow-xs"
+                title="पिछला माह"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="text-center">
+                <span className="text-xs font-black text-slate-900 block">
+                  {monthNames[selectedMonth.split('-')[1]] || selectedMonth}
+                </span>
+                <span className="text-[10px] text-blue-700 font-bold block">
+                  {records.filter(r => r.meetingDate.startsWith(selectedMonth)).length} बैठकें निर्धारित
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setSelectedMonth('2026-10')}
+                  className="px-2 py-1 rounded-lg bg-blue-50 text-blue-800 text-[10px] font-bold border border-blue-200"
+                >
+                  आज
+                </button>
+                <button
+                  onClick={handleNextMonth}
+                  disabled={monthOrder.indexOf(selectedMonth) === monthOrder.length - 1}
+                  className="p-1.5 rounded-lg bg-white text-slate-700 disabled:opacity-40 shadow-xs"
+                  title="अगला माह"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Weekday Headers */}
-          <div className="grid grid-cols-7 gap-2 mb-2 text-center text-xs font-bold text-slate-500">
-            <div>रवि (Sun)</div>
-            <div>सोम (Mon)</div>
-            <div>मंगल (Tue)</div>
-            <div>बुध (Wed)</div>
-            <div>गुरु (Thu)</div>
-            <div>शुक्र (Fri)</div>
-            <div>शनि (Sat)</div>
+          {/* Desktop / Tablet 7-Column Grid View (>=768px) */}
+          <div className="hidden md:block">
+            {/* Weekday Headers */}
+            <div className="grid grid-cols-7 gap-2 mb-2 text-center text-xs font-bold text-slate-500">
+              <div>रवि (Sun)</div>
+              <div>सोम (Mon)</div>
+              <div>मंगल (Tue)</div>
+              <div>बुध (Wed)</div>
+              <div>गुरु (Thu)</div>
+              <div>शुक्र (Fri)</div>
+              <div>शनि (Sat)</div>
+            </div>
+
+            {/* Days Grid */}
+            <div className="grid grid-cols-7 gap-2">
+              {calendarDays.map((day, idx) => {
+                if (!day) {
+                  return <div key={`empty-${idx}`} className="h-28 rounded-xl bg-slate-50/50 border border-dashed border-slate-200" />;
+                }
+
+                const isToday = day.dateStr === asOfDate;
+                const hasMeetings = day.meetings.length > 0;
+
+                return (
+                  <div
+                    key={day.dateStr}
+                    className={`h-28 rounded-xl p-2 flex flex-col justify-between border transition-all overflow-hidden ${
+                      isToday
+                        ? 'bg-blue-50/60 border-blue-400 shadow-sm ring-1 ring-blue-300'
+                        : hasMeetings
+                        ? 'bg-white border-slate-200 hover:border-blue-300 shadow-sm'
+                        : 'bg-slate-50/30 border-slate-100 text-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={`font-bold ${isToday ? 'text-blue-700 font-black' : 'text-slate-800'}`}>
+                        {day.dayNumber}
+                      </span>
+                      {hasMeetings && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                          {day.meetings.length} बैठकें
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="overflow-y-auto space-y-1 text-[10px] scrollbar-none flex-1 mt-1">
+                      {day.meetings.map((m) => (
+                        <div
+                          key={m.id}
+                          onClick={() => openEditModal(m)}
+                          className={`p-1 rounded cursor-pointer truncate font-bold ${
+                            m.isAmended
+                              ? 'bg-amber-50 text-amber-900 border border-amber-200'
+                              : 'bg-slate-100 text-slate-800 hover:bg-blue-50 hover:text-blue-900 border border-slate-200'
+                          }`}
+                          title={`${m.gpNameUnicode} (${m.blockHindi}) - BRP: ${m.brpUnicode}`}
+                        >
+                          {m.gpNameUnicode}
+                          {m.hasNSAP && ' • NSAP'}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Days Grid */}
-          <div className="grid grid-cols-7 gap-2">
-            {calendarDays.map((day, idx) => {
-              if (!day) {
-                return <div key={`empty-${idx}`} className="h-28 rounded-xl bg-slate-50/50 border border-dashed border-slate-200" />;
+          {/* Dedicated Mobile Date-wise Agenda View (<768px) */}
+          <div className="md:hidden space-y-4">
+            <div className="flex items-center justify-between px-1 text-xs font-bold text-slate-500">
+              <span>दिनांक-वार बैठक सूची (Agenda View)</span>
+              <span className="text-blue-700">
+                कुल {records.filter(r => r.meetingDate.startsWith(selectedMonth)).length} बैठकें
+              </span>
+            </div>
+
+            {(() => {
+              const daysWithMeetings = calendarDays.filter((d): d is NonNullable<typeof d> => Boolean(d && d.meetings.length > 0));
+
+              if (daysWithMeetings.length === 0) {
+                return (
+                  <div className="py-10 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-200 p-6">
+                    <CalendarIcon className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <p className="font-semibold text-sm text-slate-600">इस माह में कोई बैठक निर्धारित नहीं है।</p>
+                    <p className="text-xs text-slate-400 mt-1">अन्य माह का चयन करने के लिए ऊपर दिए गए बटनों का उपयोग करें।</p>
+                  </div>
+                );
               }
 
-              const isToday = day.dateStr === asOfDate;
-              const hasMeetings = day.meetings.length > 0;
-
               return (
-                <div
-                  key={day.dateStr}
-                  className={`h-28 rounded-xl p-2 flex flex-col justify-between border transition-all overflow-hidden ${
-                    isToday
-                      ? 'bg-blue-50/60 border-blue-400 shadow-sm ring-1 ring-blue-300'
-                      : hasMeetings
-                      ? 'bg-white border-slate-200 hover:border-blue-300 shadow-sm'
-                      : 'bg-slate-50/30 border-slate-100 text-slate-400'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={`font-bold ${isToday ? 'text-blue-700 font-black' : 'text-slate-800'}`}>
-                      {day.dayNumber}
-                    </span>
-                    {hasMeetings && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
-                        {day.meetings.length} बैठकें
-                      </span>
-                    )}
-                  </div>
+                <div className="space-y-4">
+                  {daysWithMeetings.map((day) => {
+                    const isToday = day.dateStr === asOfDate;
+                    return (
+                      <div key={day.dateStr} className="space-y-2">
+                        {/* Day Header */}
+                        <div className={`flex items-center justify-between p-2.5 rounded-xl border font-bold text-xs ${
+                          isToday
+                            ? 'bg-blue-100/80 border-blue-300 text-blue-950'
+                            : 'bg-slate-100/80 border-slate-200 text-slate-800'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-sm">{day.dayNumber}</span>
+                            <span>{formatDateHiLong(day.dateStr)}</span>
+                            <span className="text-slate-500 text-[11px] font-normal">({getHindiDayName(day.dateStr)})</span>
+                            {isToday && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-blue-600 text-white">
+                                आज
+                              </span>
+                            )}
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-white border border-slate-200 text-slate-700">
+                            {day.meetings.length} बैठकें
+                          </span>
+                        </div>
 
-                  <div className="overflow-y-auto space-y-1 text-[10px] scrollbar-none flex-1 mt-1">
-                    {day.meetings.map((m) => (
-                      <div
-                        key={m.id}
-                        onClick={() => openEditModal(m)}
-                        className={`p-1 rounded cursor-pointer truncate font-bold ${
-                          m.isAmended
-                            ? 'bg-amber-50 text-amber-900 border border-amber-200'
-                            : 'bg-slate-100 text-slate-800 hover:bg-blue-50 hover:text-blue-900 border border-slate-200'
-                        }`}
-                        title={`${m.gpNameUnicode} (${m.blockHindi}) - BRP: ${m.brpUnicode}`}
-                      >
-                        {m.gpNameUnicode}
-                        {m.hasNSAP && ' • NSAP'}
+                        {/* Meetings on this day */}
+                        <div className="space-y-2 pl-2 border-l-2 border-blue-200">
+                          {day.meetings.map((m) => (
+                            <div
+                              key={m.id}
+                              onClick={() => openEditModal(m)}
+                              className={`p-3.5 rounded-xl border bg-white shadow-xs space-y-2 cursor-pointer hover:border-blue-400 transition-all ${
+                                m.isAmended ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <h5 className="font-black text-slate-900 text-sm">
+                                  {renderText(m.gpNameUnicode, m.gpNameKrutiDev)}
+                                </h5>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  m.isAmended
+                                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                    : m.status === 'completed'
+                                    ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                                    : 'bg-blue-50 text-blue-800 border border-blue-200'
+                                }`}>
+                                  {m.isAmended ? 'संशोधित' : m.status === 'completed' ? 'सम्पन्न' : 'प्रस्तावित'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center justify-between text-xs text-slate-600">
+                                <span>विकास खण्ड: <strong className="text-slate-800">{m.blockHindi}</strong></span>
+                                {m.hasNSAP && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                    NSAP
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100 text-slate-600">
+                                <div className="truncate">
+                                  <span className="text-slate-400">BRP: </span>
+                                  <span className="font-semibold text-slate-800">{m.brpUnicode}</span>
+                                </div>
+                                <span className="text-blue-700 font-bold hover:underline shrink-0 flex items-center gap-0.5">
+                                  विवरण देखें →
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               );
-            })}
+            })()}
           </div>
         </div>
       )}

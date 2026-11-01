@@ -303,7 +303,7 @@ export default function ExecutiveDashboardTab() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* KPI 1: Total GPs */}
           <div
             onClick={() => { setActiveModal('all'); setModalSearch(''); setModalBlockFilter('all'); }}
@@ -436,6 +436,56 @@ export default function ExecutiveDashboardTab() {
             <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>देय लंबित: <strong className="text-amber-700">{metrics.misDuePendingCount}</strong> ({metrics.misDuePendingNSAPCount} NSAP)</span>
               <span className="text-[11px] text-indigo-700 font-bold group-hover:underline">सूची देखें →</span>
+            </div>
+          </div>
+
+          {/* KPI 7: NSAP Beneficiary Data */}
+          <div
+            onClick={() => setActiveTab('nsap-data')}
+            className="social-audit-kpi bg-gradient-to-b from-white to-purple-50/20 p-4.5 rounded-2xl border border-purple-200 hover:border-purple-400 cursor-pointer group"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-purple-950">NSAP पेंशन लाभार्थी डेटा</span>
+              <div className="w-8 h-8 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700 group-hover:scale-105 transition-transform">
+                <Users className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-purple-950 tracking-tight font-mono">
+                {metrics.totalBeneficiaries}
+              </span>
+              <span className="text-xs font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200">
+                16 GP
+              </span>
+            </div>
+            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
+              <span>सत्यापित: <strong className="text-emerald-700">{metrics.totalDirect + metrics.totalFamily}</strong> (मृतक: {metrics.totalDeceased})</span>
+              <span className="text-[11px] text-purple-700 font-bold group-hover:underline">डेटा देखें →</span>
+            </div>
+          </div>
+
+          {/* KPI 8: NSAP Social Audit Progress Report */}
+          <div
+            onClick={() => setActiveTab('nsap-report')}
+            className="social-audit-kpi bg-gradient-to-b from-white to-rose-50/20 p-4.5 rounded-2xl border border-rose-200 hover:border-rose-400 cursor-pointer group"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-rose-950">NSAP सोशल ऑडिट रिपोर्ट</span>
+              <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-700 group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-rose-900 tracking-tight font-mono">
+                {nsapReport.totals.completedUpToDate}
+              </span>
+              <span className="text-xs font-bold text-slate-600">
+                / {nsapReport.totals.totalProposedFY} GP
+              </span>
+            </div>
+            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
+              <span>कट-ऑफ देय: <strong className="text-blue-800">{nsapReport.totals.proposedUpToDate}</strong> (संशोधित: {nsapReport.totals.amendedOrCancelled})</span>
+              <span className="text-[11px] text-rose-700 font-bold group-hover:underline">रिपोर्ट देखें →</span>
             </div>
           </div>
         </div>

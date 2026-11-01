@@ -1096,9 +1096,9 @@ export default function NSAPDataTab() {
             </div>
           )}
 
-          {/* Master GP Table View */}
+          {/* Master GP Table View (Desktop >=768px) */}
           {recordedViewMode === 'table' && (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+            <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200 bg-white">
               <table className="w-full text-left text-xs text-slate-700">
                 <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
                   <tr>
@@ -1315,6 +1315,80 @@ export default function NSAPDataTab() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Dedicated Mobile Cards for 16 Recorded GPs (<768px) */}
+          {recordedViewMode === 'table' && (
+            <div className="md:hidden space-y-3">
+              {filteredRecordedGps.map((gp) => {
+                const inelCount = gp.beneficiaries.filter(b => b.category === 'ineligible').length;
+                const decCount = gp.beneficiaries.filter(b => b.category === 'deceased').length;
+                const unverCount = gp.beneficiaries.filter(b => b.category === 'unverified').length;
+                const hasDeceased = decCount > 0;
+
+                return (
+                  <div
+                    key={gp.id}
+                    className={`bg-white rounded-2xl border p-4 shadow-xs space-y-3 ${
+                      !hasDeceased ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600">
+                            #{gp.sno}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            gp.block === 'Baghpat' ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
+                          }`}>
+                            {gp.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
+                          </span>
+                        </div>
+                        <h4 className="font-black text-slate-900 text-sm leading-tight truncate">
+                          {renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}
+                        </h4>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] text-slate-500 font-mono block">{formatDateHi(gp.meetingDate)}</span>
+                        <span className="text-xs font-black text-slate-900 font-mono">{gp.totalBeneficiaries} कुल</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div className="text-[10px] text-slate-500 font-medium">सत्यापित</div>
+                        <div className="text-base font-black text-emerald-800 mt-0.5">{gp.verifiedTotal}</div>
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div className="text-[10px] text-slate-500 font-medium">मृतक</div>
+                        <div className={`text-base font-black mt-0.5 ${hasDeceased ? 'text-rose-700' : 'text-amber-800'}`}>
+                          {decCount}
+                        </div>
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div className="text-[10px] text-slate-500 font-medium">अपात्र</div>
+                        <div className="text-base font-black text-amber-800 mt-0.5">{inelCount}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                      <span className="text-[11px] text-slate-500">
+                        प्रत्यक्ष: <strong>{gp.verifiedDirect || 0}</strong> | परिवार: <strong>{gp.verifiedFamily || 0}</strong>
+                      </span>
+                      <button
+                        onClick={() => handleOpenEditForGp(gp)}
+                        className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100 flex items-center gap-1 transition-colors"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>संपादित करें</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -1705,8 +1779,8 @@ export default function NSAPDataTab() {
             </div>
           </div>
 
-          {/* Master Table of Beneficiaries */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+          {/* Master Table of Beneficiaries (Desktop >=768px) */}
+          <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200 bg-white">
             <table className="w-full text-left text-xs text-slate-700">
               <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
                 <tr>
@@ -1769,6 +1843,84 @@ export default function NSAPDataTab() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Dedicated Mobile Beneficiary Cards View (<768px) */}
+          <div className="md:hidden space-y-3">
+            {filteredBeneficiaries.slice(0, 150).map((b, idx) => (
+              <div
+                key={b.id}
+                className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-2.5"
+              >
+                <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600">
+                        #{idx + 1}
+                      </span>
+                      <span className="text-[10px] font-mono text-purple-700 font-semibold">
+                        {b.registrationId}
+                      </span>
+                    </div>
+                    <h4 className="font-black text-slate-900 text-sm leading-tight truncate">
+                      {renderText(b.nameUnicode, b.nameKrutiDev)}
+                    </h4>
+                  </div>
+
+                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 ${
+                    b.category === 'ineligible' 
+                      ? 'bg-amber-100 text-amber-800 border border-amber-200' 
+                      : b.category === 'deceased'
+                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                      : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  }`}>
+                    {b.categoryHindi}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-600">
+                  <span>ग्राम पंचायत: <strong className="text-slate-900">{b.gpNameUnicode}</strong></span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    b.block === 'Baghpat' ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
+                  }`}>
+                    {b.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
+                  </span>
+                </div>
+
+                {/* Verification/Cause details */}
+                <div className="text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  {b.category === 'deceased' ? (
+                    <div className="text-rose-700 font-medium">
+                      <span>मृत्यु तिथि: </span>
+                      <strong className="font-mono">{formatDateHi(b.deathDate)}</strong>
+                    </div>
+                  ) : b.category === 'ineligible' ? (
+                    <div className="text-amber-800 font-medium">
+                      <span>अपात्रता कारण: </span>
+                      <span>{b.reason || 'अपात्र / डुप्लीकेट / अन्यत्र निवास'}</span>
+                    </div>
+                  ) : (
+                    <div className="text-emerald-700 font-medium">
+                      <span>सत्यापन स्थिति: </span>
+                      <strong>प्रत्यक्ष / पारिवारिक साक्ष्य द्वारा सत्यापित</strong>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action */}
+                <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px] text-slate-500">
+                  <span>योजना: NSAP वृद्धावस्था पेंशन</span>
+                  <button
+                    onClick={() => deleteNsapBeneficiary(b.gpId, b.id)}
+                    className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 flex items-center gap-1 font-bold transition-colors"
+                    title="रिकॉर्ड हटाएं"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>हटाएं</span>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
           {filteredBeneficiaries.length > 150 && (
             <p className="text-center text-xs text-slate-500 italic">

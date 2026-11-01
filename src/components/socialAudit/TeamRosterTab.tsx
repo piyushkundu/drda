@@ -181,7 +181,8 @@ export default function TeamRosterTab() {
           सोशल ऑडिट बैठकों में जनपद स्तर से नामित नोडल/पर्यवेक्षक अधिकारी
         </p>
 
-        <div className="overflow-x-auto max-h-80 scrollbar-thin rounded-xl border border-slate-200">
+        {/* Desktop Table (>=768px) */}
+        <div className="hidden md:block overflow-x-auto max-h-80 scrollbar-thin rounded-xl border border-slate-200">
           <table className="w-full text-left border-collapse text-xs">
             <thead className="bg-slate-100 text-slate-700 sticky top-0 font-semibold border-b border-slate-200">
               <tr>
@@ -215,6 +216,44 @@ export default function TeamRosterTab() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Dedicated Mobile Cards (<768px) */}
+        <div className="md:hidden space-y-3">
+          {supervisorDirectory.map(([officer, gps], i) => (
+            <div
+              key={officer}
+              className="bg-slate-50/70 rounded-xl border border-slate-200 p-3.5 space-y-2.5"
+            >
+              <div className="flex items-start justify-between gap-2 border-b border-slate-200/80 pb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-white text-slate-600 border border-slate-200">
+                    #{i + 1}
+                  </span>
+                  <h4 className="font-bold text-slate-900 text-xs leading-snug">
+                    {officer}
+                  </h4>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300 shrink-0">
+                  {gps.length} बैठकें
+                </span>
+              </div>
+
+              <div>
+                <div className="text-[10px] text-slate-500 font-semibold mb-1">आवंटित ग्राम पंचायतें:</div>
+                <div className="flex flex-wrap gap-1">
+                  {gps.map((gp) => (
+                    <span
+                      key={gp.id}
+                      className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded-md text-slate-800 font-medium"
+                    >
+                      {gp.gpNameUnicode} ({gp.meetingDate.slice(5)})
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

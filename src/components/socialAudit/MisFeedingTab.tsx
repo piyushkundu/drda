@@ -657,8 +657,8 @@ export default function MisFeedingTab() {
           </div>
         </div>
 
-        {/* The Table */}
-        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+        {/* The Table (Desktop >=768px) */}
+        <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200">
           <table className="w-full text-left text-xs text-slate-700">
             <thead className="bg-slate-100/90 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
               <tr>
@@ -785,6 +785,107 @@ export default function MisFeedingTab() {
               })}
             </tbody>
           </table>
+        </div>
+
+        {/* Dedicated Mobile Cards View (<768px) */}
+        <div className="md:hidden p-3 space-y-3 bg-slate-50/60">
+          {filteredRecords.map((r) => {
+            const isFed = r.misStatus === 'fed';
+            const isDuePending = !isFed && r.meetingDate <= asOfDate;
+            const isUpcoming = !isFed && r.meetingDate > asOfDate;
+            const isRecentlyUpdated = justUpdatedId === r.id;
+
+            return (
+              <div
+                key={r.id}
+                className={`bg-white rounded-2xl border p-4 shadow-xs space-y-3 transition-all ${
+                  isFed
+                    ? 'border-blue-200 bg-blue-50/20'
+                    : isDuePending
+                    ? 'border-amber-300 bg-amber-50/20'
+                    : 'border-slate-200'
+                } ${isRecentlyUpdated ? 'ring-2 ring-blue-500' : ''}`}
+              >
+                <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600">
+                        #{r.sno}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                        r.block === 'Baghpat' ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
+                      }`}>
+                        {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
+                      </span>
+                      {r.hasNSAP && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          NSAP
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="font-black text-slate-900 text-sm leading-tight truncate">
+                      {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
+                    </h4>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <span className="text-xs font-mono font-bold text-slate-800 block">
+                      {formatDateHi(r.meetingDate)}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      Col 8: <strong className="text-blue-700">{isFed ? '1 (फीडेड)' : '0'}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-slate-600">
+                  <span>बी०आर०पी०: <strong>{r.brpName}</strong> ({r.brpPhone})</span>
+                </div>
+
+                {/* Status & 1-Click Action */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <div>
+                    {isFed ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300">
+                        ✓ पोर्टल पर फीडेड
+                      </span>
+                    ) : isDuePending ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                        देय लंबित (कार्रवाई आवश्यक)
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                        आगामी बैठक
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleStatusChange(r.id, 'fed')}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                        isFed
+                          ? 'bg-blue-700 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-blue-800 border border-slate-200'
+                      }`}
+                    >
+                      फीडेड
+                    </button>
+                    <button
+                      onClick={() => handleStatusChange(r.id, 'pending')}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                        !isFed
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-amber-50 hover:text-amber-800 border border-slate-200'
+                      }`}
+                    >
+                      लंबित
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
