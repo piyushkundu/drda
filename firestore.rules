@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Social Audit Baghpat - Administrative Document
+    match /socialAudit/{docId} {
+      // Transparency: Public read access for dashboard, calendar, and reports
+      allow read: if true;
+      
+      // Strict write access: Only authenticated users with valid tokens
+      // Disallows direct anonymous mutations
+      allow write: if request.auth != null;
+    }
+    
+    // Default fallback: Block all other unmapped paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

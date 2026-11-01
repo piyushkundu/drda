@@ -9,7 +9,7 @@ import {
   Download, Building2, ShieldCheck, 
   Smartphone, AlertCircle, ArrowUpRight, Check,
   Layers, Landmark, FileSpreadsheet, RefreshCw,
-  Phone, UserCheck, Calendar, ChevronRight, AlertTriangle
+  Phone, UserCheck, Calendar, ChevronRight, AlertTriangle, Lock
 } from 'lucide-react';
 
 export default function PanchayatNirnayTab() {
@@ -18,6 +18,7 @@ export default function PanchayatNirnayTab() {
     selectedBRP,
     asOfDate, 
     fontViewMode, 
+    isEditMode,
     updatePanchayatNirnayStatus,
     openEditModal 
   } = useSocialAuditStore();
@@ -195,6 +196,10 @@ export default function PanchayatNirnayTab() {
   }, [records, asOfDate, selectedBlockFilter, selectedStatusFilter, searchQuery]);
 
   const handleStatusChange = (id: string, newStatus: PanchayatNirnayStatus) => {
+    if (!isEditMode) {
+      alert('त्रुटि: पंचायत निर्णय स्थिति बदलने के लिए कृपया पहले Header से Edit Mode ON करें।');
+      return;
+    }
     updatePanchayatNirnayStatus(id, newStatus);
     setJustUpdatedId(id);
     setTimeout(() => setJustUpdatedId(null), 1500);

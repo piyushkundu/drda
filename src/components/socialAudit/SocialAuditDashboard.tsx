@@ -19,9 +19,10 @@ import EditRecordModal from './EditRecordModal';
 import AddRecordModal from './AddRecordModal';
 import GramPanchayatProfilePanel from './GramPanchayatProfilePanel';
 import GlobalSearchModal from './GlobalSearchModal';
+import MeetingCompletionModal from './MeetingCompletionModal';
 
 export default function SocialAuditDashboard() {
-  const { activeTab } = useSocialAuditStore();
+  const { activeTab, selectedRecordForCompletion, closeCompletionModal } = useSocialAuditStore();
 
   // Desktop sidebar collapse state & mobile drawer state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -111,6 +112,11 @@ export default function SocialAuditDashboard() {
       <AddRecordModal />
       <GramPanchayatProfilePanel />
       <GlobalSearchModal />
+      <MeetingCompletionModal
+        record={selectedRecordForCompletion}
+        isOpen={Boolean(selectedRecordForCompletion)}
+        onClose={closeCompletionModal}
+      />
     </div>
   );
 }

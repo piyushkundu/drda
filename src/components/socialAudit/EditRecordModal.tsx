@@ -5,10 +5,18 @@ import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { SocialAuditRecord, AuditStatus, PanchayatNirnayStatus } from '@/types/socialAudit';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
 import { validateIndianMobile, validateMeetingDateRange, detectDuplicateGP } from '@/lib/socialAuditValidation';
-import { X, Save, Trash2, AlertCircle, Calendar, Phone, Users, Shield, MapPin, Clock, Smartphone, CheckCircle2, XCircle } from 'lucide-react';
+import { X, Save, Trash2, AlertCircle, Calendar, Phone, Users, Shield, MapPin, Clock, Smartphone, CheckCircle2, XCircle, Lock } from 'lucide-react';
 
 export default function EditRecordModal() {
-  const { selectedRecordForEdit, closeEditModal, updateRecord, deleteRecord, records } = useSocialAuditStore();
+  const { 
+    selectedRecordForEdit, 
+    closeEditModal, 
+    updateRecord, 
+    deleteRecord, 
+    records, 
+    isEditMode, 
+    setHasUnsavedChanges 
+  } = useSocialAuditStore();
 
   const [gpName, setGpName] = useState('');
   const [meetingDate, setMeetingDate] = useState('');
@@ -54,6 +62,12 @@ export default function EditRecordModal() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    // 0. Central Edit Mode Check
+    if (!isEditMode) {
+      setFormError('त्रुटि: बदलाव सुरक्षित करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+      return;
+    }
 
     // 1. Required name check
     if (!gpName.trim()) {
@@ -134,11 +148,17 @@ export default function EditRecordModal() {
     };
 
     updateRecord(selectedRecordForEdit.id, updates);
+    setHasUnsavedChanges(false);
   };
 
   const handleDelete = () => {
+    if (!isEditMode) {
+      alert('त्रुटि: रिकॉर्ड हटाने के लिए कृपया पहले Header से Edit Mode ON करें।');
+      return;
+    }
     if (confirm(`क्या आप ग्राम पंचायत ${selectedRecordForEdit.gpNameUnicode} का रोस्टर हटाना चाहते हैं?`)) {
       deleteRecord(selectedRecordForEdit.id);
+      setHasUnsavedChanges(false);
     }
   };
 
@@ -178,6 +198,14 @@ export default function EditRecordModal() {
 
         {/* Form Body */}
         <form onSubmit={handleSave} className="p-6 space-y-4 text-xs">
+          {!isEditMode && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium">
+              <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>
+                <strong>केवल पठन मोड (Read Only):</strong> संपादन मोड वर्तमान में बंद है। संशोधन सुरक्षित करने के लिए पहले Header से Edit Mode ON करें।
+              </span>
+            </div>
+          )}
           {formError && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 flex items-center gap-2 font-medium">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -452,7 +480,12 @@ export default function EditRecordModal() {
             <button
               type="button"
               onClick={handleDelete}
-              className="flex items-center gap-1 text-rose-600 hover:text-rose-700 font-semibold px-3 py-2 rounded-xl hover:bg-rose-50 transition-colors"
+              disabled={!isEditMode}
+              className={`flex items-center gap-1 font-semibold px-3 py-2 rounded-xl transition-colors ${
+                !isEditMode 
+                  ? 'text-slate-300 cursor-not-allowed' 
+                  : 'text-rose-600 hover:text-rose-700 hover:bg-rose-50'
+              }`}
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>हटाएं</span>
@@ -461,17 +494,34 @@ export default function EditRecordModal() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={closeEditModal}
+                onClick={() => {
+                  setHasUnsavedChanges(false);
+                  closeEditModal();
+                }}
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-colors"
               >
                 रद्द करें
               </button>
               <button
                 type="submit"
-                className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95"
+                disabled={!isEditMode}
+                className={`flex items-center gap-1.5 px-5 py-2 rounded-xl font-bold transition-all ${
+                  !isEditMode
+                    ? 'bg-slate-400 text-slate-100 cursor-not-allowed opacity-60'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 active:scale-95'
+                }`}
               >
-                <Save className="w-4 h-4" />
-                <span>संशोधन सहेजें</span>
+                {!isEditMode ? (
+                  <>
+                    <Lock className="w-4 h-4 text-white" />
+                    <span>सहेजना लॉक है (Read Only)</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>संशोधन सहेजें</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

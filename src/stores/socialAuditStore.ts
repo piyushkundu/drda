@@ -5,6 +5,10 @@ import {
   PanchayatNirnayStatus, MisAuditStatus, NSAPGramPanchayatData, NSAPBeneficiaryRecord,
   SocialAuditActivityLog
 } from '@/types/socialAudit';
+import { 
+  SocialAuditUser, DEFAULT_DDO_USER, canUserEnableEditMode, 
+  validateMeetingCompletionDate 
+} from '@/lib/socialAuditAuth';
 import { INITIAL_SOCIAL_AUDIT_RECORDS, BLOCK_SABHA_RECORDS, DISTRICT_META } from '@/data/socialAuditInitialData';
 import { INITIAL_NSAP_DATA_RECORDS } from '@/data/nsapDataInitial';
 import { INITIAL_ACTIVITY_LOGS } from '@/data/initialActivityLogs';
@@ -44,6 +48,9 @@ interface SocialAuditState {
   selectedStatus: 'all' | AuditStatus | 'upcoming' | 'overdue';
   searchQuery: string;
   isEditMode: boolean;
+  hasUnsavedChanges: boolean;
+  currentUser: SocialAuditUser;
+  selectedRecordForCompletion: SocialAuditRecord | null;
   asOfDate: string; // YYYY-MM-DD used for NSAP reports and upcoming calculations
   isLiveSync: boolean; // Whether date automatically syncs with live Delhi date
   liveDelhiTime: string; // Real-time ticking Delhi time string e.g. "12:15:30 AM"
@@ -69,7 +76,12 @@ interface SocialAuditState {
   setSelectedScheme: (scheme: 'all' | 'nsap' | 'mgnrega' | 'pmayg') => void;
   setSelectedStatus: (status: 'all' | AuditStatus | 'upcoming' | 'overdue') => void;
   setSearchQuery: (query: string) => void;
-  setIsEditMode: (isEdit: boolean) => void;
+  setIsEditMode: (isEdit: boolean) => boolean;
+  setCurrentUser: (user: SocialAuditUser) => void;
+  setHasUnsavedChanges: (hasChanges: boolean) => void;
+  openCompletionModal: (record: SocialAuditRecord) => void;
+  closeCompletionModal: () => void;
+  canCompleteMeeting: (record: SocialAuditRecord | null | undefined) => { canComplete: boolean; errorCode?: string; errorMessage?: string };
   setAsOfDate: (date: string) => void;
   setLiveSync: (enabled: boolean) => void;
   tickDelhiClock: () => void;
@@ -112,6 +124,12 @@ let _localChangeTimestamp = 0;
  */
 function notifyStoreChange(state: SocialAuditState, immediate = false) {
   if (typeof window === 'undefined') return;
+  
+  // Security guard: Only persist changes to remote Firestore if Central Edit Mode is enabled
+  if (!state.isEditMode) {
+    return;
+  }
+
   _localChangeTimestamp = Date.now();
   useSocialAuditStore.setState({ firebaseSyncStatus: 'syncing' });
 
@@ -146,6 +164,9 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       selectedStatus: 'all',
       searchQuery: '',
       isEditMode: false,
+      hasUnsavedChanges: false,
+      currentUser: DEFAULT_DDO_USER,
+      selectedRecordForCompletion: null,
       // Default to live current Delhi (IST) date
       asOfDate: getDelhiDateString(),
       isLiveSync: true,
@@ -260,7 +281,71 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       setSelectedScheme: (scheme) => set({ selectedScheme: scheme }),
       setSelectedStatus: (status) => set({ selectedStatus: status }),
       setSearchQuery: (query) => set({ searchQuery: query }),
-      setIsEditMode: (isEdit) => set({ isEditMode: isEdit }),
+      setCurrentUser: (user) => {
+        set({ currentUser: user });
+        if (!user.isAuthenticated || !['ddo', 'admin'].includes(user.role)) {
+          set({ isEditMode: false });
+        }
+      },
+
+      setHasUnsavedChanges: (hasChanges) => set({ hasUnsavedChanges: hasChanges }),
+
+      setIsEditMode: (isEdit: boolean) => {
+        if (isEdit) {
+          const authCheck = canUserEnableEditMode(get().currentUser);
+          if (!authCheck.allowed) {
+            if (typeof window !== 'undefined') {
+              alert(authCheck.reason || 'अनधिकृत: केवल अधिकृत प्रशासनिक अधिकारी ही संपादन मोड चालू कर सकते हैं।');
+            }
+            return false;
+          }
+          set({ isEditMode: true });
+          return true;
+        } else {
+          // Exiting Edit Mode: check for unsaved changes
+          if (get().hasUnsavedChanges) {
+            if (typeof window !== 'undefined') {
+              const confirmExit = window.confirm(
+                'आपके कुछ बदलाव अभी सेव नहीं हुए हैं। Edit Mode बंद करने पर ये बदलाव खो सकते हैं। क्या आप जारी रखना चाहते हैं?'
+              );
+              if (!confirmExit) {
+                return false;
+              }
+            }
+          }
+          set({ 
+            isEditMode: false, 
+            hasUnsavedChanges: false,
+            selectedRecordForCompletion: null,
+            selectedRecordForEdit: null,
+            isAddModalOpen: false
+          });
+          return true;
+        }
+      },
+
+      canCompleteMeeting: (record) => {
+        return validateMeetingCompletionDate(record?.meetingDate, get().asOfDate);
+      },
+
+      openCompletionModal: (record) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: बैठक सम्पन्न करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+        const check = get().canCompleteMeeting(record);
+        if (!check.canComplete) {
+          if (typeof window !== 'undefined') {
+            alert(check.errorMessage || 'इस ग्राम पंचायत की सोशल ऑडिट बैठक की निर्धारित तिथि अभी नहीं आई है। निर्धारित तिथि से पहले बैठक को सम्पन्न नहीं किया जा सकता।');
+          }
+          return;
+        }
+        set({ selectedRecordForCompletion: record });
+      },
+
+      closeCompletionModal: () => set({ selectedRecordForCompletion: null }),
 
       setAsOfDate: (date) => {
         const liveDate = getDelhiDateString();
@@ -352,6 +437,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       updateRecord: (id, updates) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: अभिलेख में संपादन करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         const current = get().records.find(r => r.id === id);
         const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
         const block = current?.block || 'Baghpat';
@@ -373,13 +465,20 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           block,
           actionType: 'update',
           actionLabel: 'विवरण अद्यतन',
-          userName: 'प्रशासनिक अधिकारी',
+          userName: get().currentUser.name || 'प्रशासनिक अधिकारी',
           details: `${gpName} के अभिलेख में अद्यतन किया गया।`
         });
         notifyStoreChange(get());
       },
 
       updatePanchayatNirnayStatus: (id, status, notes) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: पंचायत निर्णय स्थिति बदलने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         const current = get().records.find(r => r.id === id);
         const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
         const block = current?.block || 'Baghpat';
@@ -412,7 +511,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           block,
           actionType: 'status_change',
           actionLabel: 'पंचायत निर्णय स्थिति बदलाव',
-          userName: 'पंचायत निर्णय नोडल',
+          userName: get().currentUser.name || 'पंचायत निर्णय नोडल',
           details: `${gpName}: पंचायत निर्णय स्थिति "${statusHi}" की गई।`,
           newValue: statusHi
         });
@@ -420,6 +519,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       addRecord: (recordData) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: नया रोस्टर रिकॉर्ड जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         const id = `${recordData.block.toLowerCase()}-${Date.now()}`;
         const newRecord: SocialAuditRecord = {
           ...recordData,
@@ -437,13 +543,20 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           block: newRecord.block,
           actionType: 'create',
           actionLabel: 'नवीन ग्राम पंचायत सृजन',
-          userName: 'प्रशासनिक अधिकारी',
+          userName: get().currentUser.name || 'प्रशासनिक अधिकारी',
           details: `नवीन ग्राम पंचायत "${newRecord.gpNameUnicode}" (${newRecord.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}) रोस्टर में जोड़ी गई।`
         });
         notifyStoreChange(get());
       },
 
       deleteRecord: (id) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: रिकॉर्ड हटाने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         const current = get().records.find(r => r.id === id);
         const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
         const block = current?.block || 'Baghpat';
@@ -461,16 +574,36 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           block,
           actionType: 'delete',
           actionLabel: 'अभिलेख विलोपन',
-          userName: 'प्रशासनिक अधिकारी',
+          userName: get().currentUser.name || 'प्रशासनिक अधिकारी',
           details: `ग्राम पंचायत "${gpName}" का अभिलेख हटाया गया।`
         });
         notifyStoreChange(get());
       },
 
       markCompleted: (id, isCompleted) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: बैठक स्थिति बदलने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         const current = get().records.find(r => r.id === id);
-        const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
-        const block = current?.block || 'Baghpat';
+        if (!current) return;
+
+        // Strict Date-based lock check for marking completion
+        if (isCompleted) {
+          const dateValidation = get().canCompleteMeeting(current);
+          if (!dateValidation.canComplete) {
+            if (typeof window !== 'undefined') {
+              alert(dateValidation.errorMessage || 'इस ग्राम पंचायत की सोशल ऑडिट बैठक की निर्धारित तिथि अभी नहीं आई है। निर्धारित तिथि से पहले बैठक को सम्पन्न नहीं किया जा सकता।');
+            }
+            return;
+          }
+        }
+
+        const gpName = current.gpNameUnicode || 'ग्राम पंचायत';
+        const block = current.block || 'Baghpat';
 
         set((state) => ({
           records: state.records.map((r) => {
@@ -497,7 +630,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           block,
           actionType: 'status_change',
           actionLabel: isCompleted ? 'बैठक सम्पन्न चिन्हित' : 'बैठक पुनः प्रस्तावित',
-          userName: 'नोडल अधिकारी',
+          userName: get().currentUser.name || 'नोडल अधिकारी',
           details: `${gpName} की सोशल ऑडिट बैठक को "${isCompleted ? 'सम्पन्न' : 'प्रस्तावित'}" के रूप में चिन्हित किया गया।`,
           newValue: isCompleted ? 'सम्पन्न' : 'प्रस्तावित'
         });
@@ -505,6 +638,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       syncNirnayFromPayload: (payload: NirnaySyncPayload) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: पंचायत निर्णय डेटा सिंक करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return { updatedCount: 0, updatedNames: [], blockMatched: '' };
+        }
+
         const state = get();
         const updatedNames: string[] = [];
         const normalizedBlock = (payload.blockName || '').toUpperCase();
@@ -553,6 +693,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       updateMisStatus: (id: string, status: MisAuditStatus, notes?: string, fedDate?: string) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: MIS फीडिंग स्थिति बदलने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         const current = get().records.find(r => r.id === id);
         const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
         const block = current?.block || 'Baghpat';
@@ -595,6 +742,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       syncMisFromPayload: (payload: MisSyncPayload) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: MIS फीडिंग डेटा सिंक करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return { updatedCount: 0, updatedNames: [], blockMatched: '' };
+        }
+
         const state = get();
         const updatedNames: string[] = [];
         const normalizedBlock = (payload.blockName || '').toUpperCase();
@@ -643,6 +797,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       resetToBaseline: () => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: कैलेंडर रीसेट करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         if (typeof window !== 'undefined' && window.confirm('क्या आप सोशल ऑडिट कैलेंडर को मूल आधिकारिक डेटा पर रीसेट करना चाहते हैं?')) {
           set({ 
             records: INITIAL_SOCIAL_AUDIT_RECORDS,
@@ -654,6 +815,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
 
       // NSAP Detailed Beneficiary Actions
       addNsapRecord: (data: NSAPGramPanchayatData) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: NSAP डेटा जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         set((state) => ({
           nsapRecords: [data, ...state.nsapRecords.filter(r => r.gpNameUnicode !== data.gpNameUnicode)]
         }));
@@ -661,6 +829,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       updateNsapRecord: (id: string, updates: Partial<NSAPGramPanchayatData>) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: NSAP डेटा संपादित करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         set((state) => ({
           nsapRecords: state.nsapRecords.map(r => r.id === id ? { ...r, ...updates } : r)
         }));
@@ -668,6 +843,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       deleteNsapRecord: (id: string) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: NSAP डेटा हटाने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         set((state) => ({
           nsapRecords: state.nsapRecords.filter(r => r.id !== id)
         }));
@@ -675,6 +857,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       addNsapBeneficiary: (gpId: string, beneficiary: Omit<NSAPBeneficiaryRecord, 'id'>) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: लाभार्थी जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         set((state) => {
           const target = state.nsapRecords.find(r => r.id === gpId);
           if (!target) return state;
@@ -697,6 +886,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       addNsapBeneficiariesBatch: (gpId: string, beneficiaries: Omit<NSAPBeneficiaryRecord, 'id'>[]) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: बैच लाभार्थी जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         set((state) => {
           const target = state.nsapRecords.find(r => r.id === gpId);
           if (!target || !beneficiaries.length) return state;
@@ -720,6 +916,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       deleteNsapBeneficiary: (gpId: string, beneficiaryId: string) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: लाभार्थी हटाने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
         set((state) => {
           const target = state.nsapRecords.find(r => r.id === gpId);
           if (!target) return state;
@@ -752,6 +955,11 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // ALWAYS enforce Edit Mode starts OFF on rehydrate / page refresh / session start
+          state.isEditMode = false;
+          state.selectedRecordForCompletion = null;
+          state.hasUnsavedChanges = false;
+
           // Rehydrate activity logs if missing
           if (!state.activityLogs || !Array.isArray(state.activityLogs) || state.activityLogs.length === 0) {
             state.activityLogs = INITIAL_ACTIVITY_LOGS;

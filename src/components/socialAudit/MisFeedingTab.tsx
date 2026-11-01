@@ -8,7 +8,7 @@ import {
   CheckCircle2, Clock, XCircle, Search, Filter, 
   Download, Building2, ShieldCheck, 
   FileSpreadsheet, RefreshCw, Layers, Landmark, 
-  Calendar, Check, AlertTriangle, ArrowUpRight, Phone
+  Calendar, Check, AlertTriangle, ArrowUpRight, Phone, Lock
 } from 'lucide-react';
 
 export default function MisFeedingTab() {
@@ -17,6 +17,7 @@ export default function MisFeedingTab() {
     selectedBRP,
     asOfDate, 
     fontViewMode, 
+    isEditMode,
     updateMisStatus,
     openEditModal 
   } = useSocialAuditStore();
@@ -223,6 +224,10 @@ export default function MisFeedingTab() {
   }, [records, asOfDate, selectedBlockFilter, selectedStatusFilter, searchQuery]);
 
   const handleStatusChange = (id: string, newStatus: MisAuditStatus) => {
+    if (!isEditMode) {
+      alert('त्रुटि: MIS फीडिंग स्थिति बदलने के लिए कृपया पहले Header से Edit Mode ON करें।');
+      return;
+    }
     updateMisStatus(id, newStatus);
     setJustUpdatedId(id);
     setTimeout(() => setJustUpdatedId(null), 1500);

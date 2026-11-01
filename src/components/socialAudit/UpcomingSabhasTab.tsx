@@ -8,7 +8,7 @@ import {
   Calendar, Clock, MapPin, Phone, Users, Shield, 
   AlertCircle, CheckCircle2, ChevronRight, Sparkles,
   Layers, Check, AlertTriangle, Search, Filter, 
-  ChevronDown, BarChart3, ArrowRight
+  ChevronDown, BarChart3, ArrowRight, Lock
 } from 'lucide-react';
 
 export default function UpcomingSabhasTab() {
@@ -25,7 +25,10 @@ export default function UpcomingSabhasTab() {
     liveDelhiTime,
     liveDelhiDate,
     fontViewMode, 
+    isEditMode,
     openEditModal, 
+    openCompletionModal,
+    canCompleteMeeting,
     markCompleted,
     setActiveTab,
     setSelectedBlock 
@@ -367,20 +370,50 @@ export default function UpcomingSabhasTab() {
                   </div>
 
                   <div className="flex flex-col gap-2 w-full">
-                    <button
-                      onClick={() => openEditModal(nextSabha)}
-                      className="w-full bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all active:scale-95"
-                    >
-                      संशोधित / संपादित करें
-                    </button>
+                    {!isEditMode ? (
+                      <button
+                        disabled
+                        className="w-full bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold py-2.5 px-4 rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5"
+                        title="संपादन करने के लिए पहले Header से Edit Mode ON करें।"
+                      >
+                        <Lock className="w-3.5 h-3.5 text-rose-500" />
+                        <span>संपादन हेतु Edit Mode ON करें</span>
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => openEditModal(nextSabha)}
+                          className="w-full bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all active:scale-95"
+                        >
+                          संशोधित / संपादित करें
+                        </button>
 
-                    <button
-                      onClick={() => markCompleted(nextSabha.id, nextSabha.status !== 'completed')}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95"
-                    >
-                      <Check className="w-3.5 h-3.5 text-white" />
-                      <span>सम्पन्न मार्क करें</span>
-                    </button>
+                        {(() => {
+                          const dateCheck = canCompleteMeeting(nextSabha);
+                          if (!dateCheck.canComplete) {
+                            return (
+                              <button
+                                disabled
+                                className="w-full bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold py-2 px-4 rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5"
+                                title={dateCheck.errorMessage || 'निर्धारित तिथि से पहले बैठक को सम्पन्न नहीं किया जा सकता।'}
+                              >
+                                <Lock className="w-3.5 h-3.5 text-rose-400" />
+                                <span>तिथि पूर्व लॉक (लंबित)</span>
+                              </button>
+                            );
+                          }
+                          return (
+                            <button
+                              onClick={() => openCompletionModal(nextSabha)}
+                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                            >
+                              <Check className="w-3.5 h-3.5 text-white" />
+                              <span>सम्पन्न मार्क करें</span>
+                            </button>
+                          );
+                        })()}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -511,19 +544,49 @@ export default function UpcomingSabhasTab() {
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                    <button
-                      onClick={() => openEditModal(sabha)}
-                      className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold py-2 px-3 rounded-xl transition-all text-center"
-                    >
-                      संशोधित करें
-                    </button>
-                    <button
-                      onClick={() => markCompleted(sabha.id, true)}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm"
-                    >
-                      <Check className="w-3.5 h-3.5 text-white" />
-                      <span>सम्पन्न</span>
-                    </button>
+                    {!isEditMode ? (
+                      <button
+                        disabled
+                        className="w-full bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold py-1.5 px-3 rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5"
+                        title="संपादन करने के लिए पहले Header से Edit Mode ON करें।"
+                      >
+                        <Lock className="w-3.5 h-3.5 text-rose-500" />
+                        <span>केवल पठन (Read Only)</span>
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => openEditModal(sabha)}
+                          className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold py-2 px-3 rounded-xl transition-all text-center"
+                        >
+                          संशोधित करें
+                        </button>
+                        {(() => {
+                          const dateCheck = canCompleteMeeting(sabha);
+                          if (!dateCheck.canComplete) {
+                            return (
+                              <button
+                                disabled
+                                className="bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold py-2 px-3 rounded-xl cursor-not-allowed flex items-center justify-center gap-1"
+                                title={dateCheck.errorMessage || 'निर्धारित तिथि से पहले सम्पन्न नहीं किया जा सकता'}
+                              >
+                                <Lock className="w-3.5 h-3.5 text-rose-400" />
+                                <span>लंबित</span>
+                              </button>
+                            );
+                          }
+                          return (
+                            <button
+                              onClick={() => openCompletionModal(sabha)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm"
+                            >
+                              <Check className="w-3.5 h-3.5 text-white" />
+                              <span>सम्पन्न</span>
+                            </button>
+                          );
+                        })()}
+                      </>
+                    )}
                   </div>
                 </div>
               );
@@ -706,19 +769,49 @@ export default function UpcomingSabhasTab() {
 
                 <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => openEditModal(sabha)}
-                      className="text-xs text-blue-700 hover:text-blue-900 font-bold bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition-colors"
-                    >
-                      संशोधित करें
-                    </button>
-                    <button
-                      onClick={() => markCompleted(sabha.id, true)}
-                      className="text-xs text-white font-bold bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
-                    >
-                      <Check className="w-3 h-3 text-white" />
-                      <span>सम्पन्न</span>
-                    </button>
+                    {!isEditMode ? (
+                      <button
+                        disabled
+                        className="text-xs text-slate-400 font-bold bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 cursor-not-allowed flex items-center gap-1"
+                        title="संपादन करने के लिए पहले Header से Edit Mode ON करें।"
+                      >
+                        <Lock className="w-3 h-3 text-rose-500" />
+                        <span>Read Only</span>
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => openEditModal(sabha)}
+                          className="text-xs text-blue-700 hover:text-blue-900 font-bold bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition-colors"
+                        >
+                          संशोधित करें
+                        </button>
+                        {(() => {
+                          const dateCheck = canCompleteMeeting(sabha);
+                          if (!dateCheck.canComplete) {
+                            return (
+                              <button
+                                disabled
+                                className="text-xs text-slate-400 font-bold bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 cursor-not-allowed flex items-center gap-1"
+                                title={dateCheck.errorMessage || 'निर्धारित तिथि से पहले सम्पन्न नहीं किया जा सकता'}
+                              >
+                                <Lock className="w-3 h-3 text-rose-400" />
+                                <span>लंबित</span>
+                              </button>
+                            );
+                          }
+                          return (
+                            <button
+                              onClick={() => openCompletionModal(sabha)}
+                              className="text-xs text-white font-bold bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                            >
+                              <Check className="w-3 h-3 text-white" />
+                              <span>सम्पन्न</span>
+                            </button>
+                          );
+                        })()}
+                      </>
+                    )}
                   </div>
 
                   {sabha.hasNSAP && (

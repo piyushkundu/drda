@@ -10,11 +10,11 @@ import { getDelhiDateString, formatDelhiDateHindi } from '@/lib/delhiTime';
 import { 
   FileText, Calendar, Download, Printer, CheckCircle2, 
   Layers, ArrowUpRight, ShieldCheck, Landmark, Check,
-  AlertTriangle, Filter, Eye, Phone, Users, Shield, Edit3
+  AlertTriangle, Filter, Eye, Phone, Users, Shield, Edit3, Lock
 } from 'lucide-react';
 
 export default function NSAPReportTab() {
-  const { records, selectedBRP, asOfDate, setAsOfDate, fontViewMode, openEditModal } = useSocialAuditStore();
+  const { records, selectedBRP, asOfDate, setAsOfDate, fontViewMode, openEditModal, isEditMode } = useSocialAuditStore();
   const [downloading, setDownloading] = useState(false);
   const [amendedFilter, setAmendedFilter] = useState<'nsap' | 'uptoDate' | 'all10'>('nsap');
   const [amendedBlockFilter, setAmendedBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
@@ -552,13 +552,23 @@ export default function NSAPReportTab() {
 
                       {/* Quick Edit */}
                       <td className="py-3 px-3 text-center whitespace-nowrap">
-                        <button
-                          onClick={() => openEditModal(gp)}
-                          className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-200"
-                          title="संशोधित रोस्टर संपादित करें"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
+                        {!isEditMode ? (
+                          <button
+                            disabled
+                            className="p-1.5 bg-slate-100 text-slate-400 rounded-lg border border-slate-200 cursor-not-allowed"
+                            title="संपादन करने के लिए पहले Header से Edit Mode ON करें।"
+                          >
+                            <Lock className="w-3.5 h-3.5 text-rose-400" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => openEditModal(gp)}
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-200"
+                            title="संशोधित रोस्टर संपादित करें"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

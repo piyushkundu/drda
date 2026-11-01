@@ -6,7 +6,7 @@ import { matchesBRP } from '@/lib/brpHelper';
 import { Phone, Users, Shield, Calendar, MapPin, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
 
 export default function TeamRosterTab() {
-  const { records, asOfDate, openEditModal, selectedBRP } = useSocialAuditStore();
+  const { records, asOfDate, openEditModal, openGPProfile, isEditMode, selectedBRP } = useSocialAuditStore();
 
   const effectiveRecords = useMemo(() => {
     if (!selectedBRP || selectedBRP === 'all') return records;
@@ -174,13 +174,17 @@ export default function TeamRosterTab() {
                     {brp.allGPs.map((gp) => (
                       <span
                         key={gp.id}
-                        onClick={() => openEditModal(gp)}
+                        onClick={() => (isEditMode ? openEditModal(gp) : openGPProfile(gp))}
                         className={`text-[10px] px-2 py-0.5 rounded cursor-pointer transition-colors border ${
                           gp.isAmended
                             ? 'bg-amber-50 text-amber-800 border-amber-300'
                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
                         }`}
-                        title={`${gp.gpNameUnicode} (${gp.blockHindi}) - ${gp.meetingDate}`}
+                        title={
+                          isEditMode 
+                            ? `${gp.gpNameUnicode} (${gp.blockHindi}) - विवरण संपादित करें` 
+                            : `${gp.gpNameUnicode} (${gp.blockHindi}) - प्रोफाइल विवरण देखें`
+                        }
                       >
                         {gp.gpNameUnicode}
                       </span>

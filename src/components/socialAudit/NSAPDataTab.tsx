@@ -24,6 +24,7 @@ export default function NSAPDataTab() {
     nsapRecords, 
     asOfDate, 
     fontViewMode,
+    isEditMode,
     addNsapRecord,
     updateNsapRecord,
     deleteNsapRecord,
@@ -375,6 +376,10 @@ export default function NSAPDataTab() {
   // Submit Add GP Record
   const handleSaveGpRecord = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isEditMode) {
+      alert('त्रुटि: NSAP डेटा जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
+      return;
+    }
     if (!selectedGpForAdd) return;
 
     const rosterItem = allNsapRosterRecords.find(r => r.gpNameUnicode === selectedGpForAdd);
@@ -423,6 +428,10 @@ export default function NSAPDataTab() {
   // Submit Edit GP Record
   const handleSaveEditGp = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isEditMode) {
+      alert('त्रुटि: NSAP डेटा संपादित करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+      return;
+    }
     if (!editingGpId) return;
 
     const updatedTotalVer = editVerDirect + editVerFamily;
@@ -447,6 +456,10 @@ export default function NSAPDataTab() {
   // Submit Add Single Beneficiary
   const handleSaveSingleBeneficiary = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isEditMode) {
+      alert('त्रुटि: नया लाभार्थी जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
+      return;
+    }
     if (!targetGpIdForBen || !newBenName || !newBenRegId) return;
 
     addNsapBeneficiary(targetGpIdForBen, {
@@ -612,6 +625,10 @@ export default function NSAPDataTab() {
 
   // Submit Batch Excel Beneficiaries Import
   const handleSaveExcelBatch = () => {
+    if (!isEditMode) {
+      alert('त्रुटि: बैच लाभार्थी आयात करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+      return;
+    }
     if (!excelTargetGpId || parsedBeneficiaries.length === 0) return;
 
     addNsapBeneficiariesBatch(excelTargetGpId, parsedBeneficiaries);

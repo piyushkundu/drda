@@ -9,7 +9,7 @@ import {
   Landmark, Clock, Calendar, Cloud, Server, RefreshCw, 
   Menu, PanelLeftClose, PanelLeftOpen, Sparkles, ChevronRight, 
   Check, User, ShieldCheck, AlertCircle, Radio, SlidersHorizontal,
-  MoreVertical, X, Search
+  MoreVertical, X, Search, Lock, Unlock
 } from 'lucide-react';
 
 interface CompactHeaderProps {
@@ -42,8 +42,19 @@ export default function SocialAuditCompactHeader({
     firebaseLastSyncedAt,
     initFirebaseSync,
     forceSyncToFirebase,
-    setIsGlobalSearchOpen
+    setIsGlobalSearchOpen,
+    isEditMode,
+    setIsEditMode,
+    currentUser
   } = useSocialAuditStore();
+
+  const handleToggleEditMode = () => {
+    const success = setIsEditMode(!isEditMode);
+    if (success) {
+      setSyncToast(!isEditMode ? 'संपादन मोड (EDIT MODE ON) सक्रिय हो गया!' : 'केवल पठन मोड (EDIT MODE OFF / READ ONLY)');
+      setTimeout(() => setSyncToast(null), 3000);
+    }
+  };
 
   const { setSidebarPanel } = useUIStore();
 
@@ -135,8 +146,32 @@ export default function SocialAuditCompactHeader({
             </div>
           </div>
 
-          {/* Quick Actions (Search + Sync + More) */}
+          {/* Quick Actions (Search + Edit Mode + Sync + More) */}
           <div className="flex items-center gap-1 shrink-0">
+            {/* Mobile Central Edit Mode Toggle */}
+            <button
+              type="button"
+              onClick={handleToggleEditMode}
+              className={`px-2 py-1 rounded-xl text-[10px] font-black border flex items-center gap-1 shadow-2xs transition-all active:scale-95 shrink-0 ${
+                isEditMode
+                  ? 'bg-emerald-600 text-white border-emerald-500 ring-1 ring-emerald-300 animate-pulse'
+                  : 'bg-rose-50 text-rose-800 border-rose-300'
+              }`}
+              title={isEditMode ? 'EDIT MODE ON (Editing Enabled)' : 'EDIT MODE OFF (Read Only)'}
+            >
+              {isEditMode ? (
+                <>
+                  <Unlock className="w-3 h-3 text-white" />
+                  <span>EDIT ON</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3 h-3 text-rose-600" />
+                  <span>EDIT OFF</span>
+                </>
+              )}
+            </button>
+
             <button
               onClick={() => setIsGlobalSearchOpen(true)}
               className="p-2 rounded-xl text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors"
@@ -223,6 +258,41 @@ export default function SocialAuditCompactHeader({
                 >
                   <X className="w-4 h-4" />
                 </button>
+              </div>
+
+              {/* Central Edit Mode Toggle in Mobile Drawer */}
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {isEditMode ? (
+                      <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                        <Unlock className="w-4 h-4" />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-xs font-black text-slate-900">
+                        {isEditMode ? 'EDIT MODE ON' : 'EDIT MODE OFF'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-bold">
+                        {isEditMode ? 'Editing Enabled' : 'केवल पठन (Read Only)'}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleToggleEditMode}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shadow-xs ${
+                      isEditMode
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-emerald-600 text-white'
+                    }`}
+                  >
+                    {isEditMode ? 'बंद करें (Turn OFF)' : 'चालू करें (Turn ON)'}
+                  </button>
+                </div>
               </div>
 
               {/* 1. Full Date Picker */}
@@ -400,6 +470,44 @@ export default function SocialAuditCompactHeader({
               title="संदर्भ तिथि बदलें"
             />
           </div>
+
+          {/* CENTRAL PROMINENT EDIT MODE CONTROL (OFF: Read Only | ON: Editing Enabled) */}
+          <button
+            type="button"
+            onClick={handleToggleEditMode}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all shadow-xs cursor-pointer select-none active:scale-95 shrink-0 ${
+              isEditMode
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30 ring-2 ring-emerald-300 animate-pulse'
+                : 'bg-rose-50/90 hover:bg-rose-100 text-rose-800 border-rose-300'
+            }`}
+            title={
+              isEditMode
+                ? 'EDIT MODE ON (Editing Enabled) - क्लिक करके केवल पठन मोड पर जाएं'
+                : 'EDIT MODE OFF (Read Only) - क्लिक करके संपादन मोड सक्रिय करें'
+            }
+          >
+            {isEditMode ? (
+              <>
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+                <Unlock className="w-3.5 h-3.5 text-white shrink-0" />
+                <span className="text-[11px] font-black tracking-tight whitespace-nowrap">EDIT MODE ON</span>
+                <span className="text-[9px] font-bold text-emerald-100 bg-emerald-700/60 px-1.5 py-0.5 rounded-full hidden lg:inline whitespace-nowrap">
+                  Editing Enabled
+                </span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span className="text-[11px] font-black tracking-tight whitespace-nowrap">EDIT MODE OFF</span>
+                <span className="text-[9px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded-full hidden lg:inline whitespace-nowrap">
+                  Read Only
+                </span>
+              </>
+            )}
+          </button>
 
           {/* Compact Firebase Cloud Connection Status Pill with Tooltip */}
           <div

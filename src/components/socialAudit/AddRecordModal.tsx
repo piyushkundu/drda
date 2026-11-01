@@ -4,11 +4,11 @@ import React, { useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { AuditBlock, AuditStatus } from '@/types/socialAudit';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
-import { X, Plus, Calendar, Users, Shield, MapPin, AlertCircle } from 'lucide-react';
+import { X, Plus, Calendar, Users, Shield, MapPin, AlertCircle, Lock } from 'lucide-react';
 import { validateIndianMobile, validateMeetingDateRange, detectDuplicateGP } from '@/lib/socialAuditValidation';
 
 export default function AddRecordModal() {
-  const { isAddModalOpen, closeAddModal, addRecord, records } = useSocialAuditStore();
+  const { isAddModalOpen, closeAddModal, addRecord, records, isEditMode } = useSocialAuditStore();
 
   const [block, setBlock] = useState<AuditBlock>('Baghpat');
   const [gpName, setGpName] = useState('');
@@ -30,6 +30,12 @@ export default function AddRecordModal() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    // 0. Central Edit Mode check
+    if (!isEditMode) {
+      setFormError('त्रुटि: नया रिकॉर्ड जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
+      return;
+    }
 
     // 1. Required name check
     if (!gpName.trim()) {
@@ -132,6 +138,14 @@ export default function AddRecordModal() {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+          {!isEditMode && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium">
+              <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>
+                <strong>केवल पठन मोड (Read Only):</strong> संपादन मोड वर्तमान में बंद है। रोस्टर जोड़ने के लिए पहले Header से Edit Mode ON करें।
+              </span>
+            </div>
+          )}
           {formError && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 flex items-center gap-2 font-medium">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -260,9 +274,21 @@ export default function AddRecordModal() {
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+              disabled={!isEditMode}
+              className={`px-5 py-2 rounded-xl font-bold transition-all flex items-center gap-1.5 ${
+                !isEditMode
+                  ? 'bg-slate-400 text-slate-100 cursor-not-allowed opacity-60'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 active:scale-95'
+              }`}
             >
-              रोस्टर जोड़ें
+              {!isEditMode ? (
+                <>
+                  <Lock className="w-4 h-4 text-white" />
+                  <span>जोड़ना लॉक है (Read Only)</span>
+                </>
+              ) : (
+                <span>रोस्टर जोड़ें</span>
+              )}
             </button>
           </div>
         </form>

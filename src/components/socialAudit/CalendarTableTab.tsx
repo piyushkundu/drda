@@ -9,7 +9,8 @@ import {
   Search, Filter, Calendar as CalendarIcon, Download, 
   Edit3, Plus, RotateCcw, CheckCircle2, AlertTriangle, 
   Layers, Phone, User, Users, Shield, FileSpreadsheet,
-  ChevronLeft, ChevronRight, Check, X, Eye, CalendarDays
+  ChevronLeft, ChevronRight, Check, X, Eye, CalendarDays,
+  Lock, Unlock
 } from 'lucide-react';
 
 export default function CalendarTableTab() {
@@ -30,6 +31,8 @@ export default function CalendarTableTab() {
     openEditModal,
     openAddModal,
     openGPProfile,
+    openCompletionModal,
+    canCompleteMeeting,
     markCompleted,
     resetToBaseline,
     asOfDate
@@ -298,18 +301,31 @@ export default function CalendarTableTab() {
               </button>
             </div>
 
-            {/* Edit Mode Toggle Button */}
+            {/* Central Edit Mode Toggle Button */}
             <button
               onClick={() => setIsEditMode(!isEditMode)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
                 isEditMode
-                  ? 'bg-amber-500 text-white shadow-amber-500/30 ring-2 ring-amber-300 animate-pulse'
-                  : 'bg-slate-100 hover:bg-slate-200 text-amber-800 border border-amber-200'
+                  ? 'bg-emerald-600 text-white shadow-emerald-600/30 ring-2 ring-emerald-300 animate-pulse'
+                  : 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300'
               }`}
-              title="कैलेंडर में संपादन मोड चालू/बंद करें"
+              title={
+                isEditMode
+                  ? 'EDIT MODE ON: संपादन सक्रिय है - क्लिक करके केवल पठन मोड पर जाएं'
+                  : 'EDIT MODE OFF: केवल पठन मोड - संपादन करने हेतु क्लिक करें'
+              }
             >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>{isEditMode ? 'एडिट मोड सक्रिय' : 'एडिट मोड (Edit)'}</span>
+              {isEditMode ? (
+                <>
+                  <Unlock className="w-3.5 h-3.5" />
+                  <span>EDIT MODE ON</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3.5 h-3.5 text-rose-600" />
+                  <span>EDIT MODE OFF (Read Only)</span>
+                </>
+              )}
             </button>
 
             {/* Add New Entry Button (visible in edit mode) */}
@@ -694,21 +710,48 @@ export default function CalendarTableTab() {
                               <button
                                 onClick={() => openEditModal(r)}
                                 className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-200"
-                                title="संपादित करें"
+                                title="विवरण संशोधित करें"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
                               </button>
-                              <button
-                                onClick={() => markCompleted(r.id, !isCompleted)}
-                                className={`p-1.5 rounded-lg transition-colors ${
-                                  isCompleted
-                                    ? 'bg-emerald-600 text-white'
-                                    : 'bg-slate-100 hover:bg-emerald-100 text-slate-700 border border-slate-200'
-                                }`}
-                                title="सम्पन्न टॉगल करें"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                              </button>
+                              {(() => {
+                                const completionCheck = canCompleteMeeting(r);
+                                if (isCompleted) {
+                                  return (
+                                    <button
+                                      onClick={() => {
+                                        if (confirm(`क्या आप ${r.gpNameUnicode} की बैठक को पुनः प्रस्तावित करना चाहते हैं?`)) {
+                                          markCompleted(r.id, false);
+                                        }
+                                      }}
+                                      className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-rose-600 transition-colors shadow-2xs"
+                                      title="सम्पन्न (पुनः प्रस्तावित करने हेतु क्लिक करें)"
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                    </button>
+                                  );
+                                }
+                                if (!completionCheck.canComplete) {
+                                  return (
+                                    <button
+                                      disabled
+                                      className="p-1.5 rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                                      title={completionCheck.errorMessage || 'निर्धारित तिथि से पूर्व सम्पन्न नहीं किया जा सकता'}
+                                    >
+                                      <Lock className="w-3.5 h-3.5 text-rose-400" />
+                                    </button>
+                                  );
+                                }
+                                return (
+                                  <button
+                                    onClick={() => openCompletionModal(r)}
+                                    className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-300 transition-colors shadow-2xs"
+                                    title="सत्यापन कर बैठक सम्पन्न करें"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                  </button>
+                                );
+                              })()}
                             </div>
                           </td>
                         )}
