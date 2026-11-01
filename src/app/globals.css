@@ -894,3 +894,82 @@ body {
   text-decoration: underline wavy #ff6b6b;
   background-color: rgba(255, 107, 107, 0.1);
 }
+
+/* ============================================================
+   SOCIAL AUDIT BAGHPAT – PREMIUM ENTERPRISE V3 DESIGN SYSTEM
+   Strictly scoped under .social-audit-shell to never affect Hindi Editor
+   ============================================================ */
+
+.social-audit-shell {
+  --sa-bg: #f8fafc;
+  --sa-card-bg: rgba(255, 255, 255, 0.96);
+  --sa-card-border: rgba(226, 232, 240, 0.9);
+  --sa-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 16px -2px rgba(15, 23, 42, 0.03);
+  --sa-card-shadow-hover: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 16px 24px -4px rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+}
+
+.social-audit-glass-card {
+  background: var(--sa-card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--sa-card-border);
+  border-radius: 1rem;
+  box-shadow: var(--sa-card-shadow);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.social-audit-glass-card:hover {
+  box-shadow: var(--sa-card-shadow-hover);
+}
+
+.social-audit-kpi {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.social-audit-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+}
+
+.social-audit-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.social-audit-table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.social-audit-table td {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.social-audit-table tr:hover td {
+  background: #f8fafc;
+}
+
+.social-audit-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  border-width: 1px;
+}
+

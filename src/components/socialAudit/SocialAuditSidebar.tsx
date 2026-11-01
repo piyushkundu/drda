@@ -126,42 +126,48 @@ export default function SocialAuditSidebar({
       {isOpenMobile && (
         <div
           onClick={() => setIsOpenMobile(false)}
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs lg:hidden transition-opacity duration-300 animate-in fade-in"
           aria-hidden="true"
         />
       )}
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed lg:static top-0 left-0 h-full z-40 bg-white border-r border-slate-200/90 shadow-sm flex flex-col justify-between transition-all duration-300 ease-in-out select-none ${
+        className={`fixed lg:static inset-y-0 left-0 h-full z-50 bg-white/95 backdrop-blur-md border-r border-slate-200/90 flex flex-col justify-between transition-all duration-300 ease-in-out select-none ${
           /* Mobile Drawer */
           isOpenMobile
-            ? 'translate-x-0 w-64 shadow-2xl'
-            : '-translate-x-full lg:translate-x-0'
+            ? 'translate-x-0 w-72 max-w-[85vw] shadow-2xl visible'
+            : '-translate-x-full lg:translate-x-0 invisible lg:visible shadow-none'
         } ${
-          /* Desktop Width */
-          isCollapsed ? 'lg:w-20' : 'lg:w-64'
+          /* Desktop Width: 72px collapsed, 260px expanded */
+          isCollapsed ? 'lg:w-[72px]' : 'lg:w-[260px]'
         }`}
       >
         {/* Top: Mobile Close Button & Header Branding for Mobile */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 lg:hidden">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 lg:hidden bg-slate-50">
           <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-blue-800" />
-            <span className="font-black text-slate-900 text-sm">सोशल ऑडिट नेविगेशन</span>
+            <div className="w-7 h-7 rounded-lg bg-blue-700 text-white flex items-center justify-center font-bold">
+              <Building2 className="w-4 h-4 text-amber-300" />
+            </div>
+            <div>
+              <span className="font-black text-slate-900 text-sm block leading-tight">सोशल ऑडिट बागपत</span>
+              <span className="text-[10px] text-slate-500 font-medium">प्रशासनिक नेविगेशन मेन्यू</span>
+            </div>
           </div>
           <button
             onClick={() => setIsOpenMobile(false)}
-            className="p-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200"
+            className="p-1.5 rounded-xl bg-white text-slate-700 hover:bg-slate-200 border border-slate-200 shadow-xs"
             title="मेन्यू बंद करें"
+            aria-label="Close Navigation Menu"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Navigation Items List */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1.5 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-2.5 space-y-1 scrollbar-thin">
           {!isCollapsed && (
-            <div className="hidden lg:block px-3 py-1.5 text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">
+            <div className="hidden lg:block px-3 py-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
               प्रशासनिक मॉड्यूल्स (Navigation)
             </div>
           )}
@@ -176,26 +182,26 @@ export default function SocialAuditSidebar({
               <div key={item.id} className="relative group">
                 <button
                   onClick={() => handleSelectTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left text-xs font-bold relative ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all text-left text-xs font-bold relative ${
                     isActive
-                      ? 'bg-blue-50/90 text-blue-900 border-l-4 border-blue-700 shadow-sm font-black'
+                      ? 'bg-blue-50/90 text-blue-900 border-l-4 border-blue-700 shadow-xs font-black'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  } ${isCollapsed ? 'justify-center px-2' : ''}`}
+                  } ${isCollapsed ? 'justify-center px-1.5' : ''}`}
                 >
                   {/* Colored Icon Badge */}
                   <span
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 transition-transform ${
-                      isActive ? 'scale-105 shadow-sm' : 'group-hover:scale-105'
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center border shrink-0 transition-transform ${
+                      isActive ? 'scale-105 shadow-xs' : 'group-hover:scale-105'
                     } ${item.iconColor}`}
                   >
-                    <IconComponent className="w-4 h-4" />
+                    <IconComponent className="w-3.5 h-3.5" />
                   </span>
 
                   {/* Expanded Item Label & Badge */}
                   {!isCollapsed && (
                     <div className="flex-1 min-w-0 flex items-center justify-between gap-1.5">
                       <div className="truncate">
-                        <div className="truncate">{item.label}</div>
+                        <div className="truncate text-xs">{item.label}</div>
                       </div>
 
                       {item.badge && (
@@ -231,8 +237,8 @@ export default function SocialAuditSidebar({
         <div className="p-3 border-t border-slate-200/90 bg-slate-50/80">
           {!isCollapsed ? (
             <div className="space-y-2">
-              <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs shrink-0">
+              <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs shrink-0">
                   DDO
                 </div>
                 <div className="min-w-0 flex-1">
@@ -246,17 +252,17 @@ export default function SocialAuditSidebar({
               </div>
 
               <div className="flex items-center justify-between text-[10px] text-slate-600 px-1 font-medium">
-                <span>Enterprise v2.4</span>
+                <span>Enterprise v3.0</span>
                 <span className="flex items-center gap-1 text-emerald-700 font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  सक्रिय पोर्टल
+                  सक्रिय
                 </span>
               </div>
             </div>
           ) : (
             <div className="flex justify-center">
               <div
-                className="w-8 h-8 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs"
+                className="w-7 h-7 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs"
                 title="जिला विकास अधिकारी (DDO) बागपत"
               >
                 DDO

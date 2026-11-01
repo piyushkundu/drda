@@ -364,10 +364,10 @@ export default function CalendarTableTab() {
 
           <div className="overflow-x-auto max-h-[650px] scrollbar-thin">
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-slate-100/90 text-slate-700 sticky top-0 z-20 font-bold border-b border-slate-200">
+              <thead className="bg-slate-100 text-slate-700 sticky top-0 z-20 font-bold border-b border-slate-200 shadow-xs">
                 <tr>
-                  <th className="py-3 px-3 w-12 text-center">क्र०</th>
-                  <th className="py-3 px-3">ग्राम पंचायत</th>
+                  <th className="py-3 px-3 w-12 text-center sticky left-0 bg-slate-100 z-30">क्र०</th>
+                  <th className="py-3 px-3 min-w-[140px] sticky left-12 bg-slate-100 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">ग्राम पंचायत</th>
                   <th className="py-3 px-3">विकास खण्ड</th>
                   <th className="py-3 px-3 text-center">प्रारम्भ तिथि</th>
                   <th className="py-3 px-3 text-center">बैठक तिथि</th>
@@ -396,42 +396,42 @@ export default function CalendarTableTab() {
                         key={r.id}
                         className={`transition-colors group ${
                           r.isAmended
-                            ? 'bg-amber-50/60 hover:bg-amber-50 border-l-4 border-l-amber-500'
+                            ? 'bg-amber-50/70 hover:bg-amber-100/60 border-l-4 border-l-amber-500'
                             : index % 2 === 0
-                            ? 'bg-white hover:bg-slate-50/80'
-                            : 'bg-slate-50/40 hover:bg-slate-50/80'
+                            ? 'bg-white hover:bg-blue-50/40'
+                            : 'bg-slate-50/50 hover:bg-blue-50/40'
                         }`}
                       >
-                        {/* SNo */}
-                        <td className="py-3 px-3 text-center text-slate-500 font-mono">
+                        {/* SNo - Sticky */}
+                        <td className="py-3.5 px-3 text-center text-slate-500 font-mono sticky left-0 bg-inherit z-10 font-semibold">
                           {r.sno}
                         </td>
 
-                        {/* Gram Panchayat Name */}
-                        <td className="py-3 px-3 font-bold text-slate-900 whitespace-nowrap">
+                        {/* Gram Panchayat Name - Sticky */}
+                        <td className="py-3.5 px-3 font-bold text-slate-900 whitespace-nowrap sticky left-12 bg-inherit z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
                           {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
                         </td>
 
                         {/* Block */}
-                        <td className="py-3 px-3 whitespace-nowrap">
+                        <td className="py-3.5 px-3 whitespace-nowrap">
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                             {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                           </span>
                         </td>
 
                         {/* Start Date */}
-                        <td className="py-3 px-3 text-center whitespace-nowrap text-slate-600 font-medium">
+                        <td className="py-3.5 px-3 text-center whitespace-nowrap text-slate-600 font-medium">
                           {formatDate(r.startDate)}
                         </td>
 
                         {/* Meeting Date */}
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
+                        <td className="py-3.5 px-3 text-center whitespace-nowrap">
                           {r.isAmended && r.originalMeetingDate ? (
                             <div className="flex flex-col items-center">
                               <span className="line-through text-slate-400 text-[10px]">
                                 {formatDate(r.originalMeetingDate)}
                               </span>
-                              <span className="font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                              <span className="font-bold text-amber-900 bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-300">
                                 {formatDate(r.meetingDate)}
                               </span>
                             </div>
@@ -443,7 +443,7 @@ export default function CalendarTableTab() {
                         </td>
 
                         {/* BRP */}
-                        <td className="py-3 px-3 text-slate-900 whitespace-nowrap">
+                        <td className="py-3.5 px-3 text-slate-900 whitespace-nowrap">
                           <div className="font-bold">
                             {renderText(r.brpName || r.brpUnicode, r.brpKrutiDev)}
                           </div>
@@ -458,21 +458,21 @@ export default function CalendarTableTab() {
                         </td>
 
                         {/* Team Members */}
-                        <td className="py-3 px-3 max-w-xs text-slate-700 leading-snug">
-                          <div className="line-clamp-2" title={r.teamMembersUnicode}>
+                        <td className="py-3.5 px-3 max-w-xs text-slate-700 leading-snug">
+                          <div className="line-clamp-2 text-[11px] leading-relaxed" title={r.teamMembersUnicode}>
                             {renderText(r.teamMembersUnicode, r.teamMembersKrutiDev)}
                           </div>
                         </td>
 
                         {/* Supervisor Officer */}
-                        <td className="py-3 px-3 max-w-xs text-slate-600 text-[11px] leading-snug">
-                          <div className="line-clamp-2" title={r.supervisorOfficerUnicode}>
+                        <td className="py-3.5 px-3 max-w-xs text-slate-600 text-[11px] leading-snug">
+                          <div className="line-clamp-2 text-[11px] leading-relaxed font-medium" title={r.supervisorOfficerUnicode}>
                             {renderText(r.supervisorOfficerUnicode, r.supervisorOfficerKrutiDev)}
                           </div>
                         </td>
 
                         {/* Schemes */}
-                        <td className="py-3 px-3 whitespace-nowrap">
+                        <td className="py-3.5 px-3 whitespace-nowrap">
                           <div className="flex flex-wrap gap-1">
                             {r.hasNSAP && (
                               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -493,10 +493,10 @@ export default function CalendarTableTab() {
                         </td>
 
                         {/* Status */}
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
+                        <td className="py-3.5 px-3 text-center whitespace-nowrap">
                           {r.isAmended ? (
                             <span 
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-xs"
                               title="BRP कार्यमुक्त होने के कारण बैठक तिथि व टीम संशोधित"
                             >
                               <AlertTriangle className="w-3 h-3 text-amber-600" />
@@ -516,7 +516,7 @@ export default function CalendarTableTab() {
 
                         {/* Actions (in Edit Mode) */}
                         {isEditMode && (
-                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                          <td className="py-3.5 px-3 text-center whitespace-nowrap">
                             <div className="flex items-center justify-center gap-1.5">
                               <button
                                 onClick={() => openEditModal(r)}

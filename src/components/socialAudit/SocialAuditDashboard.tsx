@@ -23,7 +23,7 @@ export default function SocialAuditDashboard() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-100 text-slate-800 overflow-hidden font-sans">
+    <div className="social-audit-shell flex flex-col h-screen w-screen bg-slate-100/80 text-slate-800 overflow-hidden font-sans">
       {/* 1. Compact Top Header (~56-64px height) */}
       <SocialAuditCompactHeader
         isSidebarCollapsed={isSidebarCollapsed}
@@ -33,8 +33,8 @@ export default function SocialAuditDashboard() {
       />
 
       {/* 2. Main Shell: Collapsible Left Sidebar + Main Content Area */}
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Collapsible Left Sidebar */}
+      <div className="flex flex-1 overflow-hidden relative w-full min-w-0">
+        {/* Collapsible Left Sidebar (desktop static, mobile drawer) */}
         <SocialAuditSidebar
           isCollapsed={isSidebarCollapsed}
           setIsCollapsed={setIsSidebarCollapsed}
@@ -42,9 +42,9 @@ export default function SocialAuditDashboard() {
           setIsOpenMobile={setIsMobileSidebarOpen}
         />
 
-        {/* Main Content Area */}
-        <main className="flex-1 h-full overflow-y-auto p-3 sm:p-5 md:p-6 bg-slate-100/70 scrollbar-thin">
-          <div className="w-full max-w-[1920px] mx-auto space-y-5">
+        {/* Main Content Area - Uses 100% full screen width on mobile */}
+        <main className="flex-1 w-full min-w-0 h-full overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 bg-slate-100/60 scrollbar-thin">
+          <div className="w-full max-w-[1920px] mx-auto space-y-4 sm:space-y-5 min-w-0">
             {/* 1. डैशबोर्ड (PRIMARY MONITORING CENTER) */}
             {(activeTab === 'dashboard' || activeTab === 'overview') && (
               <ExecutiveDashboardTab />

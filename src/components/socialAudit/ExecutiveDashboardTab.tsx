@@ -257,167 +257,152 @@ export default function ExecutiveDashboardTab() {
     <div className="bg-slate-50 text-slate-800 rounded-3xl p-4 sm:p-6 md:p-8 space-y-6 border border-slate-200/90 shadow-sm font-sans">
       
       {/* ========================================================================= */}
-      {/* SECTION A: DASHBOARD HEADER (Compact & Elegant Government Enterprise Banner) */}
+      {/* SECTION A: DASHBOARD HEADER (Compact Title Section Without Duplicate Stats) */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-900 border border-blue-200">
               <Landmark className="w-3.5 h-3.5 text-blue-800" />
               उत्तर प्रदेश शासन • जिला विकास अधिकारी (DDO)
             </span>
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
               वित्तीय वर्ष: <strong className="text-slate-800">{DISTRICT_META.financialYear || '2026-2027'}</strong>
             </span>
           </div>
 
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <span>सोशल ऑडिट डैशबोर्ड</span>
-            <span className="text-sm font-semibold text-slate-500 hidden sm:inline">
-              (जनपद बागपत, उत्तर प्रदेश)
+            <span className="text-sm font-semibold text-slate-500">
+              — जनपद बागपत, उत्तर प्रदेश
             </span>
           </h2>
           <p className="text-xs text-slate-600 mt-0.5 font-medium">
             विकास खंड बागपत एवं बड़ौत की ग्राम पंचायतों का प्रशासनिक अनुश्रवण।
           </p>
         </div>
-
-        {/* Quick Block Scope Indicators */}
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end text-xs">
-          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700">
-            <Layers className="w-4 h-4 text-blue-700" />
-            <span className="text-[11px] font-bold">
-              कुल 88 ग्राम पंचायतें
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 bg-blue-50 text-blue-900 px-3 py-1.5 rounded-xl border border-blue-200 text-[11px] font-bold">
-            <span>बागपत: 44</span>
-            <span className="text-blue-300">|</span>
-            <span>बड़ौत: 44</span>
-          </div>
-
-          <button
-            onClick={() => setActiveTab('upcoming')}
-            className="flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white font-bold px-3 py-1.5 rounded-xl transition-all shadow-sm active:scale-95 text-xs"
-            title="आगामी सभाएं देखें"
-          >
-            <span>आगामी सभाएं देखें</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* SECTION B: TOP 8 DYNAMIC KPI CARDS (Clickable for Detail Lists) */}
+      {/* SECTION B: TOP 8 DYNAMIC KPI CARDS (Clickable for Detail Lists - 3D White Glass) */}
       {/* ========================================================================= */}
       <div>
         <div className="flex items-center justify-between mb-3 px-1">
           <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
             <Layers className="w-4 h-4 text-blue-800" />
-            मुख्य प्रगति संकेतक (Key Performance Indicators)
+            <span>मुख्य प्रगति संकेतक (Key Performance Indicators)</span>
           </h3>
-          <span className="text-xs text-slate-500 font-medium">
-            (विवरण सूची देखने हेतु किसी भी कार्ड पर क्लिक करें)
+          <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+            (सूची विवरण देखने हेतु कार्ड पर क्लिक करें)
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* KPI 1: Total GPs */}
           <div
             onClick={() => { setActiveModal('all'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
+            className="social-audit-kpi bg-white p-4.5 rounded-2xl border border-slate-200 hover:border-blue-400 cursor-pointer group"
           >
-            <div className="flex items-center justify-between text-slate-500 mb-2">
+            <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700">कुल ग्राम पंचायतें</span>
-              <Building2 className="w-4 h-4 text-blue-800 group-hover:scale-110 transition-transform" />
+              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 group-hover:scale-105 transition-transform">
+                <Building2 className="w-4 h-4" />
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <div className="text-3xl font-black text-slate-900 tracking-tight font-mono">
               {metrics.totalGPs}
             </div>
-            <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
+            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>बागपत: <strong className="text-slate-800">{metrics.baghpatCount}</strong> | बड़ौत: <strong className="text-slate-800">{metrics.barautCount}</strong></span>
-              <ChevronRight className="w-3.5 h-3.5 text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <ArrowUpRight className="w-3.5 h-3.5 text-blue-700 opacity-60 group-hover:opacity-100 transition-opacity" />
             </div>
           </div>
 
           {/* KPI 2: Total Scheduled */}
           <div
             onClick={() => { setActiveModal('all'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
+            className="social-audit-kpi bg-white p-4.5 rounded-2xl border border-slate-200 hover:border-indigo-400 cursor-pointer group"
           >
-            <div className="flex items-center justify-between text-slate-500 mb-2">
+            <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700">कुल निर्धारित सोशल ऑडिट</span>
-              <Calendar className="w-4 h-4 text-blue-800 group-hover:scale-110 transition-transform" />
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700 group-hover:scale-105 transition-transform">
+                <Calendar className="w-4 h-4" />
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <div className="text-3xl font-black text-slate-900 tracking-tight font-mono">
               {metrics.totalGPs}
             </div>
-            <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
+            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>2 ब्लॉक स्तरीय सभाएं सम्मिलित</span>
-              <ChevronRight className="w-3.5 h-3.5 text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <ArrowUpRight className="w-3.5 h-3.5 text-indigo-700 opacity-60 group-hover:opacity-100 transition-opacity" />
             </div>
           </div>
 
           {/* KPI 3: Completed Audits */}
           <div
             onClick={() => { setActiveModal('completed'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="bg-white p-4 rounded-2xl border border-emerald-200 bg-emerald-50/20 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer group"
+            className="social-audit-kpi bg-gradient-to-b from-white to-emerald-50/20 p-4.5 rounded-2xl border border-emerald-200 hover:border-emerald-400 cursor-pointer group"
           >
-            <div className="flex items-center justify-between text-emerald-800 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-900">पूर्ण सोशल ऑडिट बैठकें</span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-700 group-hover:scale-110 transition-transform" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-950">सम्पन्न सोशल ऑडिट बैठकें</span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-105 transition-transform">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-emerald-800 tracking-tight">
+              <span className="text-3xl font-black text-emerald-900 tracking-tight font-mono">
                 {metrics.completedCount}
               </span>
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
                 {metrics.completedPercent}%
               </span>
             </div>
-            <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
+            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>बागपत: <strong className="text-slate-800">{metrics.baghpatCompletedCount}</strong> | बड़ौत: <strong className="text-slate-800">{metrics.barautCompletedCount}</strong></span>
-              <span className="text-[10px] text-emerald-700 font-bold">सूची देखें →</span>
+              <span className="text-[11px] text-emerald-700 font-bold group-hover:underline">सूची देखें →</span>
             </div>
           </div>
 
           {/* KPI 4: Upcoming Audits */}
           <div
             onClick={() => { setActiveModal('upcoming'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="bg-white p-4 rounded-2xl border border-blue-200 bg-blue-50/20 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
+            className="social-audit-kpi bg-gradient-to-b from-white to-sky-50/20 p-4.5 rounded-2xl border border-sky-200 hover:border-sky-400 cursor-pointer group"
           >
-            <div className="flex items-center justify-between text-blue-900 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">आगामी बैठकें</span>
-              <Clock className="w-4 h-4 text-blue-800 group-hover:scale-110 transition-transform" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-sky-950">आगामी बैठकें</span>
+              <div className="w-8 h-8 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 group-hover:scale-105 transition-transform">
+                <Clock className="w-4 h-4" />
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-blue-900 tracking-tight">
+            <div className="text-3xl font-black text-blue-900 tracking-tight font-mono">
               {metrics.upcomingCount}
             </div>
-            <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
+            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>बागपत: <strong className="text-slate-800">{metrics.baghpatUpcomingCount}</strong> | बड़ौत: <strong className="text-slate-800">{metrics.barautUpcomingCount}</strong></span>
-              <span className="text-[10px] text-blue-800 font-bold">सूची देखें →</span>
+              <span className="text-[11px] text-blue-700 font-bold group-hover:underline">सूची देखें →</span>
             </div>
           </div>
 
           {/* KPI 5: Due Pending */}
           <div
             onClick={() => { setActiveModal('pending'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer group"
+            className="social-audit-kpi bg-gradient-to-b from-white to-amber-50/20 p-4.5 rounded-2xl border border-amber-200 hover:border-amber-400 cursor-pointer group"
           >
-            <div className="flex items-center justify-between text-slate-700 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">आज तक देय लंबित बैठकें</span>
-              <AlertTriangle className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-950">आज तक देय लंबित बैठकें</span>
+              <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 group-hover:scale-105 transition-transform">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              <span className="text-3xl font-black text-slate-900 tracking-tight font-mono">
                 {metrics.duePendingCount}
               </span>
-              <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded-full">
+              <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold px-2 py-0.5 rounded-full">
                 {metrics.duePendingCount === 0 ? 'सब क्लियर' : 'कार्यवाही अपेक्षित'}
               </span>
             </div>
-            <div className="text-xs text-slate-500 mt-1">
+            <div className="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
               {metrics.duePendingCount === 0 ? 'कट-ऑफ तिथि तक समस्त बैठकें अद्यतन' : 'बैठक तिथि उपरांत शेष'}
             </div>
           </div>
@@ -425,86 +410,92 @@ export default function ExecutiveDashboardTab() {
           {/* KPI 6: Panchayat Nirnay Status */}
           <div
             onClick={() => { setActiveModal('nirnay'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="bg-white p-4 rounded-2xl border border-teal-200 bg-teal-50/20 hover:border-teal-400 hover:shadow-md transition-all cursor-pointer group"
+            className="social-audit-kpi bg-gradient-to-b from-white to-teal-50/20 p-4.5 rounded-2xl border border-teal-200 hover:border-teal-400 cursor-pointer group"
           >
-            <div className="flex items-center justify-between text-teal-900 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">पंचायत निर्णय ऐप (R 9.6.2)</span>
-              <Smartphone className="w-4 h-4 text-teal-700 group-hover:scale-110 transition-transform" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-teal-950">पंचायत निर्णय ऐप (R 9.6.2)</span>
+              <div className="w-8 h-8 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 group-hover:scale-105 transition-transform">
+                <Smartphone className="w-4 h-4" />
+              </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-teal-900 tracking-tight">
+              <span className="text-3xl font-black text-teal-900 tracking-tight font-mono">
                 {metrics.nirnayCapturedCount}
               </span>
               <span className="text-xs font-bold text-teal-700">
                 / {metrics.nirnayMappedCount} ({metrics.nirnayPercent}%)
               </span>
             </div>
-            <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
+            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>बागपत: <strong className="text-slate-800">{metrics.baghpatNirnayCapturedCount}</strong> | बड़ौत: <strong className="text-slate-800">{metrics.barautNirnayCapturedCount}</strong></span>
-              <span className="text-[10px] text-teal-800 font-bold">सूची देखें →</span>
+              <span className="text-[11px] text-teal-700 font-bold group-hover:underline">सूची देखें →</span>
             </div>
           </div>
 
           {/* KPI 7: MIS Feeding Status */}
           <div
             onClick={() => { setActiveModal('mis'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="bg-white p-4 rounded-2xl border border-indigo-200 bg-indigo-50/20 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer group"
+            className="social-audit-kpi bg-gradient-to-b from-white to-indigo-50/20 p-4.5 rounded-2xl border border-indigo-200 hover:border-indigo-400 cursor-pointer group"
           >
-            <div className="flex items-center justify-between text-indigo-900 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">MIS फीडिंग (R 9.1.3)</span>
-              <FileSpreadsheet className="w-4 h-4 text-indigo-700 group-hover:scale-110 transition-transform" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-950">MIS फीडिंग (R 9.1.3)</span>
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700 group-hover:scale-105 transition-transform">
+                <FileSpreadsheet className="w-4 h-4" />
+              </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-indigo-900 tracking-tight">
+              <span className="text-3xl font-black text-indigo-900 tracking-tight font-mono">
                 {metrics.misFedCount}
               </span>
               <span className="text-xs font-bold text-indigo-700">
                 / {metrics.totalGPs} ({metrics.misFedPercent}%)
               </span>
             </div>
-            <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
+            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>देय लंबित: <strong className="text-amber-700">{metrics.misDuePendingCount}</strong> ({metrics.misDuePendingNSAPCount} NSAP)</span>
-              <span className="text-[10px] text-indigo-800 font-bold">सूची देखें →</span>
+              <span className="text-[11px] text-indigo-700 font-bold group-hover:underline">सूची देखें →</span>
             </div>
           </div>
 
           {/* KPI 8: Total NSAP Beneficiaries */}
           <div
             onClick={() => { setActiveModal('nsap'); setModalSearch(''); }}
-            className="bg-white p-4 rounded-2xl border border-purple-200 bg-purple-50/20 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer group"
+            className="social-audit-kpi bg-gradient-to-b from-white to-purple-50/20 p-4.5 rounded-2xl border border-purple-200 hover:border-purple-400 cursor-pointer group"
           >
-            <div className="flex items-center justify-between text-purple-900 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider">NSAP पेंशन लाभार्थी संख्या</span>
-              <Users className="w-4 h-4 text-purple-700 group-hover:scale-110 transition-transform" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-purple-950">NSAP पेंशन लाभार्थी संख्या</span>
+              <div className="w-8 h-8 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700 group-hover:scale-105 transition-transform">
+                <Users className="w-4 h-4" />
+              </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-purple-900 tracking-tight">
+              <span className="text-3xl font-black text-purple-900 tracking-tight font-mono">
                 {metrics.totalBeneficiaries}
               </span>
-              <span className="text-xs font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200">
+              <span className="text-xs font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200">
                 {metrics.nsapRecordedCount} GP
               </span>
             </div>
-            <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
+            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>सत्यापित: <strong className="text-emerald-700">{metrics.totalVerified}</strong> | मृतक: <strong className="text-rose-700">{metrics.totalDeceased}</strong></span>
-              <span className="text-[10px] text-purple-800 font-bold">सूची देखें →</span>
+              <span className="text-[11px] text-purple-700 font-bold group-hover:underline">सूची देखें →</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* SECTION C: BLOCK-WISE COMPARATIVE SUMMARY (बागपत एवं बड़ौत) */}
+      {/* SECTION C: BLOCK-WISE STATUS CARDS (बागपत एवं बड़ौत) */}
       {/* ========================================================================= */}
       <div>
         <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5">
           <Building2 className="w-4 h-4 text-blue-800" />
-          विकास खंड-वार तुलनात्मक स्थिति (Block-wise Status)
+          <span>विकास खंड-वार स्थिति (Block-wise Overview)</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* BLOCK 1: BAGHPAT */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div className="social-audit-glass-card bg-white/95 rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-blue-50 text-blue-900 border border-blue-200 flex items-center justify-center font-black text-sm">
@@ -516,7 +507,7 @@ export default function ExecutiveDashboardTab() {
                 </div>
               </div>
 
-              <span className="text-xs font-black bg-blue-100 text-blue-900 px-3 py-1 rounded-full border border-blue-200">
+              <span className="text-xs font-black bg-blue-50 text-blue-900 px-3 py-1 rounded-full border border-blue-200">
                 44 ग्राम पंचायतें
               </span>
             </div>
@@ -531,44 +522,44 @@ export default function ExecutiveDashboardTab() {
               </div>
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
                 <div 
-                  className="bg-blue-800 h-full rounded-full transition-all duration-500"
+                  className="bg-blue-700 h-full rounded-full transition-all duration-500"
                   style={{ width: `${(metrics.baghpatCompletedCount / 44) * 100}%` }}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">सम्पन्न बैठकें</div>
                 <div className="text-lg font-black text-emerald-800 mt-0.5">{metrics.baghpatCompletedCount}</div>
                 <div className="text-[10px] text-slate-500">ग्राम पंचायतें</div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">आगामी बैठकें</div>
                 <div className="text-lg font-black text-blue-900 mt-0.5">{metrics.baghpatUpcomingCount}</div>
                 <div className="text-[10px] text-slate-500">ग्राम पंचायतें</div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">निर्णय ऐप सत्यापित</div>
                 <div className="text-lg font-black text-teal-800 mt-0.5">{metrics.baghpatNirnayCapturedCount} / 44</div>
                 <div className="text-[10px] text-slate-500">लाइव अपलोड</div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">MIS फीडेड</div>
                 <div className="text-lg font-black text-indigo-800 mt-0.5">{metrics.baghpatMisFedCount} / 44</div>
                 <div className="text-[10px] text-slate-500">पोर्टल पर दर्ज</div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">संशोधित रोस्टर</div>
                 <div className="text-lg font-black text-amber-800 mt-0.5">6 ग्राम पंचायतें</div>
                 <div className="text-[10px] text-emerald-700 font-semibold">1 सम्पन्न (खेड़की)</div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">NSAP पेंशन रोस्टर</div>
                 <div className="text-lg font-black text-purple-900 mt-0.5">24 ग्राम पंचायतें</div>
                 <div className="text-[10px] text-slate-500">8 में विस्तृत डेटा दर्ज</div>
@@ -587,7 +578,7 @@ export default function ExecutiveDashboardTab() {
           </div>
 
           {/* BLOCK 2: BARAUT */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div className="social-audit-glass-card bg-white/95 rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-200 flex items-center justify-center font-black text-sm">
@@ -599,7 +590,7 @@ export default function ExecutiveDashboardTab() {
                 </div>
               </div>
 
-              <span className="text-xs font-black bg-indigo-100 text-indigo-900 px-3 py-1 rounded-full border border-indigo-200">
+              <span className="text-xs font-black bg-indigo-50 text-indigo-900 px-3 py-1 rounded-full border border-indigo-200">
                 44 ग्राम पंचायतें
               </span>
             </div>
@@ -614,44 +605,44 @@ export default function ExecutiveDashboardTab() {
               </div>
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
                 <div 
-                  className="bg-indigo-800 h-full rounded-full transition-all duration-500"
+                  className="bg-indigo-700 h-full rounded-full transition-all duration-500"
                   style={{ width: `${(metrics.barautCompletedCount / 44) * 100}%` }}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">सम्पन्न बैठकें</div>
                 <div className="text-lg font-black text-emerald-800 mt-0.5">{metrics.barautCompletedCount}</div>
                 <div className="text-[10px] text-slate-500">ग्राम पंचायतें</div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">आगामी बैठकें</div>
                 <div className="text-lg font-black text-indigo-900 mt-0.5">{metrics.barautUpcomingCount}</div>
                 <div className="text-[10px] text-slate-500">ग्राम पंचायतें</div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">निर्णय ऐप सत्यापित</div>
                 <div className="text-lg font-black text-teal-800 mt-0.5">{metrics.barautNirnayCapturedCount} / 22</div>
                 <div className="text-[10px] text-slate-500">मैप्ड में से अपलोड</div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">MIS फीडेड</div>
                 <div className="text-lg font-black text-indigo-800 mt-0.5">{metrics.barautMisFedCount} / 44</div>
                 <div className="text-[10px] text-slate-500">पोर्टल पर दर्ज</div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">संशोधित रोस्टर</div>
                 <div className="text-lg font-black text-amber-800 mt-0.5">4 ग्राम पंचायतें</div>
                 <div className="text-[10px] text-slate-500">4 आगामी तिथियों में</div>
               </div>
 
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">NSAP पेंशन रोस्टर</div>
                 <div className="text-lg font-black text-purple-900 mt-0.5">23 ग्राम पंचायतें</div>
                 <div className="text-[10px] text-slate-500">8 में विस्तृत डेटा दर्ज</div>
