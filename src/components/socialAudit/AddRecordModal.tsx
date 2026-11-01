@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { AuditBlock, AuditStatus } from '@/types/socialAudit';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
-import { X, Plus, Calendar, Users, Shield, MapPin } from 'lucide-react';
+import { X, Plus, Calendar, Users, Shield, MapPin, AlertCircle } from 'lucide-react';
+import { validateIndianMobile, validateMeetingDateRange, detectDuplicateGP } from '@/lib/socialAuditValidation';
 
 export default function AddRecordModal() {
   const { isAddModalOpen, closeAddModal, addRecord, records } = useSocialAuditStore();
@@ -22,11 +23,42 @@ export default function AddRecordModal() {
   const [hasNSAP, setHasNSAP] = useState(true);
   const [hasMGNREGA, setHasMGNREGA] = useState(true);
   const [hasPMAYG, setHasPMAYG] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   if (!isAddModalOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+
+    // 1. Required name check
+    if (!gpName.trim()) {
+      setFormError('कृपया ग्राम पंचायत का नाम दर्ज करें।');
+      return;
+    }
+
+    // 2. Duplicate GP check
+    const dupCheck = detectDuplicateGP(records, gpName, block);
+    if (dupCheck.isDuplicate) {
+      setFormError(dupCheck.message || 'यह ग्राम पंचायत पहले से दर्ज है।');
+      return;
+    }
+
+    // 3. Meeting Date range check
+    const dateRangeCheck = validateMeetingDateRange(startDate || meetingDate, meetingDate);
+    if (!dateRangeCheck.isValid) {
+      setFormError(dateRangeCheck.error || 'अमान्य बैठक तिथि।');
+      return;
+    }
+
+    // 4. Mobile number check
+    if (brpPhone) {
+      const mobileCheck = validateIndianMobile(brpPhone);
+      if (!mobileCheck.isValid) {
+        setFormError(mobileCheck.error || 'अमान्य मोबाइल नंबर।');
+        return;
+      }
+    }
 
     const blockRecords = records.filter((r) => r.block === block);
     const nextSno = blockRecords.length + 1;
@@ -100,6 +132,12 @@ export default function AddRecordModal() {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+          {formError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 flex items-center gap-2 font-medium">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-slate-700 font-semibold mb-1">विकास खण्ड</label>

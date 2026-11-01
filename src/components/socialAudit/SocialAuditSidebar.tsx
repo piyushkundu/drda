@@ -6,7 +6,8 @@ import { useSocialAuditStore, SocialAuditTab } from '@/stores/socialAuditStore';
 import { 
   LayoutDashboard, Clock, Calendar, Smartphone, FileSpreadsheet, 
   Users, FileText, Briefcase, ChevronLeft, ChevronRight, X, 
-  Building2, ShieldCheck, UserCheck, CheckCircle2, AlertCircle
+  Building2, ShieldCheck, UserCheck, CheckCircle2, AlertCircle,
+  FileBarChart2, History
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -142,6 +143,22 @@ export default function SocialAuditSidebar({
       sublabel: 'Field Officers & BRP Directory',
       icon: Briefcase,
       iconColor: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+    },
+    {
+      id: 'reports',
+      label: 'रिपोर्ट सेंटर',
+      sublabel: 'Central Report Center (9 Reports)',
+      icon: FileBarChart2,
+      badge: '9 रिपोर्ट',
+      badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-200',
+      iconColor: 'text-emerald-800 bg-emerald-50 border-emerald-200',
+    },
+    {
+      id: 'activity-log',
+      label: 'गतिविधि लॉग',
+      sublabel: 'Audit Trail & Activity Log',
+      icon: History,
+      iconColor: 'text-slate-700 bg-slate-100 border-slate-200',
     },
   ];
 

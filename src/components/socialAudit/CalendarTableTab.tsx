@@ -29,6 +29,7 @@ export default function CalendarTableTab() {
     setIsEditMode,
     openEditModal,
     openAddModal,
+    openGPProfile,
     markCompleted,
     resetToBaseline,
     asOfDate
@@ -565,7 +566,14 @@ export default function CalendarTableTab() {
 
                         {/* Gram Panchayat Name - Static on mobile/tablet, sticky on desktop */}
                         <td className="py-3.5 px-3 font-bold text-slate-900 whitespace-nowrap static lg:sticky lg:left-12 bg-inherit z-auto lg:z-10 lg:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
-                          {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
+                          <button
+                            type="button"
+                            onClick={() => openGPProfile(r)}
+                            className="text-left font-bold text-slate-900 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
+                            title="ग्राम पंचायत प्रोफाइल देखें"
+                          >
+                            {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
+                          </button>
                         </td>
 
                         {/* Block */}

@@ -13,8 +13,12 @@ import TeamRosterTab from './TeamRosterTab';
 import PanchayatNirnayTab from './PanchayatNirnayTab';
 import MisFeedingTab from './MisFeedingTab';
 import NSAPDataTab from './NSAPDataTab';
+import ReportCenterTab from './ReportCenterTab';
+import ActivityLogTab from './ActivityLogTab';
 import EditRecordModal from './EditRecordModal';
 import AddRecordModal from './AddRecordModal';
+import GramPanchayatProfilePanel from './GramPanchayatProfilePanel';
+import GlobalSearchModal from './GlobalSearchModal';
 
 export default function SocialAuditDashboard() {
   const { activeTab } = useSocialAuditStore();
@@ -88,13 +92,25 @@ export default function SocialAuditDashboard() {
             {activeTab === 'roster' && (
               <TeamRosterTab />
             )}
+
+            {/* 9. केन्द्रीय रिपोर्ट सेंटर (Report Center - 9 Reports) */}
+            {activeTab === 'reports' && (
+              <ReportCenterTab />
+            )}
+
+            {/* 10. गतिविधि लॉग एवं ऑडिट ट्रेल (Activity Log) */}
+            {activeTab === 'activity-log' && (
+              <ActivityLogTab />
+            )}
           </div>
         </main>
       </div>
 
-      {/* Shared Modals */}
+      {/* Shared Modals & Slide-over Panels */}
       <EditRecordModal />
       <AddRecordModal />
+      <GramPanchayatProfilePanel />
+      <GlobalSearchModal />
     </div>
   );
 }

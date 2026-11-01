@@ -158,3 +158,54 @@ export interface NSAPGramPanchayatData {
   beneficiaries: NSAPBeneficiaryRecord[];
   recordedDate?: string;
 }
+
+// ============================================================================
+// Activity Log & Audit Trail Definitions (Feature 5)
+// ============================================================================
+
+export type ActivityModule = 'gp' | 'meeting' | 'nirnay' | 'mis' | 'nsap' | 'brp' | 'system';
+
+export type ActivityActionType = 'create' | 'update' | 'status_change' | 'delete' | 'sync';
+
+export interface SocialAuditActivityLog {
+  id: string;
+  module: ActivityModule;
+  recordId: string;
+  gpName: string;
+  block?: AuditBlock;
+  actionType: ActivityActionType;
+  actionLabel: string;
+  userId?: string;
+  userName: string;
+  timestamp: string; // ISO date-time string
+  details: string;
+  previousValue?: string;
+  newValue?: string;
+}
+
+// ============================================================================
+// Report Center Definitions (Feature 4)
+// ============================================================================
+
+export type ReportType = 
+  | 'district_summary'     // A. District Summary Report
+  | 'block_wise'           // B. Block-wise Report
+  | 'gp_master'            // C. Gram Panchayat Master Register
+  | 'brp_wise'             // D. BRP-wise Report
+  | 'meeting_progress'     // E. Meeting Report
+  | 'panchayat_nirnay'     // F. Panchayat Nirnay Report
+  | 'mis_feeding'          // G. MIS Audit Feeding Report
+  | 'nsap_beneficiary'     // H. NSAP Beneficiary Report
+  | 'nsap_social_audit';   // I. NSAP Social Audit Report
+
+export interface ReportFilterState {
+  financialYear: string;
+  block: 'all' | AuditBlock;
+  brp: string;
+  scheme: 'all' | 'nsap' | 'mgnrega' | 'pmayg';
+  status: 'all' | AuditStatus | 'upcoming' | 'overdue';
+  startDate?: string;
+  endDate?: string;
+  searchQuery?: string;
+}
+

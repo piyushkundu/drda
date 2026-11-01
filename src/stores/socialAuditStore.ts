@@ -2,10 +2,12 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { 
   SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, 
-  PanchayatNirnayStatus, MisAuditStatus, NSAPGramPanchayatData, NSAPBeneficiaryRecord 
+  PanchayatNirnayStatus, MisAuditStatus, NSAPGramPanchayatData, NSAPBeneficiaryRecord,
+  SocialAuditActivityLog
 } from '@/types/socialAudit';
 import { INITIAL_SOCIAL_AUDIT_RECORDS, BLOCK_SABHA_RECORDS, DISTRICT_META } from '@/data/socialAuditInitialData';
 import { INITIAL_NSAP_DATA_RECORDS } from '@/data/nsapDataInitial';
+import { INITIAL_ACTIVITY_LOGS } from '@/data/initialActivityLogs';
 import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/lib/delhiTime';
 import { NirnaySyncPayload } from '@/lib/nirnaySyncBookmarklet';
 import { MisSyncPayload } from '@/lib/misSyncBookmarklet';
@@ -16,13 +18,25 @@ import {
   SocialAuditFirestoreDoc 
 } from '@/lib/socialAuditFirebase';
 
-export type SocialAuditTab = 'upcoming' | 'dashboard' | 'calendar' | 'nirnay' | 'mis-feeding' | 'nsap-data' | 'nsap-report' | 'roster' | 'overview';
+export type SocialAuditTab = 
+  | 'upcoming' 
+  | 'dashboard' 
+  | 'calendar' 
+  | 'nirnay' 
+  | 'mis-feeding' 
+  | 'nsap-data' 
+  | 'nsap-report' 
+  | 'roster' 
+  | 'reports' 
+  | 'activity-log' 
+  | 'overview';
 
 export type FirebaseSyncStatus = 'synced' | 'syncing' | 'error' | 'loading' | 'offline';
 
 interface SocialAuditState {
   records: SocialAuditRecord[];
   nsapRecords: NSAPGramPanchayatData[];
+  activityLogs: SocialAuditActivityLog[];
   fontViewMode: FontViewMode;
   selectedBlock: 'all' | AuditBlock;
   selectedBRP: string; // 'all' or BRP phone / name
@@ -38,6 +52,8 @@ interface SocialAuditState {
   activeTab: SocialAuditTab;
   selectedRecordForEdit: SocialAuditRecord | null;
   isAddModalOpen: boolean;
+  selectedGPForProfile: SocialAuditRecord | null;
+  isGlobalSearchOpen: boolean;
 
   // Firebase Real-time Cloud Sync
   firebaseSyncStatus: FirebaseSyncStatus;
@@ -63,6 +79,10 @@ interface SocialAuditState {
   closeEditModal: () => void;
   openAddModal: () => void;
   closeAddModal: () => void;
+  openGPProfile: (record: SocialAuditRecord) => void;
+  closeGPProfile: () => void;
+  setIsGlobalSearchOpen: (open: boolean) => void;
+  logActivity: (log: Omit<SocialAuditActivityLog, 'id' | 'timestamp'>) => void;
 
   // Record CRUD, Nirnay App & MIS Feeding Confirmation
   updateRecord: (id: string, updates: Partial<SocialAuditRecord>) => void;
@@ -100,7 +120,8 @@ function notifyStoreChange(state: SocialAuditState, immediate = false) {
     state.nsapRecords,
     state.asOfDate,
     state.isLiveSync,
-    immediate
+    immediate,
+    state.activityLogs
   ).then((success) => {
     useSocialAuditStore.setState({
       firebaseSyncStatus: success ? 'synced' : 'error',
@@ -117,6 +138,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
     (set, get) => ({
       records: INITIAL_SOCIAL_AUDIT_RECORDS,
       nsapRecords: INITIAL_NSAP_DATA_RECORDS,
+      activityLogs: INITIAL_ACTIVITY_LOGS,
       fontViewMode: 'unicode',
       selectedBlock: 'all',
       selectedBRP: 'all',
@@ -133,6 +155,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       activeTab: 'upcoming',
       selectedRecordForEdit: null,
       isAddModalOpen: false,
+      selectedGPForProfile: null,
+      isGlobalSearchOpen: false,
 
       // Firebase Sync State
       firebaseSyncStatus: 'loading',
@@ -156,6 +180,9 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               nsapRecords: (remoteDoc.nsapRecords && remoteDoc.nsapRecords.length > 0) 
                 ? remoteDoc.nsapRecords 
                 : get().nsapRecords,
+              activityLogs: (remoteDoc.activityLogs && remoteDoc.activityLogs.length > 0)
+                ? remoteDoc.activityLogs
+                : get().activityLogs,
               firebaseSyncStatus: 'synced',
               firebaseLastSyncedAt: remoteDoc.updatedAt 
                 ? new Date(remoteDoc.updatedAt).toLocaleTimeString('hi-IN') 
@@ -169,7 +196,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               state.nsapRecords,
               state.asOfDate,
               state.isLiveSync,
-              true
+              true,
+              state.activityLogs
             );
             set({
               firebaseSyncStatus: 'synced',
@@ -188,6 +216,9 @@ export const useSocialAuditStore = create<SocialAuditState>()(
                 nsapRecords: (remoteData.nsapRecords && remoteData.nsapRecords.length > 0)
                   ? remoteData.nsapRecords
                   : get().nsapRecords,
+                activityLogs: (remoteData.activityLogs && remoteData.activityLogs.length > 0)
+                  ? remoteData.activityLogs
+                  : get().activityLogs,
                 firebaseSyncStatus: 'synced',
                 firebaseLastSyncedAt: remoteData.updatedAt 
                   ? new Date(remoteData.updatedAt).toLocaleTimeString('hi-IN') 
@@ -212,7 +243,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           state.nsapRecords,
           state.asOfDate,
           state.isLiveSync,
-          true
+          true,
+          state.activityLogs
         );
         set({
           firebaseSyncStatus: success ? 'synced' : 'error',
@@ -303,17 +335,56 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       openAddModal: () => set({ isAddModalOpen: true }),
       closeAddModal: () => set({ isAddModalOpen: false }),
 
-      updateRecord: (id, updates) => {
+      openGPProfile: (record) => set({ selectedGPForProfile: record }),
+      closeGPProfile: () => set({ selectedGPForProfile: null }),
+      setIsGlobalSearchOpen: (open) => set({ isGlobalSearchOpen: open }),
+
+      logActivity: (logData) => {
+        const newLog: SocialAuditActivityLog = {
+          ...logData,
+          id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          timestamp: new Date().toISOString()
+        };
         set((state) => ({
-          records: state.records.map((r) => r.id === id ? { ...r, ...updates } : r),
-          selectedRecordForEdit: state.selectedRecordForEdit?.id === id 
-            ? { ...state.selectedRecordForEdit, ...updates } 
-            : state.selectedRecordForEdit
+          activityLogs: [newLog, ...state.activityLogs].slice(0, 200)
         }));
         notifyStoreChange(get());
       },
 
+      updateRecord: (id, updates) => {
+        const current = get().records.find(r => r.id === id);
+        const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
+        const block = current?.block || 'Baghpat';
+
+        set((state) => ({
+          records: state.records.map((r) => r.id === id ? { ...r, ...updates } : r),
+          selectedRecordForEdit: state.selectedRecordForEdit?.id === id 
+            ? { ...state.selectedRecordForEdit, ...updates } 
+            : state.selectedRecordForEdit,
+          selectedGPForProfile: state.selectedGPForProfile?.id === id
+            ? { ...state.selectedGPForProfile, ...updates }
+            : state.selectedGPForProfile
+        }));
+
+        get().logActivity({
+          module: 'gp',
+          recordId: id,
+          gpName,
+          block,
+          actionType: 'update',
+          actionLabel: 'विवरण अद्यतन',
+          userName: 'प्रशासनिक अधिकारी',
+          details: `${gpName} के अभिलेख में अद्यतन किया गया।`
+        });
+        notifyStoreChange(get());
+      },
+
       updatePanchayatNirnayStatus: (id, status, notes) => {
+        const current = get().records.find(r => r.id === id);
+        const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
+        const block = current?.block || 'Baghpat';
+        const statusHi = status === 'captured' ? 'अपलोड (Captured)' : status === 'pending' ? 'लंबित (Pending)' : 'अनुपलब्ध';
+
         set((state) => ({
           records: state.records.map((r) => {
             if (r.id === id) {
@@ -325,8 +396,26 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               };
             }
             return r;
-          })
+          }),
+          selectedGPForProfile: state.selectedGPForProfile?.id === id ? {
+            ...state.selectedGPForProfile,
+            panchayatNirnayStatus: status,
+            panchayatNirnayCapturedDate: status === 'captured' ? (state.selectedGPForProfile.panchayatNirnayCapturedDate || getDelhiDateString()) : undefined,
+            panchayatNirnayNotes: notes !== undefined ? notes : state.selectedGPForProfile.panchayatNirnayNotes
+          } : state.selectedGPForProfile
         }));
+
+        get().logActivity({
+          module: 'nirnay',
+          recordId: id,
+          gpName,
+          block,
+          actionType: 'status_change',
+          actionLabel: 'पंचायत निर्णय स्थिति बदलाव',
+          userName: 'पंचायत निर्णय नोडल',
+          details: `${gpName}: पंचायत निर्णय स्थिति "${statusHi}" की गई।`,
+          newValue: statusHi
+        });
         notifyStoreChange(get());
       },
 
@@ -340,18 +429,49 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           records: [newRecord, ...state.records],
           isAddModalOpen: false
         }));
+
+        get().logActivity({
+          module: 'gp',
+          recordId: id,
+          gpName: newRecord.gpNameUnicode,
+          block: newRecord.block,
+          actionType: 'create',
+          actionLabel: 'नवीन ग्राम पंचायत सृजन',
+          userName: 'प्रशासनिक अधिकारी',
+          details: `नवीन ग्राम पंचायत "${newRecord.gpNameUnicode}" (${newRecord.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}) रोस्टर में जोड़ी गई।`
+        });
         notifyStoreChange(get());
       },
 
       deleteRecord: (id) => {
+        const current = get().records.find(r => r.id === id);
+        const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
+        const block = current?.block || 'Baghpat';
+
         set((state) => ({
           records: state.records.filter((r) => r.id !== id),
-          selectedRecordForEdit: null
+          selectedRecordForEdit: null,
+          selectedGPForProfile: null
         }));
+
+        get().logActivity({
+          module: 'gp',
+          recordId: id,
+          gpName,
+          block,
+          actionType: 'delete',
+          actionLabel: 'अभिलेख विलोपन',
+          userName: 'प्रशासनिक अधिकारी',
+          details: `ग्राम पंचायत "${gpName}" का अभिलेख हटाया गया।`
+        });
         notifyStoreChange(get());
       },
 
       markCompleted: (id, isCompleted) => {
+        const current = get().records.find(r => r.id === id);
+        const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
+        const block = current?.block || 'Baghpat';
+
         set((state) => ({
           records: state.records.map((r) => {
             if (r.id === id) {
@@ -362,8 +482,25 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               };
             }
             return r;
-          })
+          }),
+          selectedGPForProfile: state.selectedGPForProfile?.id === id ? {
+            ...state.selectedGPForProfile,
+            status: isCompleted ? 'completed' : (state.selectedGPForProfile.isAmended ? 'amended' : 'scheduled'),
+            completedDate: isCompleted ? (state.selectedGPForProfile.completedDate || state.asOfDate) : undefined
+          } : state.selectedGPForProfile
         }));
+
+        get().logActivity({
+          module: 'meeting',
+          recordId: id,
+          gpName,
+          block,
+          actionType: 'status_change',
+          actionLabel: isCompleted ? 'बैठक सम्पन्न चिन्हित' : 'बैठक पुनः प्रस्तावित',
+          userName: 'नोडल अधिकारी',
+          details: `${gpName} की सोशल ऑडिट बैठक को "${isCompleted ? 'सम्पन्न' : 'प्रस्तावित'}" के रूप में चिन्हित किया गया।`,
+          newValue: isCompleted ? 'सम्पन्न' : 'प्रस्तावित'
+        });
         notifyStoreChange(get());
       },
 
@@ -416,6 +553,11 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       updateMisStatus: (id: string, status: MisAuditStatus, notes?: string, fedDate?: string) => {
+        const current = get().records.find(r => r.id === id);
+        const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
+        const block = current?.block || 'Baghpat';
+        const statusHi = status === 'fed' ? 'फीडेड (पूर्ण)' : status === 'pending' ? 'लंबित' : 'अनफीडेड';
+
         set(state => ({
           records: state.records.map(r => {
             if (r.id === id) {
@@ -428,8 +570,27 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               };
             }
             return r;
-          })
+          }),
+          selectedGPForProfile: state.selectedGPForProfile?.id === id ? {
+            ...state.selectedGPForProfile,
+            misStatus: status,
+            misAuditedCount: status === 'fed' ? 1 : 0,
+            misFedDate: status === 'fed' ? (fedDate || state.selectedGPForProfile.misFedDate || getDelhiDateString()) : undefined,
+            misNotes: notes !== undefined ? notes : state.selectedGPForProfile.misNotes
+          } : state.selectedGPForProfile
         }));
+
+        get().logActivity({
+          module: 'mis',
+          recordId: id,
+          gpName,
+          block,
+          actionType: 'status_change',
+          actionLabel: 'MIS फीडिंग स्थिति बदलाव',
+          userName: 'MIS फीडिंग नोडल',
+          details: `${gpName}: MIS पोर्टल फीडिंग स्थिति "${statusHi}" की गई।`,
+          newValue: statusHi
+        });
         notifyStoreChange(get());
       },
 
@@ -582,6 +743,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       partialize: (state) => ({
         records: state.records,
         nsapRecords: state.nsapRecords,
+        activityLogs: state.activityLogs,
         fontViewMode: state.fontViewMode,
         isLiveSync: state.isLiveSync,
         asOfDate: state.asOfDate,
@@ -590,6 +752,10 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // Rehydrate activity logs if missing
+          if (!state.activityLogs || !Array.isArray(state.activityLogs) || state.activityLogs.length === 0) {
+            state.activityLogs = INITIAL_ACTIVITY_LOGS;
+          }
           // Rehydrate NSAP data records if missing in local storage
           if (!state.nsapRecords || !Array.isArray(state.nsapRecords) || state.nsapRecords.length === 0) {
             state.nsapRecords = INITIAL_NSAP_DATA_RECORDS;

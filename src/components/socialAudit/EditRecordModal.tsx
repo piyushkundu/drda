@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { SocialAuditRecord, AuditStatus, PanchayatNirnayStatus } from '@/types/socialAudit';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
+import { validateIndianMobile, validateMeetingDateRange, detectDuplicateGP } from '@/lib/socialAuditValidation';
 import { X, Save, Trash2, AlertCircle, Calendar, Phone, Users, Shield, MapPin, Clock, Smartphone, CheckCircle2, XCircle } from 'lucide-react';
 
 export default function EditRecordModal() {
-  const { selectedRecordForEdit, closeEditModal, updateRecord, deleteRecord } = useSocialAuditStore();
+  const { selectedRecordForEdit, closeEditModal, updateRecord, deleteRecord, records } = useSocialAuditStore();
 
   const [gpName, setGpName] = useState('');
   const [meetingDate, setMeetingDate] = useState('');
@@ -25,6 +26,7 @@ export default function EditRecordModal() {
   const [amendmentReason, setAmendmentReason] = useState('');
   const [nirnayStatus, setNirnayStatus] = useState<PanchayatNirnayStatus>('pending');
   const [nirnayCapturedDate, setNirnayCapturedDate] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedRecordForEdit) {
@@ -51,6 +53,36 @@ export default function EditRecordModal() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+
+    // 1. Required name check
+    if (!gpName.trim()) {
+      setFormError('कृपया ग्राम पंचायत का नाम दर्ज करें।');
+      return;
+    }
+
+    // 2. Duplicate GP check
+    const dupCheck = detectDuplicateGP(records, gpName, selectedRecordForEdit.block, selectedRecordForEdit.id);
+    if (dupCheck.isDuplicate) {
+      setFormError(dupCheck.message || 'यह ग्राम पंचायत पहले से दर्ज है।');
+      return;
+    }
+
+    // 3. Meeting Date range check
+    const dateRangeCheck = validateMeetingDateRange(startDate || meetingDate, meetingDate);
+    if (!dateRangeCheck.isValid) {
+      setFormError(dateRangeCheck.error || 'अमान्य बैठक तिथि।');
+      return;
+    }
+
+    // 4. Mobile number check
+    if (brpPhone) {
+      const mobileCheck = validateIndianMobile(brpPhone);
+      if (!mobileCheck.isValid) {
+        setFormError(mobileCheck.error || 'अमान्य मोबाइल नंबर।');
+        return;
+      }
+    }
 
     const isDateChanged = meetingDate !== selectedRecordForEdit.meetingDate;
     const isAmended = selectedRecordForEdit.isAmended || isDateChanged;
@@ -146,6 +178,12 @@ export default function EditRecordModal() {
 
         {/* Form Body */}
         <form onSubmit={handleSave} className="p-6 space-y-4 text-xs">
+          {formError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 flex items-center gap-2 font-medium">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
           {/* GP Name & Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>

@@ -32,7 +32,8 @@ export default function ExecutiveDashboardTab() {
     syncWithDelhiTime,
     forceSyncToFirebase,
     firebaseSyncStatus,
-    firebaseLastSyncedAt
+    firebaseLastSyncedAt,
+    openGPProfile
   } = useSocialAuditStore();
 
   // Modal drill-down state for KPI cards
@@ -40,6 +41,10 @@ export default function ExecutiveDashboardTab() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [modalSearch, setModalSearch] = useState<string>('');
   const [modalBlockFilter, setModalBlockFilter] = useState<'all' | AuditBlock>('all');
+  const [modalSortBy, setModalSortBy] = useState<'sno' | 'name' | 'date' | 'status'>('sno');
+  const [modalSortOrder, setModalSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [modalPage, setModalPage] = useState<number>(1);
+  const modalPageSize = 12;
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Helper to format date in Hindi DD/MM/YYYY
@@ -282,6 +287,46 @@ export default function ExecutiveDashboardTab() {
 
     return list;
   }, [activeModal, modalBlockFilter, modalSearch, effectiveRecords, metrics]);
+
+  // Sorted records inside modal
+  const sortedModalRecords = useMemo(() => {
+    return [...filteredModalRecords].sort((a, b) => {
+      let comparison = 0;
+      if (modalSortBy === 'sno') {
+        comparison = (a.sno || 0) - (b.sno || 0);
+      } else if (modalSortBy === 'name') {
+        comparison = (a.gpNameUnicode || '').localeCompare(b.gpNameUnicode || '');
+      } else if (modalSortBy === 'date') {
+        comparison = (a.meetingDate || '').localeCompare(b.meetingDate || '');
+      } else if (modalSortBy === 'status') {
+        const compA = a.meetingDate <= asOfDate ? 1 : 0;
+        const compB = b.meetingDate <= asOfDate ? 1 : 0;
+        comparison = compB - compA;
+      }
+      return modalSortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredModalRecords, modalSortBy, modalSortOrder, asOfDate]);
+
+  // Paginated records inside modal
+  const totalModalPages = Math.ceil(sortedModalRecords.length / modalPageSize) || 1;
+  const paginatedModalRecords = useMemo(() => {
+    const start = (modalPage - 1) * modalPageSize;
+    return sortedModalRecords.slice(start, start + modalPageSize);
+  }, [sortedModalRecords, modalPage, modalPageSize]);
+
+  // Today's meetings (if any)
+  const todayMeetings = useMemo(() => {
+    return effectiveRecords.filter((r) => r.meetingDate === asOfDate);
+  }, [effectiveRecords, asOfDate]);
+
+  // Next 7 days upcoming meetings
+  const next7DaysMeetings = useMemo(() => {
+    return effectiveRecords.filter((r) => {
+      if (r.meetingDate <= asOfDate) return false;
+      const diff = getDaysDiff(r.meetingDate);
+      return diff !== null && diff >= 0 && diff <= 7;
+    }).sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
+  }, [effectiveRecords, asOfDate]);
 
   // BRP Directory stats
   const brpSummary = useMemo(() => {
@@ -563,6 +608,109 @@ export default function ExecutiveDashboardTab() {
               <span>{formatDateAndMonth(asOfDate)} तक देय: <strong className="text-blue-800">{nsapReport.totals.proposedUpToDate}</strong> (संशोधित: {nsapReport.totals.amendedOrCancelled})</span>
               <span className="text-[11px] text-rose-700 font-bold group-hover:underline">रिपोर्ट देखें →</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* SECTION B.2: DAILY ACTION & SYSTEM SYNCHRONIZATION SUMMARY (FEATURE 2.5) */}
+      {/* ========================================================================= */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-xl bg-blue-50 text-blue-800 border border-blue-200">
+              <CalendarDays className="w-4 h-4 text-blue-700" />
+            </span>
+            <div>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                दैनिक कार्य सारांश एवं सिस्टम स्थिति (Action & Sync Summary)
+              </h3>
+              <p className="text-[11px] text-slate-500 font-medium">
+                संदर्भ तिथि: <strong>{formatDateHi(asOfDate)}</strong> • जनपद बागपत (88 ग्राम पंचायतें)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs">
+              <span className={`w-2 h-2 rounded-full ${firebaseSyncStatus === 'synced' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+              <span className="text-[11px] font-bold">
+                {firebaseSyncStatus === 'synced' ? 'क्लाउड सिंक सक्रिय' : 'सिंक प्रगति पर'}
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                ({firebaseLastSyncedAt || 'लाइव'})
+              </span>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+              title="डेटा रीफ्रेश करें"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-700' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          {/* Card 1: Today's Meetings */}
+          <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/90 space-y-1.5">
+            <div className="flex items-center justify-between text-slate-500 text-[10px] uppercase font-bold">
+              <span>आज की बैठकें (Today)</span>
+              <Clock className="w-3.5 h-3.5 text-blue-600" />
+            </div>
+            <div className="text-2xl font-black text-slate-900 font-mono">
+              {todayMeetings.length}
+            </div>
+            <p className="text-[11px] text-slate-600">
+              {todayMeetings.length > 0 
+                ? `${todayMeetings.map(m => m.gpNameUnicode).join(', ')}`
+                : 'आज की तिथि में कोई बैठक निर्धारित नहीं है।'}
+            </p>
+          </div>
+
+          {/* Card 2: Upcoming in Next 7 Days */}
+          <div className="p-3.5 rounded-xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+            <div className="flex items-center justify-between text-blue-900 text-[10px] uppercase font-bold">
+              <span>आगामी 7 दिवस में बैठकें</span>
+              <Calendar className="w-3.5 h-3.5 text-blue-700" />
+            </div>
+            <div className="text-2xl font-black text-blue-800 font-mono">
+              {next7DaysMeetings.length}
+            </div>
+            <p className="text-[11px] text-blue-700 truncate">
+              {next7DaysMeetings.length > 0 
+                ? `${next7DaysMeetings.slice(0, 2).map(m => m.gpNameUnicode).join(', ')}${next7DaysMeetings.length > 2 ? ' आदि' : ''}`
+                : 'आगामी 7 दिनों में कोई बैठक नहीं'}
+            </p>
+          </div>
+
+          {/* Card 3: Pending MIS Feeding */}
+          <div className="p-3.5 rounded-xl bg-amber-50/40 border border-amber-200/80 space-y-1.5">
+            <div className="flex items-center justify-between text-amber-900 text-[10px] uppercase font-bold">
+              <span>MIS फीडिंग देय अवशेष</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-700" />
+            </div>
+            <div className="text-2xl font-black text-amber-900 font-mono">
+              {metrics.completedCount - metrics.misFedCount} <span className="text-xs font-semibold text-slate-500 font-normal">/ {metrics.completedCount}</span>
+            </div>
+            <p className="text-[11px] text-amber-800">
+              सम्पन्न बैठकों में से {metrics.completedCount - metrics.misFedCount} ग्राम पंचायतों की फीडिंग अवशेष है।
+            </p>
+          </div>
+
+          {/* Card 4: Pending Nirnay App Upload */}
+          <div className="p-3.5 rounded-xl bg-teal-50/40 border border-teal-200/80 space-y-1.5">
+            <div className="flex items-center justify-between text-teal-900 text-[10px] uppercase font-bold">
+              <span>पंचायत निर्णय अपलोड अवशेष</span>
+              <Smartphone className="w-3.5 h-3.5 text-teal-700" />
+            </div>
+            <div className="text-2xl font-black text-teal-900 font-mono">
+              {66 - metrics.nirnayCapturedCount} <span className="text-xs font-semibold text-slate-500 font-normal">/ 66</span>
+            </div>
+            <p className="text-[11px] text-teal-800">
+              लक्षित 66 में से {metrics.nirnayCapturedCount} अपलोड, {66 - metrics.nirnayCapturedCount} अपलोड होना शेष।
+            </p>
           </div>
         </div>
       </div>
@@ -1324,10 +1472,22 @@ export default function ExecutiveDashboardTab() {
                     {(nsapRecords || []).map((gp) => {
                       const dec = (gp.beneficiaries || []).filter(b => b.category === 'deceased').length;
                       const inel = (gp.beneficiaries || []).filter(b => b.category === 'ineligible').length;
+                      const matchedRecord = records.find(rec => rec.id === gp.id || rec.gpNameUnicode === gp.gpNameUnicode);
                       return (
-                        <div key={gp.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                          <div className="font-bold text-slate-900 text-sm truncate">
-                            {renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}
+                        <div 
+                          key={gp.id} 
+                          onClick={() => {
+                            if (matchedRecord) {
+                              setActiveModal(null);
+                              openGPProfile(matchedRecord);
+                            }
+                          }}
+                          className="p-3 bg-slate-50 hover:bg-purple-50/40 rounded-xl border border-slate-200 hover:border-purple-300 cursor-pointer transition-all shadow-2xs group"
+                          title="विस्तृत प्रोफाइल देखने हेतु क्लिक करें"
+                        >
+                          <div className="font-bold text-slate-900 group-hover:text-purple-900 text-sm truncate flex items-center justify-between">
+                            <span>{renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}</span>
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-600 transition-transform group-hover:translate-x-0.5" />
                           </div>
                           <div className="text-[11px] text-slate-500 mt-1">
                             कुल पेंशनर: <strong className="text-slate-800">{gp.totalBeneficiaries}</strong>
@@ -1345,63 +1505,141 @@ export default function ExecutiveDashboardTab() {
                   </div>
                 </div>
               ) : (
-                /* General Roster List */
+                /* General Roster List with Sorting & Profile Click */
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0">
-                      <th className="py-2.5 px-3">क्र०</th>
-                      <th className="py-2.5 px-3">ग्राम पंचायत</th>
+                    <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0 select-none">
+                      <th 
+                        className="py-2.5 px-3 cursor-pointer hover:bg-slate-200/80 transition-colors"
+                        onClick={() => {
+                          setModalSortBy('sno');
+                          setModalSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                        }}
+                        title="क्र० सं० से क्रमबद्ध करें"
+                      >
+                        क्र० {modalSortBy === 'sno' ? (modalSortOrder === 'asc' ? '↑' : '↓') : ''}
+                      </th>
+                      <th 
+                        className="py-2.5 px-3 cursor-pointer hover:bg-slate-200/80 transition-colors"
+                        onClick={() => {
+                          setModalSortBy('name');
+                          setModalSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                        }}
+                        title="नाम से क्रमबद्ध करें"
+                      >
+                        ग्राम पंचायत {modalSortBy === 'name' ? (modalSortOrder === 'asc' ? '↑' : '↓') : ''}
+                      </th>
                       <th className="py-2.5 px-2">विकास खंड</th>
-                      <th className="py-2.5 px-2">बैठक तिथि</th>
+                      <th 
+                        className="py-2.5 px-2 cursor-pointer hover:bg-slate-200/80 transition-colors"
+                        onClick={() => {
+                          setModalSortBy('date');
+                          setModalSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                        }}
+                        title="दिनांक से क्रमबद्ध करें"
+                      >
+                        बैठक तिथि {modalSortBy === 'date' ? (modalSortOrder === 'asc' ? '↑' : '↓') : ''}
+                      </th>
                       <th className="py-2.5 px-3">BRP / फोन</th>
-                      <th className="py-2.5 px-2 text-right">स्थिति</th>
+                      <th 
+                        className="py-2.5 px-2 text-right cursor-pointer hover:bg-slate-200/80 transition-colors"
+                        onClick={() => {
+                          setModalSortBy('status');
+                          setModalSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                        }}
+                        title="स्थिति से क्रमबद्ध करें"
+                      >
+                        स्थिति {modalSortBy === 'status' ? (modalSortOrder === 'asc' ? '↑' : '↓') : ''}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredModalRecords.map((r, i) => {
-                      const isCompleted = r.meetingDate <= asOfDate || r.status === 'completed';
-                      return (
-                        <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-2.5 px-3 font-mono text-slate-500">{i + 1}</td>
-                          <td className="py-2.5 px-3 font-bold text-slate-900">
-                            {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
-                          </td>
-                          <td className="py-2.5 px-2 text-slate-600">
-                            {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
-                          </td>
-                          <td className="py-2.5 px-2 font-mono text-slate-700">
-                            {formatDateHi(r.meetingDate)}
-                          </td>
-                          <td className="py-2.5 px-3 text-slate-600">
-                            <div>{r.brpName}</div>
-                            <div className="text-[10px] font-mono text-slate-500">{r.brpPhone}</div>
-                          </td>
-                          <td className="py-2.5 px-2 text-right">
-                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                              isCompleted
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                : 'bg-blue-50 text-blue-800 border-blue-200'
-                            }`}>
-                              {isCompleted ? 'सम्पन्न' : 'आगामी'}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {paginatedModalRecords.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-400">
+                          कोई रिकॉर्ड नहीं मिला।
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedModalRecords.map((r, i) => {
+                        const isCompleted = r.meetingDate <= asOfDate || r.status === 'completed';
+                        const displayIndex = (modalPage - 1) * modalPageSize + i + 1;
+                        return (
+                          <tr 
+                            key={r.id} 
+                            onClick={() => {
+                              setActiveModal(null);
+                              openGPProfile(r);
+                            }}
+                            className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
+                            title="ग्राम पंचायत प्रोफाइल देखने हेतु क्लिक करें"
+                          >
+                            <td className="py-2.5 px-3 font-mono text-slate-500">{displayIndex}</td>
+                            <td className="py-2.5 px-3 font-bold text-slate-900 group-hover:text-blue-700 flex items-center justify-between">
+                              <span>{renderText(r.gpNameUnicode, r.gpNameKrutiDev)}</span>
+                              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600 transition-transform group-hover:translate-x-0.5" />
+                            </td>
+                            <td className="py-2.5 px-2 text-slate-600">
+                              {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
+                            </td>
+                            <td className="py-2.5 px-2 font-mono text-slate-700">
+                              {formatDateHi(r.meetingDate)}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-600">
+                              <div>{r.brpName}</div>
+                              <div className="text-[10px] font-mono text-slate-500">{r.brpPhone}</div>
+                            </td>
+                            <td className="py-2.5 px-2 text-right">
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                isCompleted
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : 'bg-blue-50 text-blue-800 border-blue-200'
+                              }`}>
+                                {isCompleted ? 'सम्पन्न' : 'आगामी'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
-              <span>प्रदर्शित रिकॉर्ड: {filteredModalRecords.length}</span>
-              <button
-                onClick={() => setActiveModal(null)}
-                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-xs"
-              >
-                बंद करें
-              </button>
+            {/* Modal Footer with Pagination */}
+            <div className="p-3 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600">
+              <div className="flex items-center gap-2">
+                <span>कुल: <strong>{sortedModalRecords.length}</strong> रिकॉर्ड</span>
+                <span>•</span>
+                <span>पृष्ठ <strong>{modalPage}</strong> / <strong>{totalModalPages}</strong></span>
+              </div>
+
+              {/* Pagination controls */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={modalPage <= 1}
+                  onClick={() => setModalPage(p => Math.max(1, p - 1))}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors"
+                >
+                  ← पिछला
+                </button>
+                <button
+                  type="button"
+                  disabled={modalPage >= totalModalPages}
+                  onClick={() => setModalPage(p => Math.min(totalModalPages, p + 1))}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition-colors"
+                >
+                  अगला →
+                </button>
+                <button
+                  onClick={() => setActiveModal(null)}
+                  className="ml-2 px-3.5 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold text-xs shadow-xs"
+                >
+                  बंद करें
+                </button>
+              </div>
             </div>
           </div>
         </div>

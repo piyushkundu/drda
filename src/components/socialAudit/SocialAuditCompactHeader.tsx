@@ -9,7 +9,7 @@ import {
   Landmark, Clock, Calendar, Cloud, Server, RefreshCw, 
   Menu, PanelLeftClose, PanelLeftOpen, Sparkles, ChevronRight, 
   Check, User, ShieldCheck, AlertCircle, Radio, SlidersHorizontal,
-  MoreVertical, X
+  MoreVertical, X, Search
 } from 'lucide-react';
 
 interface CompactHeaderProps {
@@ -41,7 +41,8 @@ export default function SocialAuditCompactHeader({
     firebaseSyncStatus,
     firebaseLastSyncedAt,
     initFirebaseSync,
-    forceSyncToFirebase
+    forceSyncToFirebase,
+    setIsGlobalSearchOpen
   } = useSocialAuditStore();
 
   const { setSidebarPanel } = useUIStore();
@@ -134,8 +135,16 @@ export default function SocialAuditCompactHeader({
             </div>
           </div>
 
-          {/* Quick Actions (Sync + More) */}
+          {/* Quick Actions (Search + Sync + More) */}
           <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => setIsGlobalSearchOpen(true)}
+              className="p-2 rounded-xl text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+              title="खोजें (Search)"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
             <button
               onClick={handleManualSync}
               className="p-2 rounded-xl text-blue-700 hover:bg-blue-50 transition-colors"
@@ -339,6 +348,24 @@ export default function SocialAuditCompactHeader({
               </p>
             </div>
           </div>
+        </div>
+
+        {/* CENTER: Prominent Global Search Bar (Feature 3) */}
+        <div className="flex-1 max-w-xs md:max-w-md mx-3 hidden sm:block">
+          <button
+            type="button"
+            onClick={() => setIsGlobalSearchOpen(true)}
+            className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100/90 border border-slate-200 text-slate-400 text-xs transition-all shadow-2xs group cursor-pointer"
+            title="त्वरित एकीकृत खोज खोलें (Ctrl + K)"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0" />
+              <span className="text-slate-500 font-medium group-hover:text-slate-800 truncate">ग्राम पंचायत, BRP, बैठक या NSAP खोजें...</span>
+            </div>
+            <kbd className="hidden md:inline-flex items-center gap-0.5 font-mono text-[10px] text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-2xs shrink-0">
+              Ctrl+K
+            </kbd>
+          </button>
         </div>
 
         {/* RIGHT: Status Badges, Clocks, Sync & Actions */}
