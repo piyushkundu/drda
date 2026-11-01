@@ -220,7 +220,7 @@ export default function SocialAuditCompactHeader({
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-blue-700" />
-                  <span>कट-ऑफ संदर्भ तिथि बदलें</span>
+                  <span>प्रगति संदर्भ तिथि बदलें</span>
                 </label>
                 <input
                   type="date"
@@ -362,7 +362,7 @@ export default function SocialAuditCompactHeader({
           {/* As-Of Reference Date Selector */}
           <div 
             className="flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs hover:border-slate-300 transition-colors"
-            title="सोशल ऑडिट संदर्भ कट-ऑफ तिथि"
+            title="सोशल ऑडिट प्रगति संदर्भ तिथि"
           >
             <Calendar className="w-3.5 h-3.5 text-blue-700 shrink-0" />
             <input

@@ -53,6 +53,23 @@ export default function ExecutiveDashboardTab() {
     }
   };
 
+  // Helper to format date and short month e.g. "1 Nov"
+  const formatDateAndMonth = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const [y, m, d] = dateStr.split('-');
+      const day = parseInt(d, 10);
+      const monthShortNames: Record<string, string> = {
+        '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun',
+        '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec'
+      };
+      const month = monthShortNames[m] || m;
+      return `${day} ${month}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
   // Helper to calculate days diff from asOfDate
   const getDaysDiff = (targetDate: string) => {
     try {
@@ -543,7 +560,7 @@ export default function ExecutiveDashboardTab() {
               </span>
             </div>
             <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
-              <span>कट-ऑफ देय: <strong className="text-blue-800">{nsapReport.totals.proposedUpToDate}</strong> (संशोधित: {nsapReport.totals.amendedOrCancelled})</span>
+              <span>{formatDateAndMonth(asOfDate)} तक देय: <strong className="text-blue-800">{nsapReport.totals.proposedUpToDate}</strong> (संशोधित: {nsapReport.totals.amendedOrCancelled})</span>
               <span className="text-[11px] text-rose-700 font-bold group-hover:underline">रिपोर्ट देखें →</span>
             </div>
           </div>
@@ -746,7 +763,7 @@ export default function ExecutiveDashboardTab() {
               NSAP सोशल ऑडिट प्रगति रिपोर्ट (माह अक्टूबर तक मासिक प्रगति)
             </h3>
             <p className="text-xs text-slate-500">
-              कट-ऑफ तिथि ({formatDateHi(asOfDate)}) तक आधिकारिक प्रारूपानुसार सोशल ऑडिट बैठकों की प्रगति सारांश
+              दिनांक {formatDateHi(asOfDate)} ({formatDateAndMonth(asOfDate)}) तक आधिकारिक प्रारूपानुसार सोशल ऑडिट बैठकों की प्रगति सारांश
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -776,7 +793,7 @@ export default function ExecutiveDashboardTab() {
 
           <div className="bg-gradient-to-br from-blue-50/50 to-white p-4 rounded-2xl border border-blue-200 shadow-sm">
             <div className="text-[11px] font-bold text-blue-900 uppercase tracking-wider mb-1">
-              कट-ऑफ तक प्रस्तावित
+              {formatDateAndMonth(asOfDate)} तक प्रस्तावित
             </div>
             <div className="text-2xl sm:text-3xl font-black text-blue-800 font-mono">
               {nsapReport.totals.proposedUpToDate}
@@ -788,7 +805,7 @@ export default function ExecutiveDashboardTab() {
 
           <div className="bg-gradient-to-br from-emerald-50/50 to-white p-4 rounded-2xl border border-emerald-200 shadow-sm">
             <div className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider mb-1">
-              कट-ऑफ तक सम्पन्न बैठकें
+              {formatDateAndMonth(asOfDate)} तक सम्पन्न बैठकें
             </div>
             <div className="text-2xl sm:text-3xl font-black text-emerald-700 font-mono">
               {nsapReport.totals.completedUpToDate}
@@ -1235,7 +1252,7 @@ export default function ExecutiveDashboardTab() {
                   </span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  कट-ऑफ तिथि {formatDateHi(asOfDate)} के अनुसार वास्तविक शासकीय रिकॉर्ड
+                  दिनांक {formatDateHi(asOfDate)} के अनुसार वास्तविक शासकीय रिकॉर्ड
                 </p>
               </div>
 

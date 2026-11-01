@@ -227,7 +227,7 @@ export default function UpcomingSabhaHero() {
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                कट-ऑफ तिथि: <strong className="text-slate-200">{formatDateHi(asOfDate)}</strong> तक की सम्पन्न, अवशेष एवं संशोधित रोस्टर की बिंदुवार स्थिति
+                दिनांक: <strong className="text-slate-200">{formatDateHi(asOfDate)}</strong> तक की सम्पन्न, अवशेष एवं संशोधित रोस्टर की बिंदुवार स्थिति
               </p>
             </div>
           </div>
@@ -329,7 +329,7 @@ export default function UpcomingSabhaHero() {
                     <Check className="w-4 h-4 text-emerald-400" />
                     <div>
                       <div>संशोधित में से सम्पन्न (Amended Completed)</div>
-                      <div className="text-[11px] text-emerald-400/80 font-normal">कट-ऑफ तिथि तक जो संशोधित पूर्ण हो चुकी हैं</div>
+                      <div className="text-[11px] text-emerald-400/80 font-normal">दिनांक {formatDateHi(asOfDate)} तक जो संशोधित पूर्ण हो चुकी हैं</div>
                     </div>
                   </td>
                   <td className="py-3 px-4 text-center font-bold text-emerald-300">

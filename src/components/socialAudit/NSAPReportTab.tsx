@@ -170,7 +170,7 @@ export default function NSAPReportTab() {
         <div className="mt-4 pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="text-slate-700 font-semibold">कट-ऑफ दिनांक चुनें:</span>
+            <span className="text-slate-700 font-semibold">प्रगति दिनांक चुनें:</span>
             <input
               type="date"
               value={asOfDate}
@@ -314,7 +314,7 @@ export default function NSAPReportTab() {
             </span>
           </span>
           <span className="text-slate-600">
-            कट-ऑफ तिथि ({formatDateHiShort(asOfDate)}) तक प्रभावी संशोधित: <strong className="text-amber-900">{reportSummary.totals.amendedOrCancelled}</strong>
+            दिनांक ({formatDateHiShort(asOfDate)}) तक प्रभावी संशोधित: <strong className="text-amber-900">{reportSummary.totals.amendedOrCancelled}</strong>
           </span>
         </div>
 
@@ -403,7 +403,7 @@ export default function NSAPReportTab() {
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
             }`}
           >
-            <span>कट-ऑफ दिनांक ({formatDateHiShort(asOfDate)}) तक प्रभावित संशोधित</span>
+            <span>दिनांक ({formatDateHiShort(asOfDate)}) तक प्रभावित संशोधित</span>
           </button>
 
           <button
@@ -574,7 +574,7 @@ export default function NSAPReportTab() {
         <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center justify-between">
           <span className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>कट-ऑफ दिनांक ({formatDateHiShort(asOfDate)}) तक आच्छादित समस्त NSAP ग्राम पंचायतों की सूची</span>
+            <span>दिनांक ({formatDateHiShort(asOfDate)}) तक आच्छादित समस्त NSAP ग्राम पंचायतों की सूची</span>
           </span>
           <span className="text-xs text-slate-500 font-normal">
             कुल {reportSummary.totals.proposedUpToDate} ग्राम पंचायतें (सम्पन्न: {reportSummary.totals.completedUpToDate}, संशोधित: {reportSummary.totals.amendedOrCancelled})

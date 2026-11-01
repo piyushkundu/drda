@@ -681,7 +681,7 @@ export default function NSAPDataTab() {
               राष्ट्रीय वृद्धावस्था पेंशन सोशल ऑडिट डेटा एवं मासिक प्रगति रिपोर्ट
             </h1>
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-              निदेशालय द्वारा निर्धारित मासिक प्रगति प्रारूप के अनुसार लाभार्थियों का सत्यापन, अपात्रों एवं मृतकों का पंजीकरण-वार डेटा, एवं कट-ऑफ तिथि (<strong className="text-slate-900">{formatDateHi(asOfDate)}</strong>) तक अवशेष/लंबित ग्राम पंचायतों की मॉनिटरिंग।
+              निदेशालय द्वारा निर्धारित मासिक प्रगति प्रारूप के अनुसार लाभार्थियों का सत्यापन, अपात्रों एवं मृतकों का पंजीकरण-वार डेटा, एवं दिनांक (<strong className="text-slate-900">{formatDateHi(asOfDate)}</strong>) तक अवशेष/लंबित ग्राम पंचायतों की मॉनिटरिंग।
             </p>
           </div>
 
@@ -762,7 +762,7 @@ export default function NSAPDataTab() {
               {duePendingNsapGps.length} <span className="text-xs font-normal text-slate-500">पंचायतें</span>
             </div>
             <div className="text-[11px] text-amber-700 font-medium">
-              कट-ऑफ {formatDateHi(asOfDate)} तक बैठक सम्पन्न
+              दिनांक {formatDateHi(asOfDate)} तक बैठक सम्पन्न
             </div>
           </div>
 
@@ -1368,7 +1368,7 @@ export default function NSAPDataTab() {
                 </div>
                 <p className="text-xs text-slate-600 mt-1">
                   {pendingScope === 'due'
-                    ? `कट-ऑफ तिथि (${formatDateHi(asOfDate)}) तक जिन ${duePendingNsapGps.length} NSAP ग्राम पंचायतों की बैठक संपन्न हो चुकी है परंतु डेटा अभी एक्सेल/पोर्टल से दर्ज होना शेष है।`
+                    ? `दिनांक (${formatDateHi(asOfDate)}) तक जिन ${duePendingNsapGps.length} NSAP ग्राम पंचायतों की बैठक संपन्न हो चुकी है परंतु डेटा अभी एक्सेल/पोर्टल से दर्ज होना शेष है।`
                     : 'समस्त ग्राम पंचायतें जिनका NSAP सोशल ऑडिट डेटा अभी दर्ज नहीं हुआ है।'}
                 </p>
               </div>
@@ -1505,7 +1505,7 @@ export default function NSAPDataTab() {
                 </h2>
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                आधिकारिक निदेशालय प्रारूप के अनुरूप बिंदुवार सारांश (कट-ऑफ तिथि: {formatDateHi(asOfDate)})
+                आधिकारिक निदेशालय प्रारूप के अनुरूप बिंदुवार सारांश (दिनांक: {formatDateHi(asOfDate)})
               </p>
             </div>
 
@@ -1548,7 +1548,7 @@ export default function NSAPDataTab() {
                 <tr className="hover:bg-slate-50">
                   <td className="py-3.5 px-3 text-center font-bold text-slate-500">(ख)</td>
                   <td className="py-3.5 px-6 font-semibold text-slate-900">
-                    माह अक्टूबर तक कुल प्रस्तावित ग्राम पंचायतों की संख्या (कट-ऑफ तिथि तक)
+                    माह अक्टूबर तक कुल प्रस्तावित ग्राम पंचायतों की संख्या (दिनांक {formatDateHi(asOfDate)} तक)
                   </td>
                   <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">{monthlyReportStats.baghpatProposedUpToDate}</td>
                   <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">{monthlyReportStats.barautProposedUpToDate}</td>

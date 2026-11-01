@@ -137,7 +137,7 @@ export default function SocialAuditHeader() {
           }`}>
             <Calendar className={`w-3.5 h-3.5 shrink-0 ${isLiveSync ? 'text-blue-400' : 'text-amber-400'}`} />
             <span className="text-slate-400 text-[11px] hidden sm:inline">
-              {isLiveSync ? 'कट-ऑफ:' : 'कस्टम कट-ऑफ:'}
+              {isLiveSync ? 'प्रगति तिथि:' : 'कस्टम तिथि:'}
             </span>
             <input
               type="date"

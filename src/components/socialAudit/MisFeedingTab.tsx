@@ -408,7 +408,7 @@ export default function MisFeedingTab() {
               </div>
               <p className="text-xs text-slate-600 mt-1 font-medium">
                 {pendingViewScope === 'due' 
-                  ? `कट-ऑफ तिथि (${formatDateHi(asOfDate)}) तक जिन ग्राम पंचायतों की बैठक संपन्न हो चुकी है परंतु पोर्टल पर फीड नहीं हुई—वे यहाँ सूचीबद्ध हैं।`
+                  ? `दिनांक (${formatDateHi(asOfDate)}) तक जिन ग्राम पंचायतों की बैठक संपन्न हो चुकी है परंतु पोर्टल पर फीड नहीं हुई—वे यहाँ सूचीबद्ध हैं।`
                   : 'समस्त ग्राम पंचायतें जिनका ऑडिट अभी पोर्टल पर फीड होना शेष है।'}
               </p>
             </div>
