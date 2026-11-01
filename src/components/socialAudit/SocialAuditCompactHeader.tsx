@@ -108,12 +108,12 @@ export default function SocialAuditCompactHeader({
         {/* Mobile Row 1: Hamburger + Logo + Branding + Sync + More Actions */}
         <div className="h-13 px-3 flex items-center justify-between border-b border-slate-100">
           <div className="flex items-center gap-2 min-w-0">
-            {/* Hamburger Button (Opens Drawer) */}
+            {/* Hamburger Button (Opens / Closes Drawer) */}
             <button
-              onClick={() => setIsMobileSidebarOpen(true)}
+              onClick={() => setIsMobileSidebarOpen(prev => !prev)}
               className="p-2 -ml-1 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0"
-              title="मेन्यू खोलें"
-              aria-label="Open Navigation Menu"
+              title="मेन्यू टॉगल करें"
+              aria-label="Toggle Navigation Menu"
             >
               <Menu className="w-5 h-5" />
             </button>

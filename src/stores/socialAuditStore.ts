@@ -27,7 +27,7 @@ interface SocialAuditState {
   selectedBlock: 'all' | AuditBlock;
   selectedBRP: string; // 'all' or BRP phone / name
   selectedScheme: 'all' | 'nsap' | 'mgnrega' | 'pmayg';
-  selectedStatus: 'all' | AuditStatus | 'upcoming';
+  selectedStatus: 'all' | AuditStatus | 'upcoming' | 'overdue';
   searchQuery: string;
   isEditMode: boolean;
   asOfDate: string; // YYYY-MM-DD used for NSAP reports and upcoming calculations
@@ -51,7 +51,7 @@ interface SocialAuditState {
   setSelectedBRP: (brp: string) => void;
   resetSelectedBRP: () => void;
   setSelectedScheme: (scheme: 'all' | 'nsap' | 'mgnrega' | 'pmayg') => void;
-  setSelectedStatus: (status: 'all' | AuditStatus | 'upcoming') => void;
+  setSelectedStatus: (status: 'all' | AuditStatus | 'upcoming' | 'overdue') => void;
   setSearchQuery: (query: string) => void;
   setIsEditMode: (isEdit: boolean) => void;
   setAsOfDate: (date: string) => void;

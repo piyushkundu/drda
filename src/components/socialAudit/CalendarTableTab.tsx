@@ -67,6 +67,27 @@ export default function CalendarTableTab() {
     return <span>{unicodeText}</span>;
   };
 
+  // Effective records filtered by global BRP
+  const effectiveRecords = useMemo(() => {
+    if (!selectedBRP || selectedBRP === 'all') return records;
+    return records.filter((r) => matchesBRP(r, selectedBRP));
+  }, [records, selectedBRP]);
+
+  // Status counts for filter buttons
+  const statusCounts = useMemo(() => {
+    const amended = effectiveRecords.filter(r => r.isAmended).length;
+    const completed = effectiveRecords.filter(r => r.status === 'completed').length;
+    const upcoming = effectiveRecords.filter(r => r.meetingDate > asOfDate && r.status !== 'completed').length;
+    const overdue = effectiveRecords.filter(r => r.meetingDate <= asOfDate && r.status !== 'completed').length;
+    return {
+      all: effectiveRecords.length,
+      amended,
+      completed,
+      upcoming,
+      overdue
+    };
+  }, [effectiveRecords, asOfDate]);
+
   // Filter records
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
@@ -80,8 +101,9 @@ export default function CalendarTableTab() {
 
       // Status filter
       if (selectedStatus === 'amended' && !r.isAmended) return false;
-      if (selectedStatus === 'completed' && r.status !== 'completed' && r.meetingDate >= asOfDate) return false;
-      if (selectedStatus === 'upcoming' && (r.status === 'completed' || r.meetingDate < asOfDate)) return false;
+      if (selectedStatus === 'completed' && r.status !== 'completed') return false;
+      if (selectedStatus === 'upcoming' && (r.status === 'completed' || r.meetingDate <= asOfDate)) return false;
+      if (selectedStatus === 'overdue' && (r.status === 'completed' || r.meetingDate > asOfDate)) return false;
 
       // Global BRP filter
       if (!matchesBRP(r, selectedBRP)) return false;
@@ -370,20 +392,29 @@ export default function CalendarTableTab() {
           <div className="h-4 w-px bg-slate-200 mx-1 hidden sm:block" />
 
           {/* Status Filter */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             <span className="text-slate-500 text-[11px] font-bold mr-1">स्थिति:</span>
             {[
-              { id: 'all', label: 'सभी' },
-              { id: 'amended', label: 'संशोधित (10)' },
-              { id: 'upcoming', label: 'आगामी' },
-              { id: 'completed', label: 'सम्पन्न' }
+              { id: 'all', label: `सभी (${statusCounts.all})` },
+              { id: 'completed', label: `🟢 सम्पन्न (${statusCounts.completed})` },
+              { id: 'upcoming', label: `🔵 प्रस्तावित (${statusCounts.upcoming})` },
+              { id: 'overdue', label: `🔴 लंबित (${statusCounts.overdue})` },
+              { id: 'amended', label: `🟠 संशोधित (${statusCounts.amended})` }
             ].map((st) => (
               <button
                 key={st.id}
                 onClick={() => setSelectedStatus(st.id as any)}
                 className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
                   selectedStatus === st.id
-                    ? 'bg-amber-600 text-white shadow-sm'
+                    ? st.id === 'completed'
+                      ? 'bg-emerald-700 text-white shadow-sm'
+                      : st.id === 'overdue'
+                      ? 'bg-rose-700 text-white shadow-sm'
+                      : st.id === 'upcoming'
+                      ? 'bg-blue-700 text-white shadow-sm'
+                      : st.id === 'amended'
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'bg-slate-800 text-white shadow-sm'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -416,19 +447,29 @@ export default function CalendarTableTab() {
       {viewType === 'table' ? (
         /* Full Data Table View */
         <div className="bg-white border border-slate-200/90 rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-3 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600 font-medium">
-            <span>
+          {/* Top Status Bar with Color Legend */}
+          <div className="p-3 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="text-slate-600 font-medium">
               कुल <strong>{filteredRecords.length}</strong> बैठकें प्रदर्शित
               {selectedBlock !== 'all' && ` (${selectedBlock === 'Baghpat' ? 'विकास खण्ड बागपत' : 'विकास खण्ड बड़ौत'})`}
             </span>
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-                <span className="text-amber-800 font-bold">संशोधित रोस्टर</span>
+            {/* Clear Color Legend */}
+            <div className="flex flex-wrap items-center gap-3 font-semibold text-[11px]">
+              <span className="inline-flex items-center gap-1.5 text-emerald-800">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-2xs" />
+                <span>🟢 सम्पन्न</span>
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" />
-                <span className="text-emerald-800 font-bold">NSAP योजना</span>
+              <span className="inline-flex items-center gap-1.5 text-blue-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow-2xs" />
+                <span>🔵 प्रस्तावित</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-rose-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block shadow-2xs" />
+                <span>🔴 लंबित</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-amber-800">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow-2xs" />
+                <span>🟠 संशोधित</span>
               </span>
             </div>
           </div>
@@ -453,7 +494,7 @@ export default function CalendarTableTab() {
                   <th className="py-3 px-3 min-w-[160px]">सोशल ऑडिट टीम सदस्य</th>
                   <th className="py-3 px-3 min-w-[150px]">पर्यवेक्षक अधिकारी</th>
                   <th className="py-3 px-3 min-w-[90px] text-center">योजना</th>
-                  <th className="py-3 px-3 text-center min-w-[95px]">स्थिति</th>
+                  <th className="py-3 px-3 text-center min-w-[110px]">स्थिति</th>
                   {isEditMode && <th className="py-3 px-3 text-center min-w-[80px]">कार्य</th>}
                 </tr>
               </thead>
@@ -466,19 +507,38 @@ export default function CalendarTableTab() {
                   </tr>
                 ) : (
                   filteredRecords.map((r, index) => {
-                    const isUpcoming = r.meetingDate >= asOfDate;
-                    const isPast = r.meetingDate < asOfDate;
+                    const isCompleted = r.status === 'completed';
+                    const isOverdue = r.meetingDate <= asOfDate && !isCompleted;
+                    const isUpcoming = r.meetingDate > asOfDate && !isCompleted;
+                    const isAmended = Boolean(r.isAmended);
+
+                    // Row subtle background & left status indicator
+                    let rowBorder = 'border-l-4 border-l-transparent';
+                    let rowBg = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/40';
+
+                    if (isCompleted) {
+                      rowBorder = 'border-l-4 border-l-emerald-500';
+                      rowBg = 'bg-emerald-50/20 hover:bg-emerald-50/40';
+                    } else if (isOverdue) {
+                      rowBorder = 'border-l-4 border-l-rose-500';
+                      rowBg = 'bg-rose-50/25 hover:bg-rose-50/45';
+                    } else if (isUpcoming) {
+                      rowBorder = 'border-l-4 border-l-blue-400';
+                      rowBg = 'bg-blue-50/15 hover:bg-blue-50/30';
+                    }
+
+                    if (isAmended) {
+                      rowBg = isCompleted
+                        ? 'bg-emerald-50/30 hover:bg-emerald-50/50'
+                        : isOverdue
+                        ? 'bg-rose-50/30 hover:bg-rose-50/50'
+                        : 'bg-amber-50/30 hover:bg-amber-50/50';
+                    }
 
                     return (
                       <tr
                         key={r.id}
-                        className={`transition-colors group ${
-                          r.isAmended
-                            ? 'bg-amber-50/70 hover:bg-amber-100/60 border-l-4 border-l-amber-500'
-                            : index % 2 === 0
-                            ? 'bg-white hover:bg-blue-50/40'
-                            : 'bg-slate-50/50 hover:bg-blue-50/40'
-                        }`}
+                        className={`transition-colors group ${rowBorder} ${rowBg}`}
                       >
                         {/* SNo - Sequential restarting from 1, static on mobile/tablet, sticky on desktop */}
                         <td className="py-3.5 px-3 text-center text-slate-500 font-mono static lg:sticky lg:left-0 bg-inherit z-auto lg:z-10 font-semibold">
@@ -514,7 +574,7 @@ export default function CalendarTableTab() {
                               </span>
                             </div>
                           ) : (
-                            <span className={`font-semibold ${isUpcoming ? 'text-blue-700 font-bold' : 'text-slate-700'}`}>
+                            <span className={`font-semibold ${isCompleted ? 'text-emerald-700' : isOverdue ? 'text-rose-700 font-bold' : 'text-blue-700 font-bold'}`}>
                               {formatDate(r.meetingDate)}
                             </span>
                           )}
@@ -570,26 +630,35 @@ export default function CalendarTableTab() {
                           </div>
                         </td>
 
-                        {/* Status */}
+                        {/* Clear Status Column with Badges & Icons */}
                         <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                          {r.isAmended ? (
-                            <span 
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-xs"
-                              title="BRP कार्यमुक्त होने के कारण बैठक तिथि व टीम संशोधित"
-                            >
-                              <AlertTriangle className="w-3 h-3 text-amber-600" />
-                              संशोधित
-                            </span>
-                          ) : r.status === 'completed' || isPast ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              सम्पन्न
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
-                              प्रस्तावित
-                            </span>
-                          )}
+                          <div className="inline-flex items-center gap-1.5 justify-center flex-wrap">
+                            {isAmended && (
+                              <span 
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs"
+                                title="BRP कार्यमुक्त होने के कारण बैठक तिथि व टीम संशोधित"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                                संशोधित
+                              </span>
+                            )}
+                            {isCompleted ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                सम्पन्न
+                              </span>
+                            ) : isOverdue ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
+                                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                                लंबित
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                प्रस्तावित
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Actions (in Edit Mode) */}
@@ -696,6 +765,32 @@ export default function CalendarTableTab() {
 
           {/* 7-Column Responsive Monthly Grid (Desktop, Tablet & Mobile) */}
           <div className="w-full">
+            {/* Calendar Status Legend */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3 px-3 py-2 bg-slate-50/80 rounded-xl border border-slate-200/80 text-xs">
+              <span className="text-slate-600 font-semibold text-[11px]">
+                माह में कुल <strong>{calendarFilteredRecords.filter(r => r.meetingDate.startsWith(selectedMonth)).length}</strong> बैठकें निर्धारित
+              </span>
+              {/* Status Color Legend */}
+              <div className="flex flex-wrap items-center gap-3 font-semibold text-[11px]">
+                <span className="inline-flex items-center gap-1.5 text-emerald-800">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-2xs" />
+                  <span>🟢 सम्पन्न</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-blue-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow-2xs" />
+                  <span>🔵 प्रस्तावित</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-rose-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block shadow-2xs" />
+                  <span>🔴 लंबित</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-amber-800">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow-2xs" />
+                  <span>🟠 संशोधित</span>
+                </span>
+              </div>
+            </div>
+
             {/* Weekday Headers */}
             <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 text-center text-[11px] sm:text-xs font-bold text-slate-600">
               <div><span className="sm:hidden">रवि</span><span className="hidden sm:inline">रवि (Sun)</span></div>
@@ -753,21 +848,68 @@ export default function CalendarTableTab() {
                       )}
                     </div>
 
-                    {/* Desktop Meetings preview inside cell (hidden on mobile to keep cells clean and avoid overflow) */}
+                    {/* Mobile Status Dots Indicator */}
+                    {hasMeetings && (
+                      <div className="flex md:hidden items-center gap-1 mt-1 flex-wrap">
+                        {day.meetings.slice(0, 3).map((m) => {
+                          const isComp = m.status === 'completed';
+                          const isOver = m.meetingDate <= asOfDate && !isComp;
+                          const isAm = Boolean(m.isAmended);
+
+                          let dotColor = 'bg-blue-500';
+                          if (isComp) dotColor = 'bg-emerald-500';
+                          else if (isOver) dotColor = 'bg-rose-500';
+                          if (isAm) dotColor = 'bg-amber-500';
+
+                          return (
+                            <span
+                              key={m.id}
+                              className={`w-2 h-2 rounded-full ${dotColor} inline-block`}
+                              title={`${m.gpNameUnicode} (${isComp ? 'सम्पन्न' : isOver ? 'लंबित' : 'प्रस्तावित'}${isAm ? ' - संशोधित' : ''})`}
+                            />
+                          );
+                        })}
+                        {day.meetings.length > 3 && (
+                          <span className="text-[8px] font-bold text-slate-500 leading-none">+{day.meetings.length - 3}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Desktop Meetings preview inside cell with status color badges */}
                     <div className="hidden md:block overflow-y-auto space-y-1 text-[10px] scrollbar-none flex-1 mt-1">
-                      {day.meetings.slice(0, 2).map((m) => (
-                        <div
-                          key={m.id}
-                          className={`p-1 rounded truncate font-semibold text-[10px] ${
-                            m.isAmended
-                              ? 'bg-amber-100/80 text-amber-900 border border-amber-200'
-                              : 'bg-slate-100 text-slate-800 border border-slate-200'
-                          }`}
-                          title={`${m.gpNameUnicode} (${m.blockHindi})`}
-                        >
-                          {m.gpNameUnicode}
-                        </div>
-                      ))}
+                      {day.meetings.slice(0, 2).map((m) => {
+                        const isComp = m.status === 'completed';
+                        const isOver = m.meetingDate <= asOfDate && !isComp;
+                        const isAm = Boolean(m.isAmended);
+
+                        let pillClass = 'bg-blue-50/90 text-blue-900 border-blue-200 hover:bg-blue-100';
+                        if (isComp) {
+                          pillClass = 'bg-emerald-50/90 text-emerald-900 border-emerald-200 hover:bg-emerald-100';
+                        } else if (isOver) {
+                          pillClass = 'bg-rose-50/90 text-rose-900 border-rose-200 hover:bg-rose-100';
+                        }
+                        if (isAm) {
+                          pillClass = 'bg-amber-50/90 text-amber-950 border-amber-300 hover:bg-amber-100';
+                        }
+
+                        return (
+                          <div
+                            key={m.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCalendarDate(day.dateStr);
+                              openEditModal(m);
+                            }}
+                            className={`p-1 rounded truncate font-medium text-[10px] border transition-colors flex items-center justify-between gap-1 ${pillClass}`}
+                            title={`${m.gpNameUnicode} (${m.blockHindi || (m.block === 'Baghpat' ? 'बागपत' : 'बड़ौत')}) - ${isComp ? 'सम्पन्न' : isOver ? 'लंबित' : 'प्रस्तावित'}${isAm ? ' [संशोधित]' : ''}`}
+                          >
+                            <span className="truncate">{m.gpNameUnicode}</span>
+                            <span className="shrink-0 text-[8px] font-bold">
+                              {isComp ? '✓' : isOver ? '!' : isAm ? 'सं' : ''}
+                            </span>
+                          </div>
+                        );
+                      })}
                       {day.meetings.length > 2 && (
                         <div className="text-[9px] text-slate-500 font-bold pl-0.5">
                           +{day.meetings.length - 2} अन्य...
@@ -823,50 +965,78 @@ export default function CalendarTableTab() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {selectedDateMeetings.map((r, i) => (
-                        <tr key={r.id} className="hover:bg-blue-50/40 transition-colors">
-                          <td className="py-2 px-3 text-center font-mono text-slate-500 static lg:sticky lg:left-0 bg-white z-auto lg:z-10 font-semibold">{i + 1}</td>
-                          <td className="py-2 px-3 font-bold text-slate-900 static lg:sticky lg:left-10 bg-white z-auto lg:z-10 lg:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
-                            {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
-                          </td>
-                          <td className="py-2 px-2.5 text-slate-600">{r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}</td>
-                          <td className="py-2 px-3 text-slate-700">
-                            <div className="font-semibold">{r.brpName}</div>
-                            {r.brpPhone && <div className="text-[10px] text-slate-500 font-mono">📞 {r.brpPhone}</div>}
-                          </td>
-                          <td className="py-2 px-3 text-slate-600 text-[11px] max-w-[160px] truncate">
-                            {renderText(r.supervisorOfficerUnicode, r.supervisorOfficerKrutiDev)}
-                          </td>
-                          <td className="py-2 px-3 text-slate-600 text-[11px] max-w-[160px] truncate">
-                            {renderText(r.teamMembersUnicode, r.teamMembersKrutiDev)}
-                          </td>
-                          <td className="py-2 px-2 text-center">
-                            <div className="flex gap-1 justify-center flex-wrap">
-                              {r.hasNSAP && <span className="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[9px] font-bold">NSAP</span>}
-                              {r.hasMGNREGA && <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold">मनरेगा</span>}
-                            </div>
-                          </td>
-                          <td className="py-2 px-2 text-center">
-                            {r.isAmended ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">संशोधित</span>
-                            ) : r.status === 'completed' || r.meetingDate < asOfDate ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">सम्पन्न</span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">प्रस्तावित</span>
-                            )}
-                          </td>
-                          <td className="py-2 px-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(r)}
-                              className="px-2 py-1 rounded bg-slate-100 hover:bg-blue-100 text-blue-800 text-[11px] font-bold flex items-center gap-1 mx-auto"
-                            >
-                              <Edit3 className="w-3 h-3" />
-                              <span>एडिट</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {selectedDateMeetings.map((r, i) => {
+                        const isCompleted = r.status === 'completed';
+                        const isOverdue = r.meetingDate <= asOfDate && !isCompleted;
+                        const isUpcoming = r.meetingDate > asOfDate && !isCompleted;
+                        const isAmended = Boolean(r.isAmended);
+
+                        let rowBorder = 'border-l-4 border-l-transparent';
+                        if (isCompleted) rowBorder = 'border-l-4 border-l-emerald-500 bg-emerald-50/15 hover:bg-emerald-50/30';
+                        else if (isOverdue) rowBorder = 'border-l-4 border-l-rose-500 bg-rose-50/20 hover:bg-rose-50/35';
+                        else if (isUpcoming) rowBorder = 'border-l-4 border-l-blue-400 bg-blue-50/10 hover:bg-blue-50/25';
+
+                        return (
+                          <tr key={r.id} className={`transition-colors ${rowBorder}`}>
+                            <td className="py-2 px-3 text-center font-mono text-slate-500 static lg:sticky lg:left-0 bg-inherit z-auto lg:z-10 font-semibold">{i + 1}</td>
+                            <td className="py-2 px-3 font-bold text-slate-900 static lg:sticky lg:left-10 bg-inherit z-auto lg:z-10 lg:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
+                              {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
+                            </td>
+                            <td className="py-2 px-2.5 text-slate-600">{r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}</td>
+                            <td className="py-2 px-3 text-slate-700">
+                              <div className="font-semibold">{r.brpName}</div>
+                              {r.brpPhone && <div className="text-[10px] text-slate-500 font-mono">📞 {r.brpPhone}</div>}
+                            </td>
+                            <td className="py-2 px-3 text-slate-600 text-[11px] max-w-[160px] truncate">
+                              {renderText(r.supervisorOfficerUnicode, r.supervisorOfficerKrutiDev)}
+                            </td>
+                            <td className="py-2 px-3 text-slate-600 text-[11px] max-w-[160px] truncate">
+                              {renderText(r.teamMembersUnicode, r.teamMembersKrutiDev)}
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <div className="flex gap-1 justify-center flex-wrap">
+                                {r.hasNSAP && <span className="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[9px] font-bold">NSAP</span>}
+                                {r.hasMGNREGA && <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold">मनरेगा</span>}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2 text-center whitespace-nowrap">
+                              <div className="inline-flex items-center gap-1.5 justify-center flex-wrap">
+                                {isAmended && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                                    संशोधित
+                                  </span>
+                                )}
+                                {isCompleted ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    सम्पन्न
+                                  </span>
+                                ) : isOverdue ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
+                                    <AlertTriangle className="w-3 h-3 text-rose-600" />
+                                    लंबित
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                    प्रस्तावित
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(r)}
+                                className="px-2 py-1 rounded bg-slate-100 hover:bg-blue-100 text-blue-800 text-[11px] font-bold flex items-center gap-1 mx-auto"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                                <span>एडिट</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

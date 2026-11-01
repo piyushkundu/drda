@@ -122,18 +122,18 @@ export default function SocialAuditSidebar({
 
   return (
     <>
-      {/* Mobile Backdrop Overlay */}
+      {/* Mobile Backdrop Overlay - Positioned over remaining viewport below header */}
       {isOpenMobile && (
         <div
           onClick={() => setIsOpenMobile(false)}
-          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs lg:hidden transition-opacity duration-300 animate-in fade-in"
+          className="absolute inset-0 z-40 bg-slate-900/50 backdrop-blur-2xs lg:hidden transition-opacity duration-300 animate-in fade-in"
           aria-hidden="true"
         />
       )}
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 h-full z-50 bg-white/95 backdrop-blur-md border-r border-slate-200/90 flex flex-col justify-between transition-all duration-300 ease-in-out select-none ${
+        className={`absolute lg:static inset-y-0 left-0 h-full z-50 bg-white/95 backdrop-blur-md border-r border-slate-200/90 flex flex-col justify-between transition-all duration-300 ease-in-out select-none ${
           /* Mobile Drawer */
           isOpenMobile
             ? 'translate-x-0 w-72 max-w-[85vw] shadow-2xl visible'
@@ -143,20 +143,20 @@ export default function SocialAuditSidebar({
           isCollapsed ? 'lg:w-[72px]' : 'lg:w-[260px]'
         }`}
       >
-        {/* Top: Mobile Close Button & Header Branding for Mobile */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 lg:hidden bg-slate-50">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-700 text-white flex items-center justify-center font-bold">
+        {/* Top: Mobile Close Button & Header Branding for Mobile (Always visible at top of drawer) */}
+        <div className="flex items-center justify-between p-3.5 border-b border-slate-200 lg:hidden bg-slate-50 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-blue-700 text-white flex items-center justify-center font-bold shrink-0">
               <Building2 className="w-4 h-4 text-amber-300" />
             </div>
-            <div>
-              <span className="font-black text-slate-900 text-sm block leading-tight">सोशल ऑडिट बागपत</span>
-              <span className="text-[10px] text-slate-500 font-medium">प्रशासनिक नेविगेशन मेन्यू</span>
+            <div className="min-w-0">
+              <span className="font-black text-slate-900 text-sm block leading-tight truncate">सोशल ऑडिट बागपत</span>
+              <span className="text-[10px] text-slate-500 font-medium block truncate">प्रशासनिक नेविगेशन मेन्यू</span>
             </div>
           </div>
           <button
             onClick={() => setIsOpenMobile(false)}
-            className="p-1.5 rounded-xl bg-white text-slate-700 hover:bg-slate-200 border border-slate-200 shadow-xs"
+            className="p-1.5 rounded-xl bg-white text-slate-700 hover:bg-slate-200 border border-slate-200 shadow-xs shrink-0"
             title="मेन्यू बंद करें"
             aria-label="Close Navigation Menu"
           >
@@ -234,7 +234,7 @@ export default function SocialAuditSidebar({
         </div>
 
         {/* Sidebar Footer: User / Role & Version */}
-        <div className="p-3 border-t border-slate-200/90 bg-slate-50/80">
+        <div className="p-3 border-t border-slate-200/90 bg-slate-50/80 shrink-0">
           {!isCollapsed ? (
             <div className="space-y-2">
               <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center gap-2.5">
