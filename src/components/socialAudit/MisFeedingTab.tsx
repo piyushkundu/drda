@@ -72,6 +72,23 @@ export default function MisFeedingTab() {
     const baghpatTotal = effectiveRecords.filter(r => r.block === 'Baghpat').length;
     const barautTotal = effectiveRecords.filter(r => r.block === 'Baraut').length;
 
+    // Helper to determine completed meetings
+    const isMeetingCompleted = (r: typeof effectiveRecords[0]) => {
+      if (r.status === 'completed') return true;
+      if (r.isAmended) {
+        return (
+          r.meetingDate <= asOfDate ||
+          (r.gpNameUnicode?.includes('खेड़की') ?? false) ||
+          (r.gpNameUnicode?.includes('खड़की') ?? false)
+        );
+      }
+      return r.meetingDate <= asOfDate;
+    };
+
+    const completedTotal = effectiveRecords.filter(isMeetingCompleted);
+    const completedBaghpat = completedTotal.filter(r => r.block === 'Baghpat');
+    const completedBaraut = completedTotal.filter(r => r.block === 'Baraut');
+
     const fedTotal = effectiveRecords.filter(r => r.misStatus === 'fed');
     const fedBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && r.misStatus === 'fed');
     const fedBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && r.misStatus === 'fed');
@@ -105,6 +122,9 @@ export default function MisFeedingTab() {
       totalGps,
       baghpatTotal,
       barautTotal,
+      completedTotalCount: completedTotal.length,
+      completedBaghpatCount: completedBaghpat.length,
+      completedBarautCount: completedBaraut.length,
       fedTotalCount: fedTotal.length,
       fedBaghpatCount: fedBaghpat.length,
       fedBarautCount: fedBaraut.length,
@@ -123,9 +143,9 @@ export default function MisFeedingTab() {
       duePendingWithNSAPTotalCount: duePendingWithNSAPTotal.length,
       duePendingWithNSAPBaghpatCount: duePendingWithNSAPBaghpat.length,
       duePendingWithNSAPBarautCount: duePendingWithNSAPBaraut.length,
-      fedPercentage: totalGps > 0 ? ((fedTotal.length / totalGps) * 100).toFixed(2) : '0.00',
-      baghpatFedPercentage: baghpatTotal > 0 ? ((fedBaghpat.length / baghpatTotal) * 100).toFixed(2) : '0.00',
-      barautFedPercentage: barautTotal > 0 ? ((fedBaraut.length / barautTotal) * 100).toFixed(2) : '0.00',
+      fedPercentage: completedTotal.length > 0 ? ((fedTotal.length / completedTotal.length) * 100).toFixed(2) : '0.00',
+      baghpatFedPercentage: completedBaghpat.length > 0 ? ((fedBaghpat.length / completedBaghpat.length) * 100).toFixed(2) : '0.00',
+      barautFedPercentage: completedBaraut.length > 0 ? ((fedBaraut.length / completedBaraut.length) * 100).toFixed(2) : '0.00',
     };
   }, [effectiveRecords, asOfDate]);
 
@@ -262,8 +282,8 @@ export default function MisFeedingTab() {
               एमआईएस सोशल ऑडिट फीडिंग स्थिति ट्रैकर
             </h1>
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed font-medium">
-              सरकारी पोर्टल R 9.1.3 रिपोर्ट के अनुसार वर्तमान में बागपत में <strong className="text-blue-700 font-bold">{metrics.fedBaghpatCount}</strong> एवं बड़ौत में <strong className="text-indigo-700 font-bold">{metrics.fedBarautCount}</strong> ग्राम पंचायतों का सोशल ऑडिट डेटा वेबसाइट पर फीड हो चुका है (कुल <strong className="text-blue-700 font-bold">{metrics.fedTotalCount}</strong>)।
-              आज (<strong className="text-slate-900">{formatDateHi(asOfDate)}</strong>) की तिथि तक जिन पंचायतों की बैठक हो चुकी है परंतु वेबसाइट पर फीड नहीं हुई हैं, वे नीचे <strong className="text-amber-800 font-bold">&apos;आज तक लंबित पुष्टि बॉक्स&apos;</strong> में निर्णय हेतु उपलब्ध हैं।
+              सरकारी पोर्टल R 9.1.3 रिपोर्ट के अनुसार अब तक सम्पन्न कुल <strong className="text-slate-900 font-bold">{metrics.completedTotalCount}</strong> ग्राम पंचायतों में से बागपत में <strong className="text-blue-700 font-bold">{metrics.fedBaghpatCount}/{metrics.completedBaghpatCount}</strong> एवं बड़ौत में <strong className="text-indigo-700 font-bold">{metrics.fedBarautCount}/{metrics.completedBarautCount}</strong> ग्राम पंचायतों का सोशल ऑडिट डेटा वेबसाइट पर फीड हो चुका है (कुल <strong className="text-blue-700 font-bold">{metrics.fedTotalCount}/{metrics.completedTotalCount}</strong> यानी <strong className="text-emerald-700 font-bold">{metrics.fedPercentage}%</strong>)।
+              सम्पन्न बैठकों में से जिन <strong className="text-rose-700 font-bold">{metrics.duePendingTotalCount}</strong> पंचायतों की बैठक हो चुकी है परंतु वेबसाइट पर फीड होना अवशेष है, वे नीचे <strong className="text-amber-800 font-bold">&apos;आज तक लंबित पुष्टि बॉक्स&apos;</strong> में निर्णय हेतु उपलब्ध हैं।
             </p>
           </div>
 
@@ -275,10 +295,10 @@ export default function MisFeedingTab() {
             <div>
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">कुल MIS फीडेड ऑडिट</div>
               <div className="text-3xl font-black text-blue-700 tracking-tight">
-                {metrics.fedTotalCount} <span className="text-sm font-semibold text-slate-500">/ {metrics.totalGps} ({metrics.fedPercentage}%)</span>
+                {metrics.fedTotalCount} <span className="text-sm font-semibold text-slate-500">/ {metrics.completedTotalCount} सम्पन्न ({metrics.fedPercentage}%)</span>
               </div>
               <div className="text-[11px] text-slate-600 mt-0.5 font-medium">
-                बागपत: <strong className="text-blue-700">{metrics.fedBaghpatCount}/44 ({metrics.baghpatFedPercentage}%)</strong> | बड़ौत: <strong className="text-indigo-700">{metrics.fedBarautCount}/44 ({metrics.barautFedPercentage}%)</strong>
+                बागपत: <strong className="text-blue-700">{metrics.fedBaghpatCount}/{metrics.completedBaghpatCount} ({metrics.baghpatFedPercentage}%)</strong> | बड़ौत: <strong className="text-indigo-700">{metrics.fedBarautCount}/{metrics.completedBarautCount} ({metrics.barautFedPercentage}%)</strong>
               </div>
             </div>
           </div>
@@ -289,48 +309,48 @@ export default function MisFeedingTab() {
       {/* 2. SUMMARY METRIC CARDS (4 PILLARS) */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: कुल ग्राम पंचायतें */}
+        {/* Card 1: सम्पन्न ग्राम पंचायतें */}
         <div className="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">कुल ग्राम पंचायतें</span>
-            <Building2 className="w-4 h-4 text-slate-400" />
+            <span className="text-xs font-bold uppercase tracking-wider">सम्पन्न ग्राम पंचायतें</span>
+            <Building2 className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-3xl font-black text-slate-900 tracking-tight">
-            {metrics.totalGps}
+            {metrics.completedTotalCount} <span className="text-sm font-semibold text-slate-400 font-mono">/ {metrics.totalGps} कुल</span>
           </div>
           <div className="text-xs text-slate-500 flex items-center justify-between pt-1 border-t border-slate-100 font-medium">
-            <span>बागपत: <strong className="text-blue-700">{metrics.baghpatTotal}</strong></span>
-            <span>बड़ौत: <strong className="text-indigo-700">{metrics.barautTotal}</strong></span>
+            <span>बागपत: <strong className="text-blue-700">{metrics.completedBaghpatCount}</strong></span>
+            <span>बड़ौत: <strong className="text-indigo-700">{metrics.completedBarautCount}</strong></span>
           </div>
         </div>
 
         {/* Card 2: MIS पर फीडेड (पूर्ण) */}
         <div className="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-blue-700">
-            <span className="text-xs font-bold uppercase tracking-wider">MIS फीडेड (पूर्ण)</span>
+            <span className="text-xs font-bold uppercase tracking-wider">MIS फीडेड (सम्पन्न में से)</span>
             <CheckCircle2 className="w-4 h-4 text-blue-700" />
           </div>
           <div className="text-3xl font-black text-blue-700 tracking-tight">
-            {metrics.fedTotalCount} <span className="text-sm font-semibold text-slate-500">/ {metrics.totalGps}</span>
+            {metrics.fedTotalCount} <span className="text-sm font-semibold text-slate-500">/ {metrics.completedTotalCount} ({metrics.fedPercentage}%)</span>
           </div>
           <div className="text-xs text-slate-500 flex items-center justify-between pt-1 border-t border-slate-100 font-medium">
-            <span>बागपत: <strong className="text-blue-700">{metrics.fedBaghpatCount} ({metrics.baghpatFedPercentage}%)</strong></span>
-            <span>बड़ौत: <strong className="text-indigo-700">{metrics.fedBarautCount} ({metrics.barautFedPercentage}%)</strong></span>
+            <span>बागपत: <strong className="text-blue-700">{metrics.fedBaghpatCount}/{metrics.completedBaghpatCount} ({metrics.baghpatFedPercentage}%)</strong></span>
+            <span>बड़ौत: <strong className="text-indigo-700">{metrics.fedBarautCount}/{metrics.completedBarautCount} ({metrics.barautFedPercentage}%)</strong></span>
           </div>
         </div>
 
         {/* Card 3: समस्त लंबित (All Pending) */}
         <div className="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-amber-700">
-            <span className="text-xs font-bold uppercase tracking-wider">समस्त लंबित (All Pending)</span>
+            <span className="text-xs font-bold uppercase tracking-wider">समस्त अनफीडेड (लंबित)</span>
             <AlertTriangle className="w-4 h-4 text-amber-600" />
           </div>
           <div className="text-3xl font-black text-amber-700 tracking-tight">
             {metrics.allPendingTotalCount} <span className="text-sm font-semibold text-slate-500">/ {metrics.totalGps}</span>
           </div>
           <div className="text-xs text-slate-500 flex items-center justify-between pt-1 border-t border-slate-100 font-medium">
-            <span>बागपत: <strong className="text-amber-800">{metrics.allPendingBaghpatCount}</strong></span>
-            <span>बड़ौत: <strong className="text-amber-800">{metrics.allPendingBarautCount}</strong></span>
+            <span>देय लंबित: <strong className="text-rose-700 font-bold">{metrics.duePendingTotalCount}</strong></span>
+            <span>आगामी: <strong className="text-slate-600 font-bold">{metrics.upcomingTotalCount}</strong></span>
           </div>
           <div className="text-[11px] text-emerald-800 font-bold pt-1 border-t border-slate-100 flex items-center justify-between">
             <span>लंबित में NSAP पेंशन:</span>

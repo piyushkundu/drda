@@ -192,7 +192,9 @@ export default function ExecutiveDashboardTab() {
       baghpatNirnayCapturedCount: baghpatNirnayCaptured.length,
       barautNirnayCapturedCount: barautNirnayCaptured.length,
       misFedCount: misFedRecords.length,
-      misFedPercent: totalGPs > 0 ? ((misFedRecords.length / totalGPs) * 100).toFixed(1) : '0.0',
+      misFedPercent: completedRecords.length > 0 ? ((misFedRecords.length / completedRecords.length) * 100).toFixed(1) : '0.0',
+      baghpatMisFedPercent: baghpatCompleted.length > 0 ? ((baghpatMisFed.length / baghpatCompleted.length) * 100).toFixed(1) : '0.0',
+      barautMisFedPercent: barautCompleted.length > 0 ? ((barautMisFed.length / barautCompleted.length) * 100).toFixed(1) : '0.0',
       misDuePendingCount: misDuePendingRecords.length,
       misDuePendingNSAPCount: misDuePendingNSAP.length,
       misPendingCount: misPendingRecords.length,
@@ -487,7 +489,7 @@ export default function ExecutiveDashboardTab() {
                 {metrics.misFedCount}
               </span>
               <span className="text-xs font-bold text-indigo-700">
-                / {metrics.totalGPs} ({metrics.misFedPercent}%)
+                / {metrics.completedCount} सम्पन्न ({metrics.misFedPercent}%)
               </span>
             </div>
             <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
@@ -613,8 +615,8 @@ export default function ExecutiveDashboardTab() {
 
               <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">MIS फीडेड</div>
-                <div className="text-lg font-black text-indigo-800 mt-0.5">{metrics.baghpatMisFedCount} / 44</div>
-                <div className="text-[10px] text-slate-500">पोर्टल पर दर्ज</div>
+                <div className="text-lg font-black text-indigo-800 mt-0.5">{metrics.baghpatMisFedCount} / {metrics.baghpatCompletedCount}</div>
+                <div className="text-[10px] text-slate-500 font-medium">सम्पन्न में से ({metrics.baghpatMisFedPercent}%)</div>
               </div>
 
               <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
@@ -696,8 +698,8 @@ export default function ExecutiveDashboardTab() {
 
               <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
                 <div className="text-[10px] text-slate-500 font-semibold uppercase">MIS फीडेड</div>
-                <div className="text-lg font-black text-indigo-800 mt-0.5">{metrics.barautMisFedCount} / 44</div>
-                <div className="text-[10px] text-slate-500">पोर्टल पर दर्ज</div>
+                <div className="text-lg font-black text-indigo-800 mt-0.5">{metrics.barautMisFedCount} / {metrics.barautCompletedCount}</div>
+                <div className="text-[10px] text-slate-500 font-medium">सम्पन्न में से ({metrics.barautMisFedPercent}%)</div>
               </div>
 
               <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200">
@@ -1082,8 +1084,8 @@ export default function ExecutiveDashboardTab() {
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div className="bg-indigo-50/60 p-2.5 rounded-xl border border-indigo-200">
               <div className="text-[10px] text-indigo-900 font-bold uppercase">पोर्टल फीडेड</div>
-              <div className="text-xl font-black text-indigo-900 mt-0.5">{metrics.misFedCount}</div>
-              <div className="text-[10px] text-indigo-700">{metrics.misFedPercent}% कुल</div>
+              <div className="text-xl font-black text-indigo-900 mt-0.5">{metrics.misFedCount} / {metrics.completedCount}</div>
+              <div className="text-[10px] text-indigo-700 font-semibold">{metrics.misFedPercent}% सम्पन्न में से</div>
             </div>
             <div className="bg-amber-50/60 p-2.5 rounded-xl border border-amber-200">
               <div className="text-[10px] text-amber-900 font-bold uppercase">देय लंबित</div>
@@ -1228,7 +1230,7 @@ export default function ExecutiveDashboardTab() {
                     {activeModal === 'upcoming' && `आगामी सोशल ऑडिट बैठकें (${metrics.upcomingCount} ग्राम पंचायतें)`}
                     {activeModal === 'pending' && `आज तक देय लंबित बैठकें (${metrics.duePendingCount} ग्राम पंचायतें)`}
                     {activeModal === 'nirnay' && `पंचायत निर्णय ऐप सत्यापित बैठकें (${metrics.nirnayCapturedCount} ग्राम पंचायतें)`}
-                    {activeModal === 'mis' && `MIS पोर्टल पर फीडेड बैठकें (${metrics.misFedCount} ग्राम पंचायतें)`}
+                    {activeModal === 'mis' && `MIS पोर्टल पर फीडेड बैठकें (${metrics.misFedCount} / ${metrics.completedCount} सम्पन्न ग्राम पंचायतें - ${metrics.misFedPercent}%)`}
                     {activeModal === 'nsap' && `NSAP पेंशन डेटा रजिस्टर (${metrics.nsapRecordedCount} ग्राम पंचायतें / ${metrics.totalBeneficiaries} पेंशनर्स)`}
                   </span>
                 </h3>
