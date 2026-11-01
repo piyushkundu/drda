@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { PanchayatNirnayStatus, SocialAuditRecord } from '@/types/socialAudit';
+import { matchesBRP } from '@/lib/brpHelper';
 import { 
   CheckCircle2, Clock, XCircle, Search, Filter, 
   Download, Building2, ShieldCheck, 
@@ -14,6 +15,7 @@ import {
 export default function PanchayatNirnayTab() {
   const { 
     records, 
+    selectedBRP,
     asOfDate, 
     fontViewMode, 
     updatePanchayatNirnayStatus,
@@ -58,34 +60,40 @@ export default function PanchayatNirnayTab() {
     return <span>{unicodeText}</span>;
   };
 
-  // Detailed Metrics computation strictly respecting asOfDate
+  // Filter records by global selectedBRP
+  const effectiveRecords = useMemo(() => {
+    if (!selectedBRP || selectedBRP === 'all') return records;
+    return records.filter((r) => matchesBRP(r, selectedBRP));
+  }, [records, selectedBRP]);
+
+  // Detailed Metrics computation strictly respecting asOfDate and selected BRP
   const metrics = useMemo(() => {
-    const totalGps = records.length; // 88
-    const baghpatTotal = records.filter(r => r.block === 'Baghpat').length; // 44
-    const barautTotal = records.filter(r => r.block === 'Baraut').length; // 44
+    const totalGps = effectiveRecords.length;
+    const baghpatTotal = effectiveRecords.filter(r => r.block === 'Baghpat').length;
+    const barautTotal = effectiveRecords.filter(r => r.block === 'Baraut').length;
 
-    const mappedRecords = records.filter(r => r.isMappedInPanchayatNirnay);
-    const totalMapped = mappedRecords.length; // 66 (44 in Baghpat + 22 in Baraut)
-    const baghpatMapped = records.filter(r => r.block === 'Baghpat' && r.isMappedInPanchayatNirnay).length;
-    const barautMapped = records.filter(r => r.block === 'Baraut' && r.isMappedInPanchayatNirnay).length;
+    const mappedRecords = effectiveRecords.filter(r => r.isMappedInPanchayatNirnay);
+    const totalMapped = mappedRecords.length;
+    const baghpatMapped = effectiveRecords.filter(r => r.block === 'Baghpat' && r.isMappedInPanchayatNirnay).length;
+    const barautMapped = effectiveRecords.filter(r => r.block === 'Baraut' && r.isMappedInPanchayatNirnay).length;
 
-    const capturedTotal = records.filter(r => r.panchayatNirnayStatus === 'captured');
-    const capturedBaghpat = records.filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'captured');
-    const capturedBaraut = records.filter(r => r.block === 'Baraut' && r.panchayatNirnayStatus === 'captured');
+    const capturedTotal = effectiveRecords.filter(r => r.panchayatNirnayStatus === 'captured');
+    const capturedBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'captured');
+    const capturedBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && r.panchayatNirnayStatus === 'captured');
 
     // Due Pending: Meeting date has arrived (meetingDate <= asOfDate) and status is pending
-    const duePendingTotal = records.filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
-    const duePendingBaghpat = records.filter(r => r.block === 'Baghpat' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
-    const duePendingBaraut = records.filter(r => r.block === 'Baraut' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+    const duePendingTotal = effectiveRecords.filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+    const duePendingBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+    const duePendingBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
 
     // Upcoming Scheduled: Future meetings (meetingDate > asOfDate) awaiting their meeting date
-    const upcomingTotal = records.filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
-    const upcomingBaghpat = records.filter(r => r.block === 'Baghpat' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
-    const upcomingBaraut = records.filter(r => r.block === 'Baraut' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
+    const upcomingTotal = effectiveRecords.filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
+    const upcomingBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
+    const upcomingBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
 
-    const notCapturedTotal = records.filter(r => r.panchayatNirnayStatus === 'not_captured');
-    const notCapturedBaghpat = records.filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'not_captured');
-    const notCapturedBaraut = records.filter(r => r.block === 'Baraut' && r.panchayatNirnayStatus === 'not_captured');
+    const notCapturedTotal = effectiveRecords.filter(r => r.panchayatNirnayStatus === 'not_captured');
+    const notCapturedBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'not_captured');
+    const notCapturedBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && r.panchayatNirnayStatus === 'not_captured');
 
     return {
       totalGps,
@@ -95,28 +103,28 @@ export default function PanchayatNirnayTab() {
       capturedTotalCount: capturedTotal.length,
       capturedBaghpatCount: capturedBaghpat.length,
       capturedBarautCount: capturedBaraut.length,
-      duePendingTotalCount: duePendingTotal.length, // Currently 0!
+      duePendingTotalCount: duePendingTotal.length,
       duePendingBaghpatCount: duePendingBaghpat.length,
       duePendingBarautCount: duePendingBaraut.length,
-      upcomingTotalCount: upcomingTotal.length, // Currently 40
+      upcomingTotalCount: upcomingTotal.length,
       upcomingBaghpatCount: upcomingBaghpat.length,
       upcomingBarautCount: upcomingBaraut.length,
       notCapturedTotalCount: notCapturedTotal.length,
       notCapturedBaghpatCount: notCapturedBaghpat.length,
       notCapturedBarautCount: notCapturedBaraut.length,
-      baghpatPercentage: ((capturedBaghpat.length / baghpatTotal) * 100).toFixed(2),
-      barautPercentageTotal: ((capturedBaraut.length / barautTotal) * 100).toFixed(2),
+      baghpatPercentage: baghpatTotal > 0 ? ((capturedBaghpat.length / baghpatTotal) * 100).toFixed(2) : '0.00',
+      barautPercentageTotal: barautTotal > 0 ? ((capturedBaraut.length / barautTotal) * 100).toFixed(2) : '0.00',
       barautPercentageMapped: barautMapped > 0 ? ((capturedBaraut.length / barautMapped) * 100).toFixed(2) : '0.00',
-      districtPercentage: ((capturedTotal.length / totalMapped) * 100).toFixed(2)
+      districtPercentage: totalMapped > 0 ? ((capturedTotal.length / totalMapped) * 100).toFixed(2) : '0.00'
     };
-  }, [records, asOfDate]);
+  }, [effectiveRecords, asOfDate]);
 
   // Active Pending Queue: Meetings that occurred on or before asOfDate AND have not been confirmed yet
   const duePendingRecords = useMemo(() => {
-    return records
+    return effectiveRecords
       .filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate)
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
-  }, [records, asOfDate]);
+  }, [effectiveRecords, asOfDate]);
 
   const filteredDuePendingRecords = useMemo(() => {
     return duePendingRecords.filter(r => {
@@ -127,27 +135,27 @@ export default function PanchayatNirnayTab() {
 
   // Upcoming Scheduled Meetings (meetingDate > asOfDate): Future meetings not due yet
   const upcomingScheduledRecords = useMemo(() => {
-    return records
+    return effectiveRecords
       .filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate)
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
-  }, [records, asOfDate]);
+  }, [effectiveRecords, asOfDate]);
 
   // Active Captured Records: Filter records by status === 'captured' dynamically
   const capturedBaghpatRecords = useMemo(() => {
-    return records
+    return effectiveRecords
       .filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'captured')
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
-  }, [records]);
+  }, [effectiveRecords]);
 
   const capturedBarautRecords = useMemo(() => {
-    return records
+    return effectiveRecords
       .filter(r => r.block === 'Baraut' && r.panchayatNirnayStatus === 'captured')
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
-  }, [records]);
+  }, [effectiveRecords]);
 
   // Main Filtered records for table
   const filteredRecords = useMemo(() => {
-    return records.filter(r => {
+    return effectiveRecords.filter(r => {
       // Block
       if (selectedBlockFilter !== 'all' && r.block !== selectedBlockFilter) return false;
       // Status
@@ -693,8 +701,14 @@ export default function PanchayatNirnayTab() {
       {/* 8. INTERACTIVE MASTER TABLE WITH 1-CLICK CONFIRMATION BUTTONS */}
       {/* ========================================================================= */}
       <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-        {/* Desktop Table View (>=768px) */}
-        <div className="hidden md:block overflow-x-auto">
+        {/* Mobile Swipe Notice */}
+        <div className="md:hidden px-3 py-1.5 bg-slate-100/90 border-b border-slate-200 text-[11px] text-slate-600 flex items-center justify-between font-medium">
+          <span>👉 तालिका को बाएं-दाएं स्वाइप करें</span>
+          <span className="font-mono text-slate-500">कुल {filteredRecords.length} रिकॉर्ड्स</span>
+        </div>
+
+        {/* Single Responsive Table for Desktop, Tablet and Mobile */}
+        <div className="overflow-x-auto max-h-[700px] scrollbar-thin">
           <table className="w-full text-left text-xs text-slate-700">
             <thead className="bg-slate-100/90 text-slate-700 uppercase text-[11px] font-bold border-b border-slate-200">
               <tr>
@@ -847,132 +861,6 @@ export default function PanchayatNirnayTab() {
               )}
             </tbody>
           </table>
-        </div>
-
-        {/* Dedicated Mobile Cards View (<768px) */}
-        <div className="md:hidden p-3 space-y-3 bg-slate-50/60">
-          {filteredRecords.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 bg-white rounded-2xl border border-slate-200 p-4 text-xs">
-              कोई रिकॉर्ड नहीं मिला।
-            </div>
-          ) : (
-            filteredRecords.map((r, idx) => {
-              const status: PanchayatNirnayStatus = r.panchayatNirnayStatus || 'pending';
-              const isFuture = r.meetingDate > asOfDate;
-              const isJustUpdated = justUpdatedId === r.id;
-
-              return (
-                <div
-                  key={r.id}
-                  className={`bg-white rounded-2xl border p-4 shadow-xs space-y-3 transition-all ${
-                    status === 'captured'
-                      ? 'border-emerald-200 bg-emerald-50/20'
-                      : status === 'not_captured'
-                      ? 'border-rose-200 bg-rose-50/20'
-                      : 'border-slate-200'
-                  } ${isJustUpdated ? 'ring-2 ring-emerald-500' : ''}`}
-                >
-                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600">
-                          #{idx + 1}
-                        </span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                          r.block === 'Baghpat' ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
-                        }`}>
-                          {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
-                        </span>
-                        {r.hasNSAP && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            NSAP
-                          </span>
-                        )}
-                      </div>
-                      <h4 className="font-black text-slate-900 text-sm leading-tight truncate">
-                        {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
-                      </h4>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      <span className="text-xs font-mono font-bold text-slate-800 block">
-                        {formatDateHi(r.meetingDate)}
-                      </span>
-                      <span className="text-[10px] text-slate-400 block font-mono">
-                        {r.isMappedInPanchayatNirnay ? 'R 9.6.2 मैप्ड' : 'गैर-मैप्ड'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Status Indicator */}
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">वर्तमान ऐप स्थिति:</span>
-                    {status === 'captured' ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1">
-                        <Check className="w-3 h-3 text-emerald-700" />
-                        अपलोड सत्यापित ({formatDateHi(r.panchayatNirnayCapturedDate || r.meetingDate)})
-                      </span>
-                    ) : status === 'not_captured' ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300">
-                        छूट गई (अपलोड नहीं हुआ)
-                      </span>
-                    ) : isFuture ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
-                        आगामी बैठक (प्रतीक्षित)
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                        आज तक देय (पुष्टि प्रतीक्षित)
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Action Bar (1-Click status change) */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <button
-                        onClick={() => handleStatusChange(r.id, 'captured')}
-                        className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                          status === 'captured'
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
-                        }`}
-                      >
-                        ✓ अपलोड
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(r.id, 'not_captured')}
-                        className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                          status === 'not_captured'
-                            ? 'bg-rose-600 text-white shadow-xs'
-                            : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
-                        }`}
-                      >
-                        ✕ नहीं हुआ
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(r.id, 'pending')}
-                        className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                          status === 'pending'
-                            ? 'bg-slate-700 text-white shadow-xs'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        लंबित
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={() => openEditModal(r)}
-                      className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 shrink-0"
-                    >
-                      संपादित
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
         </div>
       </div>
     </div>

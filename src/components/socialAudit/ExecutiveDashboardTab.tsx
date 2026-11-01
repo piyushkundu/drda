@@ -5,9 +5,10 @@ import { useSocialAuditStore, SocialAuditTab } from '@/stores/socialAuditStore';
 import { SocialAuditRecord, AuditBlock } from '@/types/socialAudit';
 import { DISTRICT_META } from '@/data/socialAuditInitialData';
 import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
+import { matchesBRP, getBRPDisplayName } from '@/lib/brpHelper';
 import { 
   Landmark, Building2, Calendar, CheckCircle2, Clock, 
-  AlertTriangle, Smartphone, FileSpreadsheet, Users, 
+  AlertTriangle, Smartphone, FileSpreadsheet, Users, UserCheck,
   Search, X, ChevronRight, RefreshCw, Cloud, MapPin, 
   Phone, ArrowRight, ExternalLink, ShieldCheck, Check, 
   Layers, AlertCircle, Info, FileText, Filter, CalendarDays,
@@ -18,6 +19,9 @@ export default function ExecutiveDashboardTab() {
   const { 
     records, 
     nsapRecords, 
+    selectedBRP,
+    setSelectedBRP,
+    resetSelectedBRP,
     asOfDate, 
     liveDelhiTime, 
     liveDelhiDate,
@@ -79,18 +83,38 @@ export default function ExecutiveDashboardTab() {
     return <span>{unicodeText}</span>;
   };
 
-  // Compute metrics dynamically from current records & asOfDate
+  // Filter records by global selectedBRP
+  const effectiveRecords = useMemo(() => {
+    if (!selectedBRP || selectedBRP === 'all') return records;
+    return records.filter((r) => matchesBRP(r, selectedBRP));
+  }, [records, selectedBRP]);
+
+  // Compute assigned GP set for NSAP beneficiary filtering
+  const assignedGpRecordIds = useMemo(() => new Set(effectiveRecords.map((r) => r.id)), [effectiveRecords]);
+  const assignedGpNames = useMemo(() => new Set(effectiveRecords.map((r) => r.gpNameUnicode?.trim())), [effectiveRecords]);
+
+  // Filter NSAP records for selected BRP assigned GPs
+  const filteredNsapList = useMemo(() => {
+    if (!selectedBRP || selectedBRP === 'all') return nsapRecords || [];
+    return (nsapRecords || []).filter((g) => 
+      (g.rosterRecordId && assignedGpRecordIds.has(g.rosterRecordId)) ||
+      assignedGpRecordIds.has(g.id) ||
+      (g.gpNameUnicode && assignedGpNames.has(g.gpNameUnicode.trim()))
+    );
+  }, [nsapRecords, selectedBRP, assignedGpRecordIds, assignedGpNames]);
+
+  // Compute metrics dynamically from effective records & asOfDate
   const metrics = useMemo(() => {
-    const totalGPs = records.length; // 88
+    const totalGPs = effectiveRecords.length;
 
     // Block splits
-    const baghpatRecords = records.filter((r) => r.block === 'Baghpat');
-    const barautRecords = records.filter((r) => r.block === 'Baraut');
+    const baghpatRecords = effectiveRecords.filter((r) => r.block === 'Baghpat');
+    const barautRecords = effectiveRecords.filter((r) => r.block === 'Baraut');
 
     // Completed & Upcoming
-    const completedRecords = records.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
-    const upcomingRecords = records.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
-    const duePendingRecords = records.filter((r) => r.meetingDate <= asOfDate && r.status !== 'completed');
+    const completedRecords = effectiveRecords.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
+    const upcomingRecords = effectiveRecords.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
+    const duePendingRecords = effectiveRecords.filter((r) => r.meetingDate <= asOfDate && r.status !== 'completed');
 
     const baghpatCompleted = baghpatRecords.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
     const baghpatUpcoming = baghpatRecords.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
@@ -98,26 +122,26 @@ export default function ExecutiveDashboardTab() {
     const barautUpcoming = barautRecords.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
 
     // Panchayat Nirnay App (R 9.6.2)
-    const nirnayMappedRecords = records.filter((r) => r.isMappedInPanchayatNirnay);
-    const nirnayCapturedRecords = records.filter((r) => r.panchayatNirnayStatus === 'captured');
-    const nirnayDuePending = records.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
-    const nirnayUpcoming = records.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
+    const nirnayMappedRecords = effectiveRecords.filter((r) => r.isMappedInPanchayatNirnay);
+    const nirnayCapturedRecords = effectiveRecords.filter((r) => r.panchayatNirnayStatus === 'captured');
+    const nirnayDuePending = effectiveRecords.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+    const nirnayUpcoming = effectiveRecords.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
 
     const baghpatNirnayCaptured = baghpatRecords.filter((r) => r.panchayatNirnayStatus === 'captured');
     const barautNirnayCaptured = barautRecords.filter((r) => r.panchayatNirnayStatus === 'captured');
 
     // MIS Audit Feeding (R 9.1.3)
-    const misFedRecords = records.filter((r) => r.misStatus === 'fed');
-    const misPendingRecords = records.filter((r) => (r.misStatus || 'pending') !== 'fed');
-    const misDuePendingRecords = records.filter((r) => (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
+    const misFedRecords = effectiveRecords.filter((r) => r.misStatus === 'fed');
+    const misPendingRecords = effectiveRecords.filter((r) => (r.misStatus || 'pending') !== 'fed');
+    const misDuePendingRecords = effectiveRecords.filter((r) => (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
     const misDuePendingNSAP = misDuePendingRecords.filter((r) => r.hasNSAP);
 
     const baghpatMisFed = baghpatRecords.filter((r) => r.misStatus === 'fed');
     const barautMisFed = barautRecords.filter((r) => r.misStatus === 'fed');
 
     // NSAP Beneficiaries & Recorded GPs
-    const nsapRosterRecords = records.filter((r) => r.hasNSAP); // 47
-    const nsapList = nsapRecords || [];
+    const nsapRosterRecords = effectiveRecords.filter((r) => r.hasNSAP);
+    const nsapList = filteredNsapList;
     const totalBeneficiaries = nsapList.reduce((acc, item) => acc + (item.totalBeneficiaries || 0), 0);
     const totalDirect = nsapList.reduce((acc, item) => acc + (item.verifiedDirect || 0), 0);
     const totalFamily = nsapList.reduce((acc, item) => acc + (item.verifiedFamily || 0), 0);
@@ -134,7 +158,7 @@ export default function ExecutiveDashboardTab() {
     });
 
     // Amended Meetings
-    const amendedRecords = records.filter((r) => r.isAmended);
+    const amendedRecords = effectiveRecords.filter((r) => r.isAmended);
     const amendedCompleted = amendedRecords.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
     const amendedRemaining = amendedRecords.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
 
@@ -195,12 +219,12 @@ export default function ExecutiveDashboardTab() {
       recentlyCompleted,
       upcomingNext,
     };
-  }, [records, nsapRecords, asOfDate]);
+  }, [effectiveRecords, filteredNsapList, asOfDate]);
 
   // Dynamic NSAP Social Audit Progress Report (GPs calculation strictly matching NSAPReportTab)
   const nsapReport = useMemo(() => {
-    return calculateNSAPReportSummary(records, asOfDate);
-  }, [records, asOfDate]);
+    return calculateNSAPReportSummary(effectiveRecords, asOfDate);
+  }, [effectiveRecords, asOfDate]);
 
   // Handle Safe Refresh Action
   const handleRefresh = async () => {
@@ -216,7 +240,7 @@ export default function ExecutiveDashboardTab() {
   // Filter records inside modal
   const filteredModalRecords = useMemo(() => {
     let list: SocialAuditRecord[] = [];
-    if (activeModal === 'all') list = records;
+    if (activeModal === 'all') list = effectiveRecords;
     else if (activeModal === 'completed') list = metrics.completedRecords;
     else if (activeModal === 'upcoming') list = metrics.upcomingRecords;
     else if (activeModal === 'pending') list = metrics.duePendingRecords;
@@ -238,7 +262,7 @@ export default function ExecutiveDashboardTab() {
     }
 
     return list;
-  }, [activeModal, modalBlockFilter, modalSearch, records, metrics]);
+  }, [activeModal, modalBlockFilter, modalSearch, effectiveRecords, metrics]);
 
   // BRP Directory stats
   const brpSummary = useMemo(() => {
@@ -288,6 +312,39 @@ export default function ExecutiveDashboardTab() {
           </p>
         </div>
       </div>
+
+      {/* Active BRP Filter Banner */}
+      {selectedBRP && selectedBRP !== 'all' && (
+        <div className="bg-gradient-to-r from-indigo-50/90 via-blue-50/80 to-indigo-50/90 border border-indigo-200/90 rounded-2xl p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs shrink-0">
+              <UserCheck className="w-4 h-4" />
+            </span>
+            <div>
+              <div className="font-black text-indigo-950 flex items-center gap-2 flex-wrap">
+                <span>बी०आर०पी० फ़िल्टर सक्रिय:</span>
+                <span className="text-indigo-900 bg-white px-2.5 py-0.5 rounded-lg border border-indigo-200 shadow-2xs font-bold">
+                  {getBRPDisplayName(selectedBRP, records)}
+                </span>
+                <span className="text-xs font-semibold text-indigo-700">
+                  (आवंटित: {metrics.totalGPs} ग्राम पंचायतें)
+                </span>
+              </div>
+              <p className="text-[11px] text-indigo-800/80 mt-0.5">
+                डैशबोर्ड के सभी 8 KPI संकेतक, ब्लॉक मैट्रिक्स एवं NSAP आंकड़े केवल इस बी०आर०पी० के अनुसार प्रदर्शित हो रहे हैं।
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={resetSelectedBRP}
+            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-indigo-950 border border-indigo-300 font-bold text-xs shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 shrink-0"
+          >
+            <X className="w-3.5 h-3.5 text-indigo-600" />
+            <span>सभी बी०आर०पी० दिखाएं (Reset)</span>
+          </button>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* SECTION B: TOP 6 DYNAMIC KPI CARDS (Clickable for Detail Lists - 3D White Glass) */}

@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { MisAuditStatus, SocialAuditRecord } from '@/types/socialAudit';
+import { matchesBRP } from '@/lib/brpHelper';
 import { 
   CheckCircle2, Clock, XCircle, Search, Filter, 
   Download, Building2, ShieldCheck, 
@@ -13,6 +14,7 @@ import {
 export default function MisFeedingTab() {
   const { 
     records, 
+    selectedBRP,
     asOfDate, 
     fontViewMode, 
     updateMisStatus,
@@ -58,30 +60,36 @@ export default function MisFeedingTab() {
     return <span>{unicodeText}</span>;
   };
 
-  // Detailed Metrics computation strictly respecting asOfDate
+  // Filter records by global selectedBRP
+  const effectiveRecords = useMemo(() => {
+    if (!selectedBRP || selectedBRP === 'all') return records;
+    return records.filter((r) => matchesBRP(r, selectedBRP));
+  }, [records, selectedBRP]);
+
+  // Detailed Metrics computation strictly respecting asOfDate and selected BRP
   const metrics = useMemo(() => {
-    const totalGps = records.length; // 88
-    const baghpatTotal = records.filter(r => r.block === 'Baghpat').length; // 44
-    const barautTotal = records.filter(r => r.block === 'Baraut').length; // 44
+    const totalGps = effectiveRecords.length;
+    const baghpatTotal = effectiveRecords.filter(r => r.block === 'Baghpat').length;
+    const barautTotal = effectiveRecords.filter(r => r.block === 'Baraut').length;
 
-    const fedTotal = records.filter(r => r.misStatus === 'fed');
-    const fedBaghpat = records.filter(r => r.block === 'Baghpat' && r.misStatus === 'fed');
-    const fedBaraut = records.filter(r => r.block === 'Baraut' && r.misStatus === 'fed');
+    const fedTotal = effectiveRecords.filter(r => r.misStatus === 'fed');
+    const fedBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && r.misStatus === 'fed');
+    const fedBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && r.misStatus === 'fed');
 
-    // All Pending (Everything not yet fed on MIS: 46 total = 19 Baghpat + 27 Baraut)
-    const allPendingTotal = records.filter(r => (r.misStatus || 'pending') !== 'fed');
-    const allPendingBaghpat = records.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed');
-    const allPendingBaraut = records.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed');
+    // All Pending (Everything not yet fed on MIS)
+    const allPendingTotal = effectiveRecords.filter(r => (r.misStatus || 'pending') !== 'fed');
+    const allPendingBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed');
+    const allPendingBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed');
 
     // Due Pending: Meeting date has arrived (meetingDate <= asOfDate) and status is pending (not yet fed on MIS)
-    const duePendingTotal = records.filter(r => (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
-    const duePendingBaghpat = records.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
-    const duePendingBaraut = records.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
+    const duePendingTotal = effectiveRecords.filter(r => (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
+    const duePendingBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
+    const duePendingBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
 
     // Upcoming Scheduled: Future meetings (meetingDate > asOfDate) awaiting their meeting date
-    const upcomingTotal = records.filter(r => (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
-    const upcomingBaghpat = records.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
-    const upcomingBaraut = records.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
+    const upcomingTotal = effectiveRecords.filter(r => (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
+    const upcomingBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
+    const upcomingBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
 
     // Pending with NSAP Pension
     const pendingWithNSAPTotal = allPendingTotal.filter(r => r.hasNSAP);
@@ -97,18 +105,18 @@ export default function MisFeedingTab() {
       totalGps,
       baghpatTotal,
       barautTotal,
-      fedTotalCount: fedTotal.length, // Baseline 42 (Screenshot: 25 Baghpat + 17 Baraut)
-      fedBaghpatCount: fedBaghpat.length, // 25 (56.82%)
-      fedBarautCount: fedBaraut.length, // 17 (38.64%)
-      allPendingTotalCount: allPendingTotal.length, // Baseline 46 (19 in Baghpat + 27 in Baraut)
-      allPendingBaghpatCount: allPendingBaghpat.length, // 19
-      allPendingBarautCount: allPendingBaraut.length, // 27
-      duePendingTotalCount: duePendingTotal.length, // Baseline 6 (4 in Baghpat + 2 in Baraut)
-      duePendingBaghpatCount: duePendingBaghpat.length, // 4
-      duePendingBarautCount: duePendingBaraut.length, // 2
-      upcomingTotalCount: upcomingTotal.length, // Baseline 40 (15 in Baghpat + 25 in Baraut)
-      upcomingBaghpatCount: upcomingBaghpat.length, // 15
-      upcomingBarautCount: upcomingBaraut.length, // 25
+      fedTotalCount: fedTotal.length,
+      fedBaghpatCount: fedBaghpat.length,
+      fedBarautCount: fedBaraut.length,
+      allPendingTotalCount: allPendingTotal.length,
+      allPendingBaghpatCount: allPendingBaghpat.length,
+      allPendingBarautCount: allPendingBaraut.length,
+      duePendingTotalCount: duePendingTotal.length,
+      duePendingBaghpatCount: duePendingBaghpat.length,
+      duePendingBarautCount: duePendingBaraut.length,
+      upcomingTotalCount: upcomingTotal.length,
+      upcomingBaghpatCount: upcomingBaghpat.length,
+      upcomingBarautCount: upcomingBaraut.length,
       pendingWithNSAPTotalCount: pendingWithNSAPTotal.length,
       pendingWithNSAPBaghpatCount: pendingWithNSAPBaghpat.length,
       pendingWithNSAPBarautCount: pendingWithNSAPBaraut.length,
@@ -119,11 +127,11 @@ export default function MisFeedingTab() {
       baghpatFedPercentage: baghpatTotal > 0 ? ((fedBaghpat.length / baghpatTotal) * 100).toFixed(2) : '0.00',
       barautFedPercentage: barautTotal > 0 ? ((fedBaraut.length / barautTotal) * 100).toFixed(2) : '0.00',
     };
-  }, [records, asOfDate]);
+  }, [effectiveRecords, asOfDate]);
 
   // Pending Records for the dedicated Pending Box (Due only vs All pending)
   const pendingBoxRecords = useMemo(() => {
-    return records
+    return effectiveRecords
       .filter(r => {
         const isPending = (r.misStatus || 'pending') !== 'fed';
         if (!isPending) return false;
@@ -132,11 +140,11 @@ export default function MisFeedingTab() {
         return r.block === pendingBlockFilter;
       })
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
-  }, [records, asOfDate, pendingBlockFilter, pendingViewScope]);
+  }, [effectiveRecords, asOfDate, pendingBlockFilter, pendingViewScope]);
 
   // Upcoming scheduled records awaiting meeting day
   const upcomingScheduledRecords = useMemo(() => {
-    return records
+    return effectiveRecords
       .filter(r => {
         const isPending = (r.misStatus || 'pending') !== 'fed';
         const isFuture = r.meetingDate > asOfDate;
@@ -145,11 +153,11 @@ export default function MisFeedingTab() {
         return r.block === pendingBlockFilter;
       })
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
-  }, [records, asOfDate, pendingBlockFilter]);
+  }, [effectiveRecords, asOfDate, pendingBlockFilter]);
 
   // Main Table Filtered Records
   const filteredRecords = useMemo(() => {
-    return records.filter(r => {
+    return effectiveRecords.filter(r => {
       // 1. Block Filter
       if (selectedBlockFilter !== 'all' && r.block !== selectedBlockFilter) return false;
 
@@ -657,8 +665,14 @@ export default function MisFeedingTab() {
           </div>
         </div>
 
-        {/* The Table (Desktop >=768px) */}
-        <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200">
+        {/* Mobile Swipe Notice */}
+        <div className="md:hidden px-3 py-1.5 bg-slate-100/90 border-b border-slate-200 text-[11px] text-slate-600 flex items-center justify-between font-medium">
+          <span>👉 तालिका को बाएं-दाएं स्वाइप करें</span>
+          <span className="font-mono text-slate-500">कुल {filteredRecords.length} रिकॉर्ड्स</span>
+        </div>
+
+        {/* Single Responsive Table for Desktop, Tablet and Mobile */}
+        <div className="overflow-x-auto max-h-[700px] scrollbar-thin rounded-2xl border border-slate-200">
           <table className="w-full text-left text-xs text-slate-700">
             <thead className="bg-slate-100/90 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
               <tr>
@@ -785,107 +799,6 @@ export default function MisFeedingTab() {
               })}
             </tbody>
           </table>
-        </div>
-
-        {/* Dedicated Mobile Cards View (<768px) */}
-        <div className="md:hidden p-3 space-y-3 bg-slate-50/60">
-          {filteredRecords.map((r) => {
-            const isFed = r.misStatus === 'fed';
-            const isDuePending = !isFed && r.meetingDate <= asOfDate;
-            const isUpcoming = !isFed && r.meetingDate > asOfDate;
-            const isRecentlyUpdated = justUpdatedId === r.id;
-
-            return (
-              <div
-                key={r.id}
-                className={`bg-white rounded-2xl border p-4 shadow-xs space-y-3 transition-all ${
-                  isFed
-                    ? 'border-blue-200 bg-blue-50/20'
-                    : isDuePending
-                    ? 'border-amber-300 bg-amber-50/20'
-                    : 'border-slate-200'
-                } ${isRecentlyUpdated ? 'ring-2 ring-blue-500' : ''}`}
-              >
-                <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600">
-                        #{r.sno}
-                      </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                        r.block === 'Baghpat' ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-indigo-50 text-indigo-800 border border-indigo-200'
-                      }`}>
-                        {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
-                      </span>
-                      {r.hasNSAP && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          NSAP
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="font-black text-slate-900 text-sm leading-tight truncate">
-                      {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
-                    </h4>
-                  </div>
-
-                  <div className="text-right shrink-0">
-                    <span className="text-xs font-mono font-bold text-slate-800 block">
-                      {formatDateHi(r.meetingDate)}
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      Col 8: <strong className="text-blue-700">{isFed ? '1 (फीडेड)' : '0'}</strong>
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-xs text-slate-600">
-                  <span>बी०आर०पी०: <strong>{r.brpName}</strong> ({r.brpPhone})</span>
-                </div>
-
-                {/* Status & 1-Click Action */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                  <div>
-                    {isFed ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300">
-                        ✓ पोर्टल पर फीडेड
-                      </span>
-                    ) : isDuePending ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                        देय लंबित (कार्रवाई आवश्यक)
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                        आगामी बैठक
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => handleStatusChange(r.id, 'fed')}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                        isFed
-                          ? 'bg-blue-700 text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-blue-800 border border-slate-200'
-                      }`}
-                    >
-                      फीडेड
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(r.id, 'pending')}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                        !isFed
-                          ? 'bg-amber-600 text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-700 hover:bg-amber-50 hover:text-amber-800 border border-slate-200'
-                      }`}
-                    >
-                      लंबित
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
         </div>
       </div>
     </div>

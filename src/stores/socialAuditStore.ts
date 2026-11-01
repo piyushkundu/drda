@@ -25,6 +25,7 @@ interface SocialAuditState {
   nsapRecords: NSAPGramPanchayatData[];
   fontViewMode: FontViewMode;
   selectedBlock: 'all' | AuditBlock;
+  selectedBRP: string; // 'all' or BRP phone / name
   selectedScheme: 'all' | 'nsap' | 'mgnrega' | 'pmayg';
   selectedStatus: 'all' | AuditStatus | 'upcoming';
   searchQuery: string;
@@ -47,6 +48,8 @@ interface SocialAuditState {
   // Actions
   setFontViewMode: (mode: FontViewMode) => void;
   setSelectedBlock: (block: 'all' | AuditBlock) => void;
+  setSelectedBRP: (brp: string) => void;
+  resetSelectedBRP: () => void;
   setSelectedScheme: (scheme: 'all' | 'nsap' | 'mgnrega' | 'pmayg') => void;
   setSelectedStatus: (status: 'all' | AuditStatus | 'upcoming') => void;
   setSearchQuery: (query: string) => void;
@@ -116,6 +119,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       nsapRecords: INITIAL_NSAP_DATA_RECORDS,
       fontViewMode: 'unicode',
       selectedBlock: 'all',
+      selectedBRP: 'all',
       selectedScheme: 'all',
       selectedStatus: 'all',
       searchQuery: '',
@@ -219,6 +223,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
 
       setFontViewMode: (mode) => set({ fontViewMode: mode }),
       setSelectedBlock: (block) => set({ selectedBlock: block }),
+      setSelectedBRP: (brp) => set({ selectedBRP: brp }),
+      resetSelectedBRP: () => set({ selectedBRP: 'all' }),
       setSelectedScheme: (scheme) => set({ selectedScheme: scheme }),
       setSelectedStatus: (status) => set({ selectedStatus: status }),
       setSearchQuery: (query) => set({ searchQuery: query }),
@@ -579,7 +585,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
         fontViewMode: state.fontViewMode,
         isLiveSync: state.isLiveSync,
         asOfDate: state.asOfDate,
-        activeTab: state.activeTab
+        activeTab: state.activeTab,
+        selectedBRP: state.selectedBRP
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

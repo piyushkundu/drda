@@ -5,6 +5,7 @@ import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { NSAPReportSummary, NSAPReportRow, SocialAuditRecord } from '@/types/socialAudit';
 import { exportNSAPReportExcel } from '@/lib/exportSocialAuditExcel';
 import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
+import { matchesBRP } from '@/lib/brpHelper';
 import { getDelhiDateString, formatDelhiDateHindi } from '@/lib/delhiTime';
 import { 
   FileText, Calendar, Download, Printer, CheckCircle2, 
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function NSAPReportTab() {
-  const { records, asOfDate, setAsOfDate, fontViewMode, openEditModal } = useSocialAuditStore();
+  const { records, selectedBRP, asOfDate, setAsOfDate, fontViewMode, openEditModal } = useSocialAuditStore();
   const [downloading, setDownloading] = useState(false);
   const [amendedFilter, setAmendedFilter] = useState<'nsap' | 'uptoDate' | 'all10'>('nsap');
   const [amendedBlockFilter, setAmendedBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
@@ -62,10 +63,16 @@ export default function NSAPReportTab() {
     return <span>{unicodeText}</span>;
   };
 
-  // Generate dynamic NSAP Report calculations based on asOfDate
+  // Filter records by global selectedBRP
+  const effectiveRecords = useMemo(() => {
+    if (!selectedBRP || selectedBRP === 'all') return records;
+    return records.filter((r) => matchesBRP(r, selectedBRP));
+  }, [records, selectedBRP]);
+
+  // Generate dynamic NSAP Report calculations based on asOfDate and selected BRP
   const reportSummary: NSAPReportSummary = useMemo(() => {
-    return calculateNSAPReportSummary(records, asOfDate);
-  }, [records, asOfDate]);
+    return calculateNSAPReportSummary(effectiveRecords, asOfDate);
+  }, [effectiveRecords, asOfDate]);
 
   // List of amended records to display based on user tab filter
   const displayedAmendedRecords = useMemo(() => {
@@ -207,14 +214,20 @@ export default function NSAPReportTab() {
           </div>
         </div>
 
-        {/* The Official Report Table (Desktop/Tablet View >=768px) */}
-        <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        {/* Mobile Swipe Notice */}
+        <div className="md:hidden px-3 py-1.5 bg-slate-100/90 border-b border-slate-200 text-[11px] text-slate-600 flex items-center justify-between font-medium">
+          <span>👉 प्रारूप तालिका को बाएं-दाएं स्वाइप करें</span>
+          <span className="font-mono text-slate-500">2 विकास खंड</span>
+        </div>
+
+        {/* The Official Report Table (Single Semantic Table for Desktop, Tablet and Mobile) */}
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs">
           <table className="w-full text-center border-collapse text-xs">
             <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
               <tr>
-                <th className="py-3 px-2 border-r border-slate-200 w-12">क्रम सं०</th>
+                <th className="py-3 px-2 border-r border-slate-200 w-12 sticky left-0 bg-slate-100 z-10">क्रम सं०</th>
                 <th className="py-3 px-3 border-r border-slate-200">जनपद का नाम</th>
-                <th className="py-3 px-3 border-r border-slate-200">विकास खंड का नाम</th>
+                <th className="py-3 px-3 border-r border-slate-200 sticky left-12 bg-slate-100 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">विकास खंड का नाम</th>
                 <th className="py-3 px-3 border-r border-slate-200 leading-tight">
                   वित्तीय वर्ष 2026-27 में प्रस्तावित कुल<br />ग्राम पंचायतों/सोशल ऑडिट की संख्या
                 </th>
@@ -232,13 +245,13 @@ export default function NSAPReportTab() {
             <tbody className="divide-y divide-slate-100 font-medium">
               {reportSummary.rows.map((row) => (
                 <tr key={row.sno} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-2 border-r border-slate-200 font-bold text-slate-500">
+                  <td className="py-3 px-2 border-r border-slate-200 font-bold text-slate-500 sticky left-0 bg-white z-10">
                     {row.sno}
                   </td>
                   <td className="py-3 px-3 border-r border-slate-200 font-bold text-slate-900 text-left">
                     {row.districtHindi}
                   </td>
-                  <td className="py-3 px-3 border-r border-slate-200 font-bold text-slate-900 text-left">
+                  <td className="py-3 px-3 border-r border-slate-200 font-bold text-slate-900 text-left sticky left-12 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
                     {row.blockHindi}
                   </td>
                   <td className="py-3 px-3 border-r border-slate-200 font-bold text-slate-700">
@@ -292,105 +305,6 @@ export default function NSAPReportTab() {
           </table>
         </div>
 
-        {/* Dedicated Mobile Block Summary Cards (<768px) */}
-        <div className="md:hidden space-y-3.5">
-          {reportSummary.rows.map((row) => {
-            const completionRate = row.proposedUpToDate > 0 ? Math.round((row.completedUpToDate / row.proposedUpToDate) * 100) : 0;
-            return (
-              <div
-                key={row.sno}
-                className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 font-black text-xs flex items-center justify-center">
-                      {row.sno}
-                    </span>
-                    <h4 className="font-black text-slate-900 text-sm">
-                      विकास खंड: {row.blockHindi}
-                    </h4>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
-                    जनपद: {row.districtHindi}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                    <div className="text-[10px] text-slate-500 font-semibold">कुल प्रस्तावित (FY 26-27)</div>
-                    <div className="text-lg font-black text-slate-800 mt-0.5">{row.totalProposedFY} GP</div>
-                  </div>
-
-                  <div className="bg-blue-50/50 p-2.5 rounded-xl border border-blue-200">
-                    <div className="text-[10px] text-blue-900 font-semibold">कट-ऑफ तक प्रस्तावित</div>
-                    <div className="text-lg font-black text-blue-800 mt-0.5">{row.proposedUpToDate} GP</div>
-                  </div>
-
-                  <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-200">
-                    <div className="text-[10px] text-emerald-900 font-semibold">कट-ऑफ तक सम्पन्न</div>
-                    <div className="text-lg font-black text-emerald-700 mt-0.5">{row.completedUpToDate} GP</div>
-                  </div>
-
-                  <div className="bg-amber-50/50 p-2.5 rounded-xl border border-amber-200">
-                    <div className="text-[10px] text-amber-900 font-semibold">संशोधित / निरस्त</div>
-                    <div className="text-lg font-black text-amber-800 mt-0.5">{row.amendedOrCancelled} GP</div>
-                    <div className="text-[9px] text-amber-700 mt-0.5">(सत्र कुल: {row.totalAmendedInFY})</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 font-semibold">
-                  <span className="text-slate-500">प्रगति दर:</span>
-                  <span className="text-emerald-700 font-black">{completionRate}% पूर्ण</span>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* District Total Summary Card for Mobile */}
-          <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white rounded-2xl p-4 shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-              <h4 className="font-black text-amber-300 text-sm">
-                जनपद बागपत (कुल योग Summary)
-              </h4>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white border border-white/20">
-                2 विकास खंड
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="bg-white/10 p-2.5 rounded-xl border border-white/10">
-                <div className="text-[10px] text-slate-300 font-medium">कुल प्रस्तावित (सत्र)</div>
-                <div className="text-xl font-black text-white mt-0.5">{reportSummary.totals.totalProposedFY} GP</div>
-              </div>
-
-              <div className="bg-blue-500/20 p-2.5 rounded-xl border border-blue-400/20">
-                <div className="text-[10px] text-blue-200 font-medium">कट-ऑफ तक देय</div>
-                <div className="text-xl font-black text-blue-200 mt-0.5">{reportSummary.totals.proposedUpToDate} GP</div>
-              </div>
-
-              <div className="bg-emerald-500/20 p-2.5 rounded-xl border border-emerald-400/20">
-                <div className="text-[10px] text-emerald-200 font-medium">कट-ऑफ तक सम्पन्न</div>
-                <div className="text-xl font-black text-emerald-300 mt-0.5">{reportSummary.totals.completedUpToDate} GP</div>
-              </div>
-
-              <div className="bg-amber-500/20 p-2.5 rounded-xl border border-amber-400/20">
-                <div className="text-[10px] text-amber-200 font-medium">संशोधित / निरस्त</div>
-                <div className="text-xl font-black text-amber-300 mt-0.5">{reportSummary.totals.amendedOrCancelled} GP</div>
-                <div className="text-[9px] text-amber-200/80 mt-0.5">(सत्र कुल: {reportSummary.totals.totalAmendedInFY})</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs pt-2 border-t border-white/10 font-medium text-slate-200">
-              <span>जनपद औसत प्रगति:</span>
-              <span className="text-emerald-300 font-black text-sm">
-                {reportSummary.totals.proposedUpToDate > 0
-                  ? Math.round((reportSummary.totals.completedUpToDate / reportSummary.totals.proposedUpToDate) * 100)
-                  : 0}%
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Note on Amendments */}
         <div className="mt-3 text-[11px] text-slate-600 flex items-center justify-between bg-amber-50 border border-amber-200 p-2.5 rounded-xl">
           <span className="flex items-center gap-1.5 text-amber-800">
@@ -405,21 +319,21 @@ export default function NSAPReportTab() {
         </div>
 
         {/* Official Signatures Blocks */}
-        <div className="mt-10 pt-6 border-t border-slate-200 grid grid-cols-2 md:grid-cols-3 gap-6 text-center text-xs">
+        <div className="mt-10 pt-6 border-t border-slate-200 grid grid-cols-3 gap-2 md:gap-6 text-center text-[10px] md:text-xs">
           <div>
             <div className="h-8" />
             <div className="font-bold text-slate-800">नोडल अधिकारी / बी०आर०पी०</div>
-            <div className="text-[11px] text-slate-500">सोशल ऑडिट, जनपद बागपत</div>
+            <div className="text-[10px] md:text-[11px] text-slate-500">सोशल ऑडिट, बागपत</div>
           </div>
-          <div className="hidden md:block">
+          <div>
             <div className="h-8" />
             <div className="font-bold text-slate-800">जिला विकास अधिकारी</div>
-            <div className="text-[11px] text-slate-500">जनपद बागपत</div>
+            <div className="text-[10px] md:text-[11px] text-slate-500">जनपद बागपत</div>
           </div>
           <div>
             <div className="h-8" />
             <div className="font-bold text-slate-800">मुख्य विकास अधिकारी</div>
-            <div className="text-[11px] text-slate-500">जनपद बागपत</div>
+            <div className="text-[10px] md:text-[11px] text-slate-500">जनपद बागपत</div>
           </div>
         </div>
       </div>
@@ -507,8 +421,14 @@ export default function NSAPReportTab() {
           </button>
         </div>
 
-        {/* Table of Amended Gram Panchayats (Desktop >=768px) */}
-        <div className="hidden md:block overflow-x-auto rounded-2xl border border-amber-200 bg-white">
+        {/* Mobile Swipe Notice */}
+        <div className="md:hidden px-3 py-1.5 bg-amber-50/90 border-b border-amber-200 text-[11px] text-amber-800 flex items-center justify-between font-medium">
+          <span>👉 तालिका को बाएं-दाएं स्वाइप करें</span>
+          <span className="font-mono text-amber-700">कुल {displayedAmendedRecords.length} संशोधित</span>
+        </div>
+
+        {/* Table of Amended Gram Panchayats (Single Semantic Table for Desktop & Mobile) */}
+        <div className="overflow-x-auto max-h-[600px] scrollbar-thin rounded-2xl border border-amber-200 bg-white shadow-xs">
           <table className="w-full text-left border-collapse text-xs">
             <thead className="bg-amber-50 text-amber-900 font-bold border-b border-amber-200">
               <tr>
@@ -647,99 +567,6 @@ export default function NSAPReportTab() {
             </tbody>
           </table>
         </div>
-
-        {/* Dedicated Mobile Cards for Amended Gram Panchayats (<768px) */}
-        <div className="md:hidden space-y-3">
-          {displayedAmendedRecords.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 bg-amber-50/30 rounded-2xl border border-amber-200 p-4 text-xs">
-              चयनित फ़िल्टर में कोई संशोधित ग्राम पंचायत नहीं है।
-            </div>
-          ) : (
-            displayedAmendedRecords.map((gp, idx) => {
-              const origDate = gp.amendmentDetails?.originalDate || gp.originalMeetingDate || '';
-              const newDate = gp.meetingDate;
-              const isCompleted = newDate <= asOfDate;
-
-              return (
-                <div
-                  key={gp.id}
-                  className="bg-white rounded-2xl border border-amber-300 p-4 shadow-xs space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-2 border-b border-amber-100 pb-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-200">
-                          #{idx + 1}
-                        </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                          {gp.blockHindi}
-                        </span>
-                        {gp.hasNSAP && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            NSAP
-                          </span>
-                        )}
-                      </div>
-                      <h4 className="font-black text-slate-900 text-sm leading-tight truncate">
-                        {renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}
-                      </h4>
-                    </div>
-
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      isCompleted
-                        ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                        : 'bg-amber-100 text-amber-900 border border-amber-300'
-                    }`}>
-                      {isCompleted ? 'सम्पन्न ✓' : 'आगामी तिथि'}
-                    </span>
-                  </div>
-
-                  {/* Dates comparison */}
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-amber-50/50 p-2.5 rounded-xl border border-amber-200">
-                    <div>
-                      <span className="text-[10px] text-rose-700 font-semibold block">मूल तिथि</span>
-                      <span className="font-mono font-bold line-through text-slate-400">
-                        {formatDateHiShort(origDate)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-amber-900 font-bold block">संशोधित तिथि</span>
-                      <span className="font-mono font-black text-amber-900">
-                        {formatDateHiShort(newDate)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* BRP Reallocation */}
-                  <div className="text-xs space-y-1">
-                    <div className="text-slate-500">
-                      <span>पूर्व BRP: </span>
-                      <span className="line-through text-slate-400 font-medium">हरिकिशन</span>
-                    </div>
-                    <div className="text-emerald-800 font-semibold">
-                      <span>नवीन BRP: </span>
-                      <span>{renderText(gp.brpName || gp.brpUnicode, gp.brpKrutiDev)}</span>
-                    </div>
-                  </div>
-
-                  {/* Action */}
-                  <div className="pt-2 border-t border-amber-100 flex items-center justify-between">
-                    <span className="text-[10px] text-amber-800 font-medium">
-                      BRP कार्यमुक्त संशोधन
-                    </span>
-                    <button
-                      onClick={() => openEditModal(gp)}
-                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100 flex items-center gap-1 transition-colors"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      <span>संपादित करें</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
       </div>
 
       {/* Breakdown: List of all NSAP Gram Panchayats up to Selected Date */}
@@ -754,7 +581,14 @@ export default function NSAPReportTab() {
           </span>
         </h3>
 
-        <div className="hidden md:block overflow-x-auto max-h-96 scrollbar-thin rounded-xl border border-slate-200">
+        {/* Mobile Swipe Notice */}
+        <div className="md:hidden px-3 py-1.5 bg-slate-100/90 border-b border-slate-200 text-[11px] text-slate-600 flex items-center justify-between font-medium">
+          <span>👉 तालिका को बाएं-दाएं स्वाइप करें</span>
+          <span className="font-mono text-slate-500">कुल {reportSummary.totals.proposedUpToDate} ग्राम पंचायतें</span>
+        </div>
+
+        {/* Table of Covered NSAP GPs (Single Semantic Table for Desktop & Mobile) */}
+        <div className="overflow-x-auto max-h-96 scrollbar-thin rounded-xl border border-slate-200 shadow-xs">
           <table className="w-full text-left border-collapse text-xs">
             <thead className="bg-slate-100 text-slate-700 sticky top-0 font-semibold border-b border-slate-200">
               <tr>
@@ -818,61 +652,6 @@ export default function NSAPReportTab() {
               )}
             </tbody>
           </table>
-        </div>
-
-        {/* Dedicated Mobile Cards for Covered NSAP GPs (<768px) */}
-        <div className="md:hidden space-y-2.5">
-          {reportSummary.totals.proposedUpToDate === 0 ? (
-            <div className="py-6 text-center text-slate-400 bg-slate-50 rounded-xl p-4 text-xs">
-              चयनित दिनांक तक कोई NSAP ऑडिट प्रस्तावित नहीं है।
-            </div>
-          ) : (
-            reportSummary.rows.flatMap((r) =>
-              r.gramPanchayatsList.map((gp, i) => {
-                const isCompl = gp.meetingDate <= asOfDate;
-                return (
-                  <div
-                    key={gp.id}
-                    className={`p-3 rounded-xl border bg-white shadow-xs space-y-2 ${
-                      gp.isAmended ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600">
-                          #{i + 1}
-                        </span>
-                        <h5 className="font-bold text-slate-900 text-xs">
-                          {gp.gpNameUnicode}
-                        </h5>
-                      </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        isCompl
-                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
-                          : 'bg-blue-50 text-blue-800 border border-blue-200'
-                      }`}>
-                        {isCompl ? 'सम्पन्न' : 'प्रस्तावित'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs text-slate-600">
-                      <span>विकास खण्ड: <strong>{gp.blockHindi}</strong></span>
-                      <span className="font-mono text-blue-800 font-semibold">{formatDateHiShort(gp.meetingDate)}</span>
-                    </div>
-
-                    <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-100 flex items-center justify-between">
-                      <span>BRP: {gp.brpUnicode}</span>
-                      {gp.isAmended && (
-                        <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded border border-amber-200">
-                          संशोधित
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )
-          )}
         </div>
       </div>
     </div>

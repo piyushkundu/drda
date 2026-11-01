@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import SocialAuditCompactHeader from './SocialAuditCompactHeader';
+import GlobalBRPFilterBar from './GlobalBRPFilterBar';
 import SocialAuditSidebar from './SocialAuditSidebar';
 import UpcomingSabhasTab from './UpcomingSabhasTab';
 import ExecutiveDashboardTab from './ExecutiveDashboardTab';
@@ -31,6 +32,9 @@ export default function SocialAuditDashboard() {
         isMobileSidebarOpen={isMobileSidebarOpen}
         setIsMobileSidebarOpen={setIsMobileSidebarOpen}
       />
+
+      {/* Global BRP Filter Toolbar - Persistent across all tabs */}
+      <GlobalBRPFilterBar />
 
       {/* 2. Main Shell: Collapsible Left Sidebar + Main Content Area */}
       <div className="flex flex-1 overflow-hidden relative w-full min-w-0">

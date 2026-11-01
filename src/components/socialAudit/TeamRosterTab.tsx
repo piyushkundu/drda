@@ -2,10 +2,16 @@
 
 import React, { useMemo } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { matchesBRP } from '@/lib/brpHelper';
 import { Phone, Users, Shield, Calendar, MapPin, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
 
 export default function TeamRosterTab() {
-  const { records, asOfDate, openEditModal } = useSocialAuditStore();
+  const { records, asOfDate, openEditModal, selectedBRP } = useSocialAuditStore();
+
+  const effectiveRecords = useMemo(() => {
+    if (!selectedBRP || selectedBRP === 'all') return records;
+    return records.filter((r) => matchesBRP(r, selectedBRP));
+  }, [records, selectedBRP]);
 
   // Group by BRP
   const brpDirectory = useMemo(() => {
@@ -63,17 +69,28 @@ export default function TeamRosterTab() {
     return Array.from(map.values()).sort((a, b) => b.allGPs.length - a.allGPs.length);
   }, [records, asOfDate]);
 
+  // Filter BRP Directory by selected BRP if active
+  const filteredBrpDirectory = useMemo(() => {
+    if (!selectedBRP || selectedBRP === 'all') return brpDirectory;
+    return brpDirectory.filter((b) => {
+      if (b.phone && selectedBRP.includes(b.phone)) return true;
+      if (b.name && selectedBRP.includes(b.name)) return true;
+      if (b.allGPs.some((r) => matchesBRP(r, selectedBRP))) return true;
+      return false;
+    });
+  }, [brpDirectory, selectedBRP]);
+
   // Group by Supervisory Officers
   const supervisorDirectory = useMemo(() => {
-    const map = new Map<string, typeof records>();
-    records.forEach((r) => {
+    const map = new Map<string, typeof effectiveRecords>();
+    effectiveRecords.forEach((r) => {
       const s = r.supervisorOfficerUnicode.trim();
       if (!s) return;
       if (!map.has(s)) map.set(s, []);
       map.get(s)!.push(r);
     });
     return Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length);
-  }, [records]);
+  }, [effectiveRecords]);
 
   return (
     <div className="space-y-6">
@@ -91,8 +108,13 @@ export default function TeamRosterTab() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {brpDirectory.map((brp) => (
+        {filteredBrpDirectory.length === 0 ? (
+          <div className="text-center py-8 bg-slate-50 border border-slate-200 rounded-2xl p-6 text-sm text-slate-500">
+            चयनित बी०आर०पी० के लिए कोई रिकॉर्ड उपलब्ध नहीं है।
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredBrpDirectory.map((brp) => (
             <div
               key={brp.phone || brp.name}
               className={`p-5 rounded-2xl border shadow-sm flex flex-col justify-between ${
@@ -169,91 +191,62 @@ export default function TeamRosterTab() {
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {/* Section 2: District Level Supervisory Officers */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm">
-        <h3 className="text-base md:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-purple-600" />
-          <span>जनपद स्तरीय पर्यवेक्षक अधिकारी सूची (Supervisory Officers)</span>
-        </h3>
-        <p className="text-xs text-slate-600 mb-4">
-          सोशल ऑडिट बैठकों में जनपद स्तर से नामित नोडल/पर्यवेक्षक अधिकारी
-        </p>
-
-        {/* Desktop Table (>=768px) */}
-        <div className="hidden md:block overflow-x-auto max-h-80 scrollbar-thin rounded-xl border border-slate-200">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead className="bg-slate-100 text-slate-700 sticky top-0 font-semibold border-b border-slate-200">
-              <tr>
-                <th className="py-2.5 px-3 w-12 text-center">क्र०</th>
-                <th className="py-2.5 px-3">पर्यवेक्षक अधिकारी का पदनाम / विभाग</th>
-                <th className="py-2.5 px-3 text-center">आवंटित बैठकें</th>
-                <th className="py-2.5 px-3">ग्राम पंचायतें</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
-              {supervisorDirectory.map(([officer, gps], i) => (
-                <tr key={officer} className="hover:bg-slate-50">
-                  <td className="py-2.5 px-3 text-center text-slate-400 font-mono">{i + 1}</td>
-                  <td className="py-2.5 px-3 font-semibold text-slate-800">{officer}</td>
-                  <td className="py-2.5 px-3 text-center font-bold text-purple-700 font-mono">
-                    {gps.length}
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <div className="flex flex-wrap gap-1 max-w-xl">
-                      {gps.map((gp) => (
-                        <span
-                          key={gp.id}
-                          className="text-[10px] bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-slate-700"
-                        >
-                          {gp.gpNameUnicode} ({gp.meetingDate.slice(5)})
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-3">
+        <div>
+          <h3 className="text-base md:text-lg font-black text-slate-900 mb-1 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-purple-600" />
+            <span>जनपद स्तरीय पर्यवेक्षक अधिकारी सूची (Supervisory Officers)</span>
+          </h3>
+          <p className="text-xs text-slate-600">
+            सोशल ऑडिट बैठकों में जनपद स्तर से नामित नोडल/पर्यवेक्षक अधिकारी
+          </p>
         </div>
 
-        {/* Dedicated Mobile Cards (<768px) */}
-        <div className="md:hidden space-y-3">
-          {supervisorDirectory.map(([officer, gps], i) => (
-            <div
-              key={officer}
-              className="bg-slate-50/70 rounded-xl border border-slate-200 p-3.5 space-y-2.5"
-            >
-              <div className="flex items-start justify-between gap-2 border-b border-slate-200/80 pb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-white text-slate-600 border border-slate-200">
-                    #{i + 1}
-                  </span>
-                  <h4 className="font-bold text-slate-900 text-xs leading-snug">
-                    {officer}
-                  </h4>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300 shrink-0">
-                  {gps.length} बैठकें
-                </span>
-              </div>
-
-              <div>
-                <div className="text-[10px] text-slate-500 font-semibold mb-1">आवंटित ग्राम पंचायतें:</div>
-                <div className="flex flex-wrap gap-1">
-                  {gps.map((gp) => (
-                    <span
-                      key={gp.id}
-                      className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded-md text-slate-800 font-medium"
-                    >
-                      {gp.gpNameUnicode} ({gp.meetingDate.slice(5)})
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
+        {/* Master Supervisory Table (Desktop, Tablet & Mobile) */}
+        <div className="w-full space-y-2">
+          <div className="md:hidden px-3 py-1.5 bg-slate-100/90 border border-slate-200 rounded-xl text-[11px] text-slate-600 flex items-center justify-between font-medium">
+            <span>👉 तालिका को बाएं-दाएं स्वाइप करें</span>
+            <span className="font-mono text-slate-500">कुल {supervisorDirectory.length} अधिकारी</span>
+          </div>
+          <div className="overflow-x-auto max-h-80 scrollbar-thin rounded-xl border border-slate-200 bg-white">
+            <table className="w-full text-left border-collapse text-xs min-w-[550px]">
+              <thead className="bg-slate-100 text-slate-700 sticky top-0 font-semibold border-b border-slate-200">
+                <tr>
+                  <th className="py-2.5 px-3 w-12 text-center">क्र०</th>
+                  <th className="py-2.5 px-3">पर्यवेक्षक अधिकारी का पदनाम / विभाग</th>
+                  <th className="py-2.5 px-3 text-center">आवंटित बैठकें</th>
+                  <th className="py-2.5 px-3">ग्राम पंचायतें</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium">
+                {supervisorDirectory.map(([officer, gps], i) => (
+                  <tr key={officer} className="hover:bg-slate-50">
+                    <td className="py-2.5 px-3 text-center text-slate-400 font-mono">{i + 1}</td>
+                    <td className="py-2.5 px-3 font-semibold text-slate-800">{officer}</td>
+                    <td className="py-2.5 px-3 text-center font-bold text-purple-700 font-mono">
+                      {gps.length}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex flex-wrap gap-1 max-w-xl">
+                        {gps.map((gp) => (
+                          <span
+                            key={gp.id}
+                            className="text-[10px] bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-slate-700"
+                          >
+                            {gp.gpNameUnicode} ({gp.meetingDate.slice(5)})
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

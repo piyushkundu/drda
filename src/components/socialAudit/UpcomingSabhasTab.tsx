@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { SocialAuditRecord } from '@/types/socialAudit';
+import { matchesBRP } from '@/lib/brpHelper';
 import { 
   Calendar, Clock, MapPin, Phone, Users, Shield, 
   AlertCircle, CheckCircle2, ChevronRight, Sparkles,
@@ -18,6 +19,7 @@ export default function UpcomingSabhasTab() {
 
   const { 
     records, 
+    selectedBRP,
     asOfDate, 
     isLiveSync,
     liveDelhiTime,
@@ -57,12 +59,12 @@ export default function UpcomingSabhasTab() {
     }
   };
 
-  // All upcoming meetings (meetingDate >= asOfDate and not completed)
+  // All upcoming meetings (meetingDate >= asOfDate and not completed) filtered by selectedBRP
   const allUpcoming = useMemo(() => {
     return records
-      .filter((r) => r.meetingDate >= asOfDate && r.status !== 'completed')
+      .filter((r) => r.meetingDate >= asOfDate && r.status !== 'completed' && matchesBRP(r, selectedBRP))
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
-  }, [records, asOfDate]);
+  }, [records, asOfDate, selectedBRP]);
 
   // Counts
   const upcomingCountTotal = allUpcoming.length;
@@ -84,7 +86,7 @@ export default function UpcomingSabhasTab() {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchGp = r.gpNameUnicode.toLowerCase().includes(q) || r.gpNameRaw.toLowerCase().includes(q);
-        const matchBrp = (r.brpName || '').toLowerCase().includes(q) || r.brpPhone.includes(q);
+        const matchBrp = (r.brpName || '').toLowerCase().includes(q) || (r.brpPhone && r.brpPhone.includes(q));
         const matchOfficer = (r.supervisorOfficerUnicode || '').toLowerCase().includes(q);
         if (!matchGp && !matchBrp && !matchOfficer) return false;
       }
@@ -95,9 +97,9 @@ export default function UpcomingSabhasTab() {
   // Meetings scheduled today (asOfDate) that are not yet marked completed
   const todayMeetings = useMemo(() => {
     return records
-      .filter((r) => r.meetingDate === asOfDate && r.status !== 'completed')
+      .filter((r) => r.meetingDate === asOfDate && r.status !== 'completed' && matchesBRP(r, selectedBRP))
       .sort((a, b) => a.block.localeCompare(b.block));
-  }, [records, asOfDate]);
+  }, [records, asOfDate, selectedBRP]);
 
   // Primary batch to feature at top:
   // If today has meetings, use todayMeetings.
