@@ -220,8 +220,10 @@ export default function EditRecordModal() {
                 type="text"
                 value={gpName}
                 onChange={(e) => setGpName(e.target.value)}
+                disabled={!isEditMode}
+                readOnly={!isEditMode}
                 required
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
             <div>
@@ -230,8 +232,10 @@ export default function EditRecordModal() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+                disabled={!isEditMode}
+                readOnly={!isEditMode}
                 required
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
             <div>
@@ -242,8 +246,10 @@ export default function EditRecordModal() {
                 type="date"
                 value={meetingDate}
                 onChange={(e) => setMeetingDate(e.target.value)}
+                disabled={!isEditMode}
+                readOnly={!isEditMode}
                 required
-                className="w-full bg-amber-50/80 border-2 border-amber-400 rounded-xl px-3 py-2 text-amber-950 font-bold outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+                className="w-full bg-amber-50/80 border-2 border-amber-400 rounded-xl px-3 py-2 text-amber-950 font-bold outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:cursor-not-allowed font-mono"
               />
             </div>
           </div>
@@ -263,14 +269,17 @@ export default function EditRecordModal() {
                 <button
                   type="button"
                   key={opt.phone}
+                  disabled={!isEditMode}
                   onClick={() => {
                     setBrpName(opt.name);
                     setBrpPhone(opt.phone);
                   }}
                   className={`p-2 rounded-xl text-left border transition-all ${
-                    brpName.includes(opt.name)
-                      ? 'bg-amber-100 border-2 border-amber-500 text-amber-950 font-bold shadow-sm'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                    !isEditMode
+                      ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
+                      : brpName.includes(opt.name)
+                      ? 'bg-amber-100 border-2 border-amber-500 text-amber-950 font-bold shadow-sm cursor-pointer'
+                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer'
                   }`}
                 >
                   <div className="truncate font-semibold">{opt.name}</div>
@@ -286,7 +295,9 @@ export default function EditRecordModal() {
                   type="text"
                   value={brpName}
                   onChange={(e) => setBrpName(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:border-blue-400"
+                  disabled={!isEditMode}
+                  readOnly={!isEditMode}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:border-blue-400 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                 />
               </div>
               <div>
@@ -295,7 +306,9 @@ export default function EditRecordModal() {
                   type="text"
                   value={brpPhone}
                   onChange={(e) => setBrpPhone(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 font-mono outline-none focus:border-blue-400"
+                  disabled={!isEditMode}
+                  readOnly={!isEditMode}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 font-mono outline-none focus:border-blue-400 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -324,7 +337,9 @@ export default function EditRecordModal() {
               type="text"
               value={supervisorOfficer}
               onChange={(e) => setSupervisorOfficer(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              disabled={!isEditMode}
+              readOnly={!isEditMode}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               placeholder="उदा० अधिशासी अभियन्ता जल निगम बागपत।"
             />
           </div>
@@ -337,7 +352,9 @@ export default function EditRecordModal() {
                 type="text"
                 value={venue}
                 onChange={(e) => setVenue(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500"
+                disabled={!isEditMode}
+                readOnly={!isEditMode}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
             <div>
@@ -346,7 +363,9 @@ export default function EditRecordModal() {
                 type="text"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500"
+                disabled={!isEditMode}
+                readOnly={!isEditMode}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
             <div>
@@ -354,7 +373,8 @@ export default function EditRecordModal() {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as AuditStatus)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 font-semibold"
+                disabled={!isEditMode}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 font-semibold disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               >
                 <option value="scheduled">प्रस्तावित (Scheduled)</option>
                 <option value="completed">सम्पन्न (Completed)</option>
@@ -367,32 +387,35 @@ export default function EditRecordModal() {
           {/* Scheme Checkboxes */}
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-wrap items-center gap-4">
             <span className="text-slate-600 font-semibold">ऑडिट योजनाएं:</span>
-            <label className="flex items-center gap-1.5 cursor-pointer text-slate-800">
+            <label className={`flex items-center gap-1.5 text-slate-800 ${!isEditMode ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 checked={hasMGNREGA}
                 onChange={(e) => setHasMGNREGA(e.target.checked)}
-                className="rounded accent-blue-600"
+                disabled={!isEditMode}
+                className="rounded accent-blue-600 disabled:cursor-not-allowed"
               />
               <span className="font-medium">मनरेगा (MGNREGA)</span>
             </label>
 
-            <label className="flex items-center gap-1.5 cursor-pointer text-emerald-800 font-bold">
+            <label className={`flex items-center gap-1.5 text-emerald-800 font-bold ${!isEditMode ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 checked={hasNSAP}
                 onChange={(e) => setHasNSAP(e.target.checked)}
-                className="rounded accent-emerald-600"
+                disabled={!isEditMode}
+                className="rounded accent-emerald-600 disabled:cursor-not-allowed"
               />
               <span>NSAP पेंशन (वृद्धावस्था/पारिवारिक)</span>
             </label>
 
-            <label className="flex items-center gap-1.5 cursor-pointer text-indigo-800 font-medium">
+            <label className={`flex items-center gap-1.5 text-indigo-800 font-medium ${!isEditMode ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 checked={hasPMAYG}
                 onChange={(e) => setHasPMAYG(e.target.checked)}
-                className="rounded accent-indigo-600"
+                disabled={!isEditMode}
+                className="rounded accent-indigo-600 disabled:cursor-not-allowed"
               />
               <span>प्र० आ० ग्रा० (PMAY-G)</span>
             </label>
@@ -410,11 +433,14 @@ export default function EditRecordModal() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
+                disabled={!isEditMode}
                 onClick={() => setNirnayStatus('captured')}
                 className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all border ${
-                  nirnayStatus === 'captured'
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md ring-2 ring-emerald-300'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50'
+                  !isEditMode
+                    ? 'opacity-60 cursor-not-allowed bg-slate-50 text-slate-500 border-slate-200'
+                    : nirnayStatus === 'captured'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md ring-2 ring-emerald-300 cursor-pointer'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 cursor-pointer'
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -423,11 +449,14 @@ export default function EditRecordModal() {
 
               <button
                 type="button"
+                disabled={!isEditMode}
                 onClick={() => setNirnayStatus('pending')}
                 className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all border ${
-                  nirnayStatus === 'pending'
-                    ? 'bg-amber-600 text-white border-amber-500 shadow-md ring-2 ring-amber-300'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400 hover:bg-amber-50'
+                  !isEditMode
+                    ? 'opacity-60 cursor-not-allowed bg-slate-50 text-slate-500 border-slate-200'
+                    : nirnayStatus === 'pending'
+                    ? 'bg-amber-600 text-white border-amber-500 shadow-md ring-2 ring-amber-300 cursor-pointer'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-amber-400 hover:bg-amber-50 cursor-pointer'
                 }`}
               >
                 <Clock className="w-3.5 h-3.5" />
@@ -436,11 +465,14 @@ export default function EditRecordModal() {
 
               <button
                 type="button"
+                disabled={!isEditMode}
                 onClick={() => setNirnayStatus('not_captured')}
                 className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all border ${
-                  nirnayStatus === 'not_captured'
-                    ? 'bg-rose-600 text-white border-rose-500 shadow-md ring-2 ring-rose-300'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-rose-400 hover:bg-rose-50'
+                  !isEditMode
+                    ? 'opacity-60 cursor-not-allowed bg-slate-50 text-slate-500 border-slate-200'
+                    : nirnayStatus === 'not_captured'
+                    ? 'bg-rose-600 text-white border-rose-500 shadow-md ring-2 ring-rose-300 cursor-pointer'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-rose-400 hover:bg-rose-50 cursor-pointer'
                 }`}
               >
                 <XCircle className="w-3.5 h-3.5" />
@@ -455,7 +487,9 @@ export default function EditRecordModal() {
                   type="date"
                   value={nirnayCapturedDate || meetingDate}
                   onChange={(e) => setNirnayCapturedDate(e.target.value)}
-                  className="bg-white border border-purple-300 text-slate-900 text-xs rounded-lg px-2 py-1 outline-none focus:border-purple-500"
+                  disabled={!isEditMode}
+                  readOnly={!isEditMode}
+                  className="bg-white border border-purple-300 text-slate-900 text-xs rounded-lg px-2 py-1 outline-none focus:border-purple-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed font-mono"
                 />
               </div>
             )}
@@ -470,8 +504,10 @@ export default function EditRecordModal() {
               type="text"
               value={amendmentReason}
               onChange={(e) => setAmendmentReason(e.target.value)}
+              disabled={!isEditMode}
+              readOnly={!isEditMode}
               placeholder="उदा० बी०आर०पी० कार्यमुक्त होने एवं अन्य प्रशासनिक कारणों से संशोधित"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
             />
           </div>
 

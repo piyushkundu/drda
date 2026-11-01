@@ -7,8 +7,9 @@ import {
   LayoutDashboard, Clock, Calendar, Smartphone, FileSpreadsheet, 
   Users, FileText, Briefcase, ChevronLeft, ChevronRight, X, 
   Building2, ShieldCheck, UserCheck, CheckCircle2, AlertCircle,
-  FileBarChart2, History
+  FileBarChart2, History, Sparkles
 } from 'lucide-react';
+import { useUIStore } from '@/stores/uiStore';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -248,7 +249,29 @@ export default function SocialAuditSidebar({
         </div>
 
         {/* Desktop Sidebar Footer */}
-        <div className="p-3 border-t border-slate-200/90 bg-slate-50/80 shrink-0">
+        <div className="p-3 border-t border-slate-200/90 bg-slate-50/80 shrink-0 space-y-2">
+          {/* Switch to Page Hindi Button */}
+          {!isCollapsed ? (
+            <button
+              type="button"
+              onClick={() => useUIStore.getState().setSidebarPanel('dashboard')}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+              title="पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+              <span>Switch to Page Hindi</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => useUIStore.getState().setSidebarPanel('dashboard')}
+              className="w-full flex items-center justify-center p-2 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-xs hover:from-blue-800 transition-all cursor-pointer"
+              title="Switch to Page Hindi (पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं)"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+            </button>
+          )}
+
           {!isCollapsed ? (
             <div className="space-y-2">
               <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center gap-2.5">
@@ -402,6 +425,20 @@ export default function SocialAuditSidebar({
 
             {/* Fixed Bottom Footer (DDO Identity Card & System Active Status) */}
             <div className="p-3.5 border-t border-slate-200/90 bg-slate-50/95 backdrop-blur-md shrink-0 pb-[max(0.875rem,env(safe-area-inset-bottom))] space-y-2">
+              {/* Switch to Page Hindi Button on Mobile */}
+              <button
+                type="button"
+                onClick={() => {
+                  useUIStore.getState().setSidebarPanel('dashboard');
+                  setIsOpenMobile(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+                title="पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                <span>Switch to Page Hindi</span>
+              </button>
+
               <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-700 to-indigo-800 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                   DDO

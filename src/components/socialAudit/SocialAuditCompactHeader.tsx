@@ -2,14 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
-import { useUIStore } from '@/stores/uiStore';
 import { DISTRICT_META } from '@/data/socialAuditInitialData';
-import { getDelhiTimeString } from '@/lib/delhiTime';
 import { 
-  Landmark, Clock, Calendar, Cloud, Server, RefreshCw, 
-  Menu, PanelLeftClose, PanelLeftOpen, Sparkles, ChevronRight, 
-  Check, User, ShieldCheck, AlertCircle, Radio, SlidersHorizontal,
-  MoreVertical, X, Search, Lock, Unlock
+  Landmark, Calendar, Menu, PanelLeftClose, PanelLeftOpen, 
+  Check, Search, Lock, Unlock, SlidersHorizontal, X 
 } from 'lucide-react';
 
 interface CompactHeaderProps {
@@ -27,25 +23,19 @@ export default function SocialAuditCompactHeader({
 }: CompactHeaderProps) {
   const [mounted, setMounted] = useState(false);
   const [syncToast, setSyncToast] = useState<string | null>(null);
-  const [serverHealth, setServerHealth] = useState<'checking' | 'online' | 'offline'>('checking');
-  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
+  const [isMobileSettingsOpen, setIsMobileSettingsOpen] = useState(false);
 
   const { 
     fontViewMode, 
     setFontViewMode, 
     asOfDate, 
     setAsOfDate,
-    liveDelhiTime,
     tickDelhiClock,
     syncWithDelhiTime,
-    firebaseSyncStatus,
-    firebaseLastSyncedAt,
     initFirebaseSync,
-    forceSyncToFirebase,
     setIsGlobalSearchOpen,
     isEditMode,
-    setIsEditMode,
-    currentUser
+    setIsEditMode
   } = useSocialAuditStore();
 
   const handleToggleEditMode = () => {
@@ -56,35 +46,11 @@ export default function SocialAuditCompactHeader({
     }
   };
 
-  const { setSidebarPanel } = useUIStore();
-
-  // Format short date for mobile display: DD/MM/YYYY
-  const formatShortDate = (dStr: string) => {
-    if (!dStr) return '';
-    try {
-      const [y, m, d] = dStr.split('-');
-      return `${d}/${m}/${y}`;
-    } catch {
-      return dStr;
-    }
-  };
-
-  // Check actual server API health
-  const checkServerHealth = async () => {
-    try {
-      const res = await fetch('/api/time', { cache: 'no-store' });
-      setServerHealth(res.ok ? 'online' : 'offline');
-    } catch {
-      setServerHealth('offline');
-    }
-  };
-
-  // Clock ticking, Firebase initialization & Server Health
+  // Background processes: IST time sync & Firebase synchronization run quietly in the background
   useEffect(() => {
     setMounted(true);
     syncWithDelhiTime();
     initFirebaseSync();
-    checkServerHealth();
 
     const tickInterval = setInterval(() => {
       tickDelhiClock();
@@ -92,7 +58,6 @@ export default function SocialAuditCompactHeader({
 
     const syncInterval = setInterval(() => {
       syncWithDelhiTime();
-      checkServerHealth();
     }, 60000);
 
     return () => {
@@ -101,26 +66,16 @@ export default function SocialAuditCompactHeader({
     };
   }, [tickDelhiClock, syncWithDelhiTime, initFirebaseSync]);
 
-  const handleManualSync = async () => {
-    setSyncToast('सर्वर से डेटा सिंक हो रहा है...');
-    const ok = await forceSyncToFirebase();
-    await syncWithDelhiTime();
-    await checkServerHealth();
-    setSyncToast(ok ? 'सर्वर से पूर्णतः सिंक हो गया!' : 'सिंक में त्रुटि!');
-    setTimeout(() => setSyncToast(null), 3000);
-  };
-
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-xs shrink-0 select-none">
       
       {/* ===================================================================== */}
-      {/* 1. DEDICATED MOBILE HEADER (<640px / 360px-430px) */}
+      {/* 1. DEDICATED CLEAN MOBILE HEADER (<640px / 320px-430px)               */}
       {/* ===================================================================== */}
       <div className="sm:hidden flex flex-col">
-        {/* Mobile Row 1: Hamburger + Logo + Branding + Sync + More Actions */}
-        <div className="h-13 px-3 flex items-center justify-between border-b border-slate-100">
+        <div className="h-14 px-3 flex items-center justify-between">
+          {/* LEFT: Hamburger Drawer Toggle + Official Emblem + Compact Title */}
           <div className="flex items-center gap-2 min-w-0">
-            {/* Hamburger Button (Opens / Closes Drawer) */}
             <button
               onClick={() => setIsMobileSidebarOpen(prev => !prev)}
               className="p-2 -ml-1 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0"
@@ -130,12 +85,10 @@ export default function SocialAuditCompactHeader({
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Emblem / Logo */}
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-700 via-blue-800 to-indigo-900 text-white flex items-center justify-center shadow-xs shrink-0">
               <Landmark className="w-4 h-4 text-amber-300" />
             </div>
 
-            {/* Branding Text */}
             <div className="min-w-0 flex items-center gap-1.5">
               <h1 className="text-sm font-black text-slate-900 tracking-tight leading-tight truncate">
                 सोशल ऑडिट बागपत
@@ -146,235 +99,116 @@ export default function SocialAuditCompactHeader({
             </div>
           </div>
 
-          {/* Quick Actions (Search + Edit Mode + Sync + More) */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Mobile Central Edit Mode Toggle */}
-            <button
-              type="button"
-              onClick={handleToggleEditMode}
-              className={`px-2 py-1 rounded-xl text-[10px] font-black border flex items-center gap-1 shadow-2xs transition-all active:scale-95 shrink-0 ${
-                isEditMode
-                  ? 'bg-emerald-600 text-white border-emerald-500 ring-1 ring-emerald-300 animate-pulse'
-                  : 'bg-rose-50 text-rose-800 border-rose-300'
-              }`}
-              title={isEditMode ? 'EDIT MODE ON (Editing Enabled)' : 'EDIT MODE OFF (Read Only)'}
-            >
-              {isEditMode ? (
-                <>
-                  <Unlock className="w-3 h-3 text-white" />
-                  <span>EDIT ON</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-3 h-3 text-rose-600" />
-                  <span>EDIT OFF</span>
-                </>
-              )}
-            </button>
-
+          {/* RIGHT: Compact Controls Only (Search, Date, Settings & Compact Lock Icon) */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Global Search Button */}
             <button
               onClick={() => setIsGlobalSearchOpen(true)}
               className="p-2 rounded-xl text-slate-700 hover:text-blue-700 hover:bg-blue-50 transition-colors"
-              title="खोजें (Search)"
+              title="खोजें (Ctrl + K)"
+              aria-label="Search"
             >
               <Search className="w-4 h-4" />
             </button>
 
-            <button
-              onClick={handleManualSync}
-              className="p-2 rounded-xl text-blue-700 hover:bg-blue-50 transition-colors"
-              title="सिंक करें"
+            {/* Mobile Reference Date Picker */}
+            <div 
+              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+              title="प्रगति संदर्भ तिथि"
             >
-              <RefreshCw className={`w-4 h-4 ${firebaseSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-            </button>
+              <Calendar className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+              <input
+                type="date"
+                value={asOfDate}
+                onChange={(e) => setAsOfDate(e.target.value)}
+                className="bg-transparent text-slate-800 text-[11px] outline-none cursor-pointer font-bold font-mono w-22"
+                title="संदर्भ तिथि बदलें"
+              />
+            </div>
 
+            {/* Mobile Font Selector Popover Toggle */}
             <button
-              onClick={() => setIsMobileMoreOpen((prev) => !prev)}
+              onClick={() => setIsMobileSettingsOpen((prev) => !prev)}
               className={`p-2 rounded-xl transition-colors ${
-                isMobileMoreOpen ? 'bg-blue-100 text-blue-800' : 'text-slate-700 hover:bg-slate-100'
+                isMobileSettingsOpen ? 'bg-blue-100 text-blue-800' : 'text-slate-600 hover:bg-slate-100'
               }`}
-              title="अतिरिक्त विकल्प"
-              aria-label="More Actions"
+              title="फ़ॉन्ट मोड विकल्प"
+              aria-label="Font Settings"
             >
               <SlidersHorizontal className="w-4 h-4" />
             </button>
-          </div>
-        </div>
 
-        {/* Mobile Row 2: Live IST Time + Current Date + Firebase Connection Status */}
-        <div className="h-9 px-3 bg-slate-50/90 flex items-center justify-between text-xs font-semibold">
-          {/* Clock & Pulse */}
-          <div className="flex items-center gap-1.5 text-slate-800">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <Clock className="w-3.5 h-3.5 text-slate-500" />
-            <span className="font-mono font-bold text-[11px] tabular-nums" suppressHydrationWarning>
-              {mounted ? (liveDelhiTime || getDelhiTimeString()) : '--:--:--'}
-            </span>
-          </div>
-
-          {/* Reference Date Display */}
-          <div className="flex items-center gap-1 text-[11px] text-slate-600 font-mono">
-            <Calendar className="w-3 h-3 text-blue-700" />
-            <span>{formatShortDate(asOfDate)}</span>
-          </div>
-
-          {/* Firebase Status Badge */}
-          <div className="flex items-center gap-1 text-[11px]">
-            <span
-              className={`inline-flex rounded-full h-2 w-2 ${
-                firebaseSyncStatus === 'synced'
-                  ? 'bg-emerald-500'
-                  : firebaseSyncStatus === 'syncing'
-                  ? 'bg-amber-500 animate-ping'
-                  : 'bg-rose-500'
+            {/* Central Compact Lock / Unlock Icon Button */}
+            <button
+              type="button"
+              onClick={handleToggleEditMode}
+              className={`p-2 rounded-xl border transition-all active:scale-95 shrink-0 ${
+                isEditMode
+                  ? 'bg-emerald-50 text-emerald-600 border-emerald-500 ring-2 ring-emerald-300 animate-pulse'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-rose-600 border-slate-200'
               }`}
-            />
-            <span className={`text-[10px] font-bold ${
-              firebaseSyncStatus === 'synced' ? 'text-emerald-800' : firebaseSyncStatus === 'syncing' ? 'text-amber-800' : 'text-rose-800'
-            }`}>
-              {firebaseSyncStatus === 'synced' ? 'क्लाउड सिंक' : firebaseSyncStatus === 'syncing' ? 'सिंकिंग...' : 'ऑफलाइन'}
-            </span>
+              title={
+                isEditMode
+                  ? 'Edit Mode ON – संपादन की अनुमति'
+                  : 'Edit Mode OFF – केवल देखने की अनुमति'
+              }
+              aria-label={
+                isEditMode
+                  ? 'Edit Mode ON – संपादन की अनुमति'
+                  : 'Edit Mode OFF – केवल देखने की अनुमति'
+              }
+            >
+              {isEditMode ? (
+                <Unlock className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <Lock className="w-4 h-4 text-slate-500" />
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Mobile More Actions Popover Drawer */}
-        {isMobileMoreOpen && (
-          <>
-            <div 
-              onClick={() => setIsMobileMoreOpen(false)}
-              className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-2xs"
-            />
-            <div className="absolute top-full left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-2xl p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
-                  अतिरिक्त सेटिंग्स व विकल्प
-                </span>
-                <button
-                  onClick={() => setIsMobileMoreOpen(false)}
-                  className="p-1 rounded-lg text-slate-500 hover:bg-slate-100"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Central Edit Mode Toggle in Mobile Drawer */}
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {isEditMode ? (
-                      <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
-                        <Unlock className="w-4 h-4" />
-                      </div>
-                    ) : (
-                      <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center">
-                        <Lock className="w-4 h-4" />
-                      </div>
-                    )}
-                    <div>
-                      <div className="text-xs font-black text-slate-900">
-                        {isEditMode ? 'EDIT MODE ON' : 'EDIT MODE OFF'}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-bold">
-                        {isEditMode ? 'Editing Enabled' : 'केवल पठन (Read Only)'}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleToggleEditMode}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shadow-xs ${
-                      isEditMode
-                        ? 'bg-rose-600 text-white'
-                        : 'bg-emerald-600 text-white'
-                    }`}
-                  >
-                    {isEditMode ? 'बंद करें (Turn OFF)' : 'चालू करें (Turn ON)'}
-                  </button>
-                </div>
-              </div>
-
-              {/* 1. Full Date Picker */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-blue-700" />
-                  <span>प्रगति संदर्भ तिथि बदलें</span>
-                </label>
-                <input
-                  type="date"
-                  value={asOfDate}
-                  onChange={(e) => setAsOfDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold font-mono outline-none focus:border-blue-500"
-                />
-              </div>
-
-              {/* 2. Font Selector */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-600">फ़ॉन्ट प्रदर्शन मोड</label>
-                <div className="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl">
-                  <button
-                    onClick={() => setFontViewMode('unicode')}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
-                      fontViewMode === 'unicode' ? 'bg-blue-700 text-white shadow-xs' : 'text-slate-700'
-                    }`}
-                  >
-                    यूनिकोड
-                  </button>
-                  <button
-                    onClick={() => setFontViewMode('krutidev')}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
-                      fontViewMode === 'krutidev' ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-700'
-                    }`}
-                    style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}
-                  >
-                    कृतिदेव
-                  </button>
-                  <button
-                    onClick={() => setFontViewMode('dual')}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition-all ${
-                      fontViewMode === 'dual' ? 'bg-indigo-700 text-white shadow-xs' : 'text-slate-700'
-                    }`}
-                  >
-                    द्विभाषी
-                  </button>
-                </div>
-              </div>
-
-              {/* 3. Server Health & Cloud Status */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                <div className="flex items-center gap-2">
-                  <Server className="w-4 h-4 text-slate-600" />
-                  <span className="font-medium text-slate-700">सर्वर स्थिति:</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                  serverHealth === 'online' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
-                }`}>
-                  {serverHealth === 'online' ? 'ऑनलाइन (200 OK)' : 'ऑफलाइन'}
-                </span>
-              </div>
-
-              {/* 4. Page Hindi Suite Navigation */}
+        {/* Mobile Font Selector Dropdown */}
+        {isMobileSettingsOpen && (
+          <div className="border-t border-slate-100 bg-slate-50 px-3 py-2 flex items-center justify-between animate-in slide-in-from-top-1">
+            <span className="text-[11px] font-bold text-slate-600">फ़ॉन्ट प्रदर्शन मोड:</span>
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => { setSidebarPanel('dashboard'); setIsMobileMoreOpen(false); }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-800 text-white font-bold text-xs shadow-xs"
+                onClick={() => { setFontViewMode('unicode'); setIsMobileSettingsOpen(false); }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  fontViewMode === 'unicode' ? 'bg-blue-700 text-white' : 'bg-white border text-slate-700'
+                }`}
               >
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं</span>
-                <ChevronRight className="w-4 h-4" />
+                यूनिकोड
+              </button>
+              <button
+                onClick={() => { setFontViewMode('krutidev'); setIsMobileSettingsOpen(false); }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  fontViewMode === 'krutidev' ? 'bg-amber-600 text-white' : 'bg-white border text-slate-700'
+                }`}
+                style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}
+              >
+                कृतिदेव
+              </button>
+              <button
+                onClick={() => { setFontViewMode('dual'); setIsMobileSettingsOpen(false); }}
+                className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+                  fontViewMode === 'dual' ? 'bg-indigo-700 text-white' : 'bg-white border text-slate-700'
+                }`}
+              >
+                द्विभाषी
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
 
       {/* ===================================================================== */}
-      {/* 2. DESKTOP & TABLET SINGLE-ROW HEADER (>=640px) */}
+      {/* 2. DESKTOP & TABLET SINGLE-ROW HEADER (>=640px)                      */}
       {/* ===================================================================== */}
       <div className="hidden sm:flex h-14 sm:h-16 px-3 sm:px-5 items-center justify-between">
-        {/* LEFT: Mobile Toggle + Desktop Collapse + Government Branding */}
+        {/* LEFT: Mobile Toggle + Desktop Collapse + Official Government Branding */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          {/* Mobile Hamburger Toggle (Opens Drawer on tablet <lg) */}
+          {/* Mobile Hamburger Toggle (<lg) */}
           <button
             onClick={() => setIsMobileSidebarOpen(true)}
             className="lg:hidden p-2 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors shrink-0"
@@ -384,7 +218,7 @@ export default function SocialAuditCompactHeader({
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Desktop Sidebar Collapse Toggle */}
+          {/* Desktop Sidebar Collapse Toggle (>=lg) */}
           <button
             onClick={() => setIsSidebarCollapsed((prev) => !prev)}
             className="hidden lg:flex p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors shrink-0"
@@ -420,13 +254,14 @@ export default function SocialAuditCompactHeader({
           </div>
         </div>
 
-        {/* CENTER: Prominent Global Search Bar (Feature 3) */}
+        {/* CENTER: Prominent Global Search Bar */}
         <div className="flex-1 max-w-xs md:max-w-md mx-3 hidden sm:block">
           <button
             type="button"
             onClick={() => setIsGlobalSearchOpen(true)}
             className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100/90 border border-slate-200 text-slate-400 text-xs transition-all shadow-2xs group cursor-pointer"
             title="त्वरित एकीकृत खोज खोलें (Ctrl + K)"
+            aria-label="खोजें"
           >
             <div className="flex items-center gap-2 min-w-0">
               <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0" />
@@ -438,27 +273,12 @@ export default function SocialAuditCompactHeader({
           </button>
         </div>
 
-        {/* RIGHT: Status Badges, Clocks, Sync & Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* RIGHT: Essential User-Facing Controls Only (Date + Font Selector + Compact Lock Icon) */}
+        <div className="flex items-center gap-2 shrink-0">
           
-          {/* Live Delhi IST Clock Pill */}
-          <div 
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs shadow-inner"
-            title="भारतीय मानक समय (IST) लाइव दिल्ली घड़ी"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <Clock className="w-3.5 h-3.5 text-slate-500" />
-            <span className="font-mono font-bold text-slate-800 tabular-nums text-[11px]" suppressHydrationWarning>
-              {mounted ? (liveDelhiTime || getDelhiTimeString()) : '--:--:--'}
-            </span>
-          </div>
-
           {/* As-Of Reference Date Selector */}
           <div 
-            className="flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs hover:border-slate-300 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs hover:border-slate-300 transition-colors"
             title="सोशल ऑडिट प्रगति संदर्भ तिथि"
           >
             <Calendar className="w-3.5 h-3.5 text-blue-700 shrink-0" />
@@ -471,166 +291,72 @@ export default function SocialAuditCompactHeader({
             />
           </div>
 
-          {/* CENTRAL PROMINENT EDIT MODE CONTROL (OFF: Read Only | ON: Editing Enabled) */}
-          <button
-            type="button"
-            onClick={handleToggleEditMode}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all shadow-xs cursor-pointer select-none active:scale-95 shrink-0 ${
-              isEditMode
-                ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30 ring-2 ring-emerald-300 animate-pulse'
-                : 'bg-rose-50/90 hover:bg-rose-100 text-rose-800 border-rose-300'
-            }`}
-            title={
-              isEditMode
-                ? 'EDIT MODE ON (Editing Enabled) - क्लिक करके केवल पठन मोड पर जाएं'
-                : 'EDIT MODE OFF (Read Only) - क्लिक करके संपादन मोड सक्रिय करें'
-            }
-          >
-            {isEditMode ? (
-              <>
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                </span>
-                <Unlock className="w-3.5 h-3.5 text-white shrink-0" />
-                <span className="text-[11px] font-black tracking-tight whitespace-nowrap">EDIT MODE ON</span>
-                <span className="text-[9px] font-bold text-emerald-100 bg-emerald-700/60 px-1.5 py-0.5 rounded-full hidden lg:inline whitespace-nowrap">
-                  Editing Enabled
-                </span>
-              </>
-            ) : (
-              <>
-                <Lock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                <span className="text-[11px] font-black tracking-tight whitespace-nowrap">EDIT MODE OFF</span>
-                <span className="text-[9px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded-full hidden lg:inline whitespace-nowrap">
-                  Read Only
-                </span>
-              </>
-            )}
-          </button>
-
-          {/* Compact Firebase Cloud Connection Status Pill with Tooltip */}
-          <div
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-xl border text-[11px] font-bold shadow-xs transition-all cursor-help relative group ${
-              firebaseSyncStatus === 'synced'
-                ? 'bg-emerald-50/70 text-emerald-800 border-emerald-200'
-                : firebaseSyncStatus === 'syncing' || firebaseSyncStatus === 'loading'
-                ? 'bg-amber-50/70 text-amber-800 border-amber-200'
-                : 'bg-rose-50/70 text-rose-800 border-rose-200'
-            }`}
-            title={`फायरबेस क्लाउड: ${
-              firebaseSyncStatus === 'synced' 
-                ? 'कनेक्टेड व सुरक्षित' 
-                : firebaseSyncStatus === 'syncing' 
-                ? 'सिंकिंग जारी...' 
-                : 'ऑफलाइन/त्रुटि'
-            } (अंतिम सिंक: ${firebaseLastSyncedAt || 'सक्रिय'})`}
-          >
-            <span className="relative flex h-2 w-2 shrink-0">
-              {firebaseSyncStatus === 'syncing' ? (
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              ) : null}
-              <span
-                className={`relative inline-flex rounded-full h-2 w-2 ${
-                  firebaseSyncStatus === 'synced'
-                    ? 'bg-emerald-500'
-                    : firebaseSyncStatus === 'syncing' || firebaseSyncStatus === 'loading'
-                    ? 'bg-amber-500'
-                    : 'bg-rose-500'
-                }`}
-              />
-            </span>
-            <Cloud className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden xl:inline text-[10px]">
-              {firebaseSyncStatus === 'synced' ? 'क्लाउड' : firebaseSyncStatus === 'syncing' ? 'सिंकिंग' : 'ऑफलाइन'}
-            </span>
-          </div>
-
-          {/* Compact Server Health Status Indicator */}
-          <div 
-            className={`hidden sm:flex items-center gap-1 px-2 py-1 rounded-xl border text-[11px] font-bold shadow-xs transition-all cursor-help ${
-              serverHealth === 'online'
-                ? 'bg-slate-50 text-slate-700 border-slate-200'
-                : serverHealth === 'checking'
-                ? 'bg-amber-50 text-amber-800 border-amber-200'
-                : 'bg-rose-50 text-rose-800 border-rose-200'
-            }`}
-            title={
-              serverHealth === 'online' 
-                ? 'सर्वर स्थिति: ऑनलाइन एवं सक्रिय (API 200 OK)' 
-                : serverHealth === 'checking'
-                ? 'सर्वर स्थिति: जांच हो रही है...'
-                : 'सर्वर स्थिति: ऑफलाइन / संपर्क विहीन'
-            }
-          >
-            <span className="relative flex h-1.5 w-1.5 shrink-0">
-              <span className={`inline-flex rounded-full h-1.5 w-1.5 ${
-                serverHealth === 'online' ? 'bg-emerald-500' : serverHealth === 'checking' ? 'bg-amber-500' : 'bg-rose-500'
-              }`} />
-            </span>
-            <Server className="w-3.5 h-3.5 text-slate-600" />
-          </div>
-
-          {/* Compact Manual Sync Button */}
-          <button
-            onClick={handleManualSync}
-            className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 shadow-xs shrink-0"
-            title="डेटा क्लाउड से रिफ्रेश व सिंक करें"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-blue-700 ${firebaseSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-            <span className="hidden md:inline">सिंक</span>
-          </button>
-
           {/* Font View Mode Segmented Selector */}
           <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl p-0.5 text-xs shrink-0">
             <button
               onClick={() => setFontViewMode('unicode')}
-              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                 fontViewMode === 'unicode'
                   ? 'bg-blue-700 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
               title="यूनिकोड / मंगल"
             >
-              <span className="sm:hidden">यू</span>
-              <span className="hidden sm:inline">यूनिकोड</span>
+              यूनिकोड
             </button>
             <button
               onClick={() => setFontViewMode('krutidev')}
-              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                 fontViewMode === 'krutidev'
                   ? 'bg-amber-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
-              style={{ fontFamily: fontViewMode === 'krutidev' ? "'Kruti Dev 010', sans-serif" : undefined }}
+              style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}
               title="कृतिदेव 010"
             >
-              <span className="sm:hidden">कृ</span>
-              <span className="hidden sm:inline">कृतिदेव</span>
+              कृतिदेव
             </button>
             <button
               onClick={() => setFontViewMode('dual')}
-              className={`px-1.5 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+              className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
                 fontViewMode === 'dual'
                   ? 'bg-indigo-700 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
               title="द्विभाषी दोनों फ़ॉन्ट"
             >
-              <span className="sm:hidden">द्वि</span>
-              <span className="hidden sm:inline">द्विभाषी</span>
+              द्विभाषी
             </button>
           </div>
 
-          {/* User Account / Page Hindi Suite Jump */}
+          {/* CENTRAL COMPACT EDIT MODE CONTROL (Lock Icon Only) */}
           <button
-            onClick={() => setSidebarPanel('dashboard')}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-xs transition-all transform active:scale-95 shrink-0"
-            title="पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं"
+            type="button"
+            onClick={handleToggleEditMode}
+            className={`p-2 rounded-xl border transition-all cursor-pointer select-none active:scale-95 shrink-0 group ${
+              isEditMode
+                ? 'bg-emerald-50 text-emerald-600 border-emerald-500 ring-2 ring-emerald-300 animate-pulse shadow-sm'
+                : 'bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-rose-600 border-slate-200 shadow-2xs'
+            }`}
+            title={
+              isEditMode
+                ? 'Edit Mode ON – संपादन की अनुमति'
+                : 'Edit Mode OFF – केवल देखने की अनुमति'
+            }
+            aria-label={
+              isEditMode
+                ? 'Edit Mode ON – संपादन की अनुमति'
+                : 'Edit Mode OFF – केवल देखने की अनुमति'
+            }
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span className="hidden md:inline">पेज हिंदी सुइट</span>
-            <ChevronRight className="w-3 h-3 text-white/70" />
+            {isEditMode ? (
+              <Unlock className="w-4 h-4 text-emerald-600" />
+            ) : (
+              <Lock className="w-4 h-4 text-slate-500 group-hover:text-rose-600 transition-colors" />
+            )}
+            <span className="sr-only">
+              {isEditMode ? 'Edit Mode ON' : 'Edit Mode OFF'}
+            </span>
           </button>
         </div>
       </div>
@@ -645,4 +371,3 @@ export default function SocialAuditCompactHeader({
     </header>
   );
 }
-

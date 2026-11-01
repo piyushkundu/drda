@@ -549,19 +549,34 @@ export default function MisFeedingTab() {
                   </div>
                 </div>
 
-                {/* 1-Click Action Button */}
+                {/* 1-Click Action Button (Guarded by Edit Mode) */}
                 <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
                   <button
+                    disabled={!isEditMode}
                     onClick={() => handleStatusChange(r.id, 'fed')}
-                    className="flex-1 py-2 px-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all transform active:scale-95"
+                    className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all ${
+                      !isEditMode
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        : 'bg-blue-700 hover:bg-blue-800 text-white transform active:scale-95 cursor-pointer'
+                    }`}
+                    title={isEditMode ? "MIS पर फीड हो चुका है" : "स्थिति बदलने के लिए Edit Mode ON करें"}
                   >
-                    <Check className="w-4 h-4 text-white stroke-[3]" />
+                    {isEditMode ? (
+                      <Check className="w-4 h-4 text-white stroke-[3]" />
+                    ) : (
+                      <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    )}
                     <span>MIS पर फीड हो चुका है</span>
                   </button>
                   <button
+                    disabled={!isEditMode}
                     onClick={() => openEditModal(r)}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200"
-                    title="विवरण संपादित करें"
+                    className={`p-2 rounded-xl border transition-all ${
+                      !isEditMode
+                        ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200 cursor-pointer'
+                    }`}
+                    title={isEditMode ? "विवरण संपादित करें" : "संपादित करने के लिए Edit Mode ON करें"}
                   >
                     <ArrowUpRight className="w-4 h-4" />
                   </button>
@@ -794,25 +809,31 @@ export default function MisFeedingTab() {
                     <td className="py-3 px-4 text-center">
                       <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1">
                         <button
+                          disabled={!isEditMode}
                           onClick={() => handleStatusChange(r.id, 'fed')}
                           className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                            isFed
-                              ? 'bg-blue-700 text-white shadow-sm'
-                              : 'text-slate-600 hover:text-slate-900'
+                            !isEditMode
+                              ? 'cursor-not-allowed opacity-60 text-slate-400'
+                              : isFed
+                              ? 'bg-blue-700 text-white shadow-sm cursor-pointer'
+                              : 'text-slate-600 hover:text-slate-900 cursor-pointer'
                           }`}
-                          title="MIS पर फीड हो चुका मार्क करें"
+                          title={isEditMode ? "MIS पर फीड हो चुका मार्क करें" : "स्थिति बदलने के लिए Edit Mode ON करें"}
                         >
                           <Check className="w-3 h-3" />
                           <span>फीडेड</span>
                         </button>
                         <button
+                          disabled={!isEditMode}
                           onClick={() => handleStatusChange(r.id, 'pending')}
                           className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                            !isFed
-                              ? 'bg-amber-600 text-white shadow-sm'
-                              : 'text-slate-600 hover:text-slate-900'
+                            !isEditMode
+                              ? 'cursor-not-allowed opacity-60 text-slate-400'
+                              : !isFed
+                              ? 'bg-amber-600 text-white shadow-sm cursor-pointer'
+                              : 'text-slate-600 hover:text-slate-900 cursor-pointer'
                           }`}
-                          title="लंबित मार्क करें"
+                          title={isEditMode ? "लंबित मार्क करें" : "स्थिति बदलने के लिए Edit Mode ON करें"}
                         >
                           <Clock className="w-3 h-3" />
                           <span>लंबित</span>

@@ -14,7 +14,7 @@ import {
   Search, Filter, Plus, Printer, Download, Sparkles, Building2, 
   ShieldCheck, ArrowRight, UserX, Skull, Home, Phone, Calendar,
   ChevronDown, ChevronUp, X, Check, Eye, Edit3, ClipboardPaste,
-  FileText, Trash2, HelpCircle
+  FileText, Trash2, HelpCircle, Lock, Unlock
 } from 'lucide-react';
 
 export default function NSAPDataTab() {
@@ -706,20 +706,52 @@ export default function NSAPDataTab() {
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             {/* Direct Excel Paste Button */}
             <button
-              onClick={() => handleOpenExcelPaste()}
-              className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm flex items-center gap-2 transition-all transform active:scale-95"
-              title="एक्सेल से सीधे कॉपी-पेस्ट करें"
+              onClick={() => {
+                if (!isEditMode) {
+                  alert('त्रुटि: एक्सेल डेटा इम्पोर्ट करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+                  return;
+                }
+                handleOpenExcelPaste();
+              }}
+              disabled={!isEditMode}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm flex items-center gap-2 transition-all ${
+                isEditMode
+                  ? 'bg-teal-600 hover:bg-teal-700 text-white transform active:scale-95 cursor-pointer'
+                  : 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed opacity-60'
+              }`}
+              title={isEditMode ? 'एक्सेल से सीधे कॉपी-पेस्ट करें' : 'डेटा संपादित करने के लिए Edit Mode ON करें।'}
             >
-              <ClipboardPaste className="w-4 h-4 stroke-[2.5]" />
+              {isEditMode ? (
+                <ClipboardPaste className="w-4 h-4 stroke-[2.5]" />
+              ) : (
+                <Lock className="w-4 h-4 text-slate-400" />
+              )}
               <span>📋 एक्सेल से पेस्ट करें</span>
             </button>
 
             {/* Add Record Button */}
             <button
-              onClick={() => { setSelectedGpForAdd(''); setIsAddModalOpen(true); }}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center gap-2 transition-all transform active:scale-95"
+              onClick={() => {
+                if (!isEditMode) {
+                  alert('त्रुटि: नया NSAP डेटा जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
+                  return;
+                }
+                setSelectedGpForAdd('');
+                setIsAddModalOpen(true);
+              }}
+              disabled={!isEditMode}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm flex items-center gap-2 transition-all ${
+                isEditMode
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white transform active:scale-95 cursor-pointer'
+                  : 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed opacity-60'
+              }`}
+              title={isEditMode ? 'नया NSAP डेटा जोड़ें' : 'डेटा संपादित करने के लिए Edit Mode ON करें।'}
             >
-              <Plus className="w-4 h-4 stroke-[3]" />
+              {isEditMode ? (
+                <Plus className="w-4 h-4 stroke-[3]" />
+              ) : (
+                <Lock className="w-4 h-4 text-slate-400" />
+              )}
               <span>नया NSAP डेटा जोड़ें</span>
             </button>
 
@@ -1037,13 +1069,17 @@ export default function NSAPDataTab() {
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Edit Button */}
+                        {/* Edit / View Button */}
                         <button
                           onClick={() => handleOpenEditForGp(gp)}
-                          className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs transition-all"
-                          title="इस पंचायत का डेटा एडिट करें (Edit Data)"
+                          className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs transition-all cursor-pointer"
+                          title={isEditMode ? "इस पंचायत का डेटा एडिट करें (Edit Data)" : "डेटा देखें (केवल पठन - Read Only)"}
                         >
-                          <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                          {isEditMode ? (
+                            <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                          ) : (
+                            <Lock className="w-3.5 h-3.5 text-slate-500" />
+                          )}
                         </button>
 
                         <span className="text-[10px] font-black px-2.5 py-1 rounded-xl border text-emerald-800 bg-emerald-50 border-emerald-200 flex items-center gap-1 shrink-0">
@@ -1108,24 +1144,43 @@ export default function NSAPDataTab() {
                         <span>विवरण ({gp.beneficiaries.length})</span>
                       </button>
 
-                      {/* Excel Paste directly into this GP */}
-                      <button
-                        onClick={() => handleOpenExcelPaste(gp.id)}
-                        className="py-1.5 px-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
-                        title="एक्सेल से सीधे कॉपी-पेस्ट करें"
-                      >
-                        <ClipboardPaste className="w-3.5 h-3.5 text-cyan-600" />
-                        <span>एक्सेल पेस्ट</span>
-                      </button>
+                      {/* Excel Paste directly into this GP (Edit Mode ON only) */}
+                      {isEditMode ? (
+                        <button
+                          onClick={() => handleOpenExcelPaste(gp.id)}
+                          className="py-1.5 px-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                          title="एक्सेल से सीधे कॉपी-पेस्ट करें"
+                        >
+                          <ClipboardPaste className="w-3.5 h-3.5 text-cyan-600" />
+                          <span>एक्सेल पेस्ट</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="py-1.5 px-2 rounded-xl bg-slate-50 text-slate-400 border border-slate-200 text-[11px] font-bold flex items-center justify-center gap-1 cursor-not-allowed opacity-50"
+                          title="डेटा संपादित करने के लिए Edit Mode ON करें"
+                        >
+                          <Lock className="w-3.5 h-3.5 text-slate-400" />
+                          <span>पेस्ट लॉक</span>
+                        </button>
+                      )}
 
-                      {/* Edit GP Data */}
+                      {/* Edit / View GP Data */}
                       <button
                         onClick={() => handleOpenEditForGp(gp)}
-                        className="py-1.5 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
-                        title="संख्या व बैठक डेटा एडिट करें"
+                        className={`py-1.5 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                          isEditMode
+                            ? 'bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-200'
+                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                        }`}
+                        title={isEditMode ? "संख्या व बैठक डेटा एडिट करें" : "डेटा देखें (केवल पठन)"}
                       >
-                        <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                        <span>एडिट</span>
+                        {isEditMode ? (
+                          <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                        ) : (
+                          <Lock className="w-3.5 h-3.5 text-slate-500" />
+                        )}
+                        <span>{isEditMode ? 'एडिट' : 'देखें'}</span>
                       </button>
                     </div>
                   </div>
@@ -1217,45 +1272,57 @@ export default function NSAPDataTab() {
                           <td className="py-3 px-3 text-center font-mono text-slate-500">{unverCount || gp.unverifiedCount || 0}</td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-1">
-                              {/* Edit GP Button */}
+                              {/* Edit / View GP Button */}
                               <button
                                 onClick={() => handleOpenEditForGp(gp)}
-                                className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200"
-                                title="डेटा एडिट करें"
+                                className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                  isEditMode
+                                    ? 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
+                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                                }`}
+                                title={isEditMode ? "डेटा एडिट करें" : "डेटा देखें (केवल पठन - Read Only)"}
                               >
-                                <Edit3 className="w-3.5 h-3.5" />
+                                {isEditMode ? (
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                ) : (
+                                  <Lock className="w-3.5 h-3.5 text-slate-500" />
+                                )}
                               </button>
 
                               {/* Excel Paste Button */}
-                              <button
-                                onClick={() => handleOpenExcelPaste(gp.id)}
-                                className="p-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200"
-                                title="एक्सेल से सीधे कॉपी-पेस्ट करें"
-                              >
-                                <ClipboardPaste className="w-3.5 h-3.5" />
-                              </button>
+                              {isEditMode && (
+                                <button
+                                  onClick={() => handleOpenExcelPaste(gp.id)}
+                                  className="p-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 cursor-pointer"
+                                  title="एक्सेल से सीधे कॉपी-पेस्ट करें"
+                                >
+                                  <ClipboardPaste className="w-3.5 h-3.5" />
+                                </button>
+                              )}
 
                               {/* Expand / View Beneficiaries */}
                               <button
                                 onClick={() => setExpandedGpId(isExpanded ? null : gp.id)}
-                                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 border border-slate-200"
+                                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 border border-slate-200 cursor-pointer"
                                 title="लाभार्थी विवरण देखें"
                               >
                                 <Eye className="w-3.5 h-3.5 text-emerald-600" />
                                 <span>{isExpanded ? 'छुपाएं' : `सूची (${gp.beneficiaries.length})`}</span>
                               </button>
 
-                              {/* Add Single Beneficiary */}
-                              <button
-                                onClick={() => {
-                                  setTargetGpIdForBen(gp.id);
-                                  setIsBenModalOpen(true);
-                                }}
-                                className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
-                                title="इस पंचायत में लाभार्थी जोड़ें"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
+                              {/* Add Single Beneficiary (Edit Mode ON only) */}
+                              {isEditMode && (
+                                <button
+                                  onClick={() => {
+                                    setTargetGpIdForBen(gp.id);
+                                    setIsBenModalOpen(true);
+                                  }}
+                                  className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 cursor-pointer"
+                                  title="इस पंचायत में लाभार्थी जोड़ें"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1269,25 +1336,27 @@ export default function NSAPDataTab() {
                                   <h4 className="text-xs font-black text-emerald-800 uppercase tracking-wider flex items-center gap-2">
                                     <span>{gp.gpNameUnicode} • कुल {gp.beneficiaries.length} दर्ज लाभार्थी (अपात्र, मृतक एवं असत्यापित)</span>
                                   </h4>
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => handleOpenExcelPaste(gp.id)}
-                                      className="text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm"
-                                    >
-                                      <ClipboardPaste className="w-3.5 h-3.5" />
-                                      <span>एक्सेल से पेस्ट करें</span>
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setTargetGpIdForBen(gp.id);
-                                        setIsBenModalOpen(true);
-                                      }}
-                                      className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg flex items-center gap-1 shadow-sm"
-                                    >
-                                      <Plus className="w-3.5 h-3.5" />
-                                      <span>लाभार्थी जोड़ें</span>
-                                    </button>
-                                  </div>
+                                  {isEditMode && (
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={() => handleOpenExcelPaste(gp.id)}
+                                        className="text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm cursor-pointer"
+                                      >
+                                        <ClipboardPaste className="w-3.5 h-3.5" />
+                                        <span>एक्सेल से पेस्ट करें</span>
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setTargetGpIdForBen(gp.id);
+                                          setIsBenModalOpen(true);
+                                        }}
+                                        className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg flex items-center gap-1 shadow-sm cursor-pointer"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" />
+                                        <span>लाभार्थी जोड़ें</span>
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {gp.beneficiaries.length > 0 ? (
@@ -1313,13 +1382,15 @@ export default function NSAPDataTab() {
                                             }`}>
                                               {b.categoryHindi}
                                             </span>
-                                            <button
-                                              onClick={() => deleteNsapBeneficiary(gp.id, b.id)}
-                                              className="opacity-0 group-hover/ben:opacity-100 p-1 text-slate-400 hover:text-rose-600 transition-opacity"
-                                              title="हटाएं"
-                                            >
-                                              <Trash2 className="w-3 h-3" />
-                                            </button>
+                                            {isEditMode && (
+                                              <button
+                                                onClick={() => deleteNsapBeneficiary(gp.id, b.id)}
+                                                className="opacity-0 group-hover/ben:opacity-100 p-1 text-slate-400 hover:text-rose-600 transition-opacity cursor-pointer"
+                                                title="हटाएं"
+                                              >
+                                                <Trash2 className="w-3 h-3" />
+                                              </button>
+                                            )}
                                           </div>
                                         </div>
                                         <div className="font-mono text-[11px] text-slate-500">
@@ -1480,13 +1551,29 @@ export default function NSAPDataTab() {
                       </div>
                     </div>
 
-                    {/* Action Button */}
+                    {/* Action Button (Guarded by Edit Mode) */}
                     <button
-                      onClick={() => handleOpenAddForGp(r.gpNameUnicode)}
-                      className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all transform active:scale-95"
+                      onClick={() => {
+                        if (!isEditMode) {
+                          alert('डेटा दर्ज करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+                          return;
+                        }
+                        handleOpenAddForGp(r.gpNameUnicode);
+                      }}
+                      disabled={!isEditMode}
+                      className={`w-full py-2 px-3 rounded-xl font-black text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all ${
+                        isEditMode
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white transform active:scale-95 cursor-pointer'
+                          : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                      }`}
+                      title={isEditMode ? "डेटा दर्ज करें (Record NSAP Data)" : "डेटा संपादित करने के लिए Edit Mode ON करें।"}
                     >
-                      <Plus className="w-4 h-4 stroke-[3]" />
-                      <span>डेटा दर्ज करें (Record NSAP Data)</span>
+                      {isEditMode ? (
+                        <Plus className="w-4 h-4 stroke-[3]" />
+                      ) : (
+                        <Lock className="w-3.5 h-3.5 text-slate-400" />
+                      )}
+                      <span>{isEditMode ? 'डेटा दर्ज करें (Record NSAP Data)' : 'डेटा दर्ज करें (केवल पठन - Edit Mode OFF)'}</span>
                     </button>
                   </div>
                 );
@@ -1806,13 +1893,19 @@ export default function NSAPDataTab() {
                       )}
                     </td>
                     <td className="py-2.5 px-3 text-center">
-                      <button
-                        onClick={() => deleteNsapBeneficiary(b.gpId, b.id)}
-                        className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
-                        title="हटाएं"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {isEditMode ? (
+                        <button
+                          onClick={() => deleteNsapBeneficiary(b.gpId, b.id)}
+                          className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                          title="हटाएं"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <span className="p-1 text-slate-300 cursor-not-allowed inline-block" title="डेटा हटाने के लिए Edit Mode ON करें">
+                          <Lock className="w-3.5 h-3.5 text-slate-300" />
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -1939,13 +2032,23 @@ export default function NSAPDataTab() {
               </button>
             </div>
 
+            {!isEditMode && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium text-xs">
+                <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>
+                  <strong>केवल पठन मोड (Read Only):</strong> संपादन मोड बंद है। नया डेटा जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।
+                </span>
+              </div>
+            )}
+
             <form onSubmit={handleSaveGpRecord} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">ग्राम पंचायत चुनें (47 NSAP में से):</label>
                 <select
                   value={selectedGpForAdd}
                   onChange={(e) => setSelectedGpForAdd(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                  disabled={!isEditMode}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
                   required
                 >
                   <option value="">-- ग्राम पंचायत चुनें --</option>
@@ -1964,7 +2067,8 @@ export default function NSAPDataTab() {
                     type="number"
                     value={modalTotalBens}
                     onChange={(e) => setModalTotalBens(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                    disabled={!isEditMode}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 disabled:bg-slate-100 disabled:cursor-not-allowed font-mono"
                     required
                   />
                 </div>
@@ -1974,7 +2078,8 @@ export default function NSAPDataTab() {
                     type="number"
                     value={modalVerDirect}
                     onChange={(e) => setModalVerDirect(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                    disabled={!isEditMode}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 disabled:bg-slate-100 disabled:cursor-not-allowed font-mono"
                     required
                   />
                 </div>
@@ -1984,7 +2089,8 @@ export default function NSAPDataTab() {
                     type="number"
                     value={modalVerFamily}
                     onChange={(e) => setModalVerFamily(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                    disabled={!isEditMode}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 disabled:bg-slate-100 disabled:cursor-not-allowed font-mono"
                   />
                 </div>
               </div>
@@ -1996,7 +2102,8 @@ export default function NSAPDataTab() {
                     type="number"
                     value={modalUnverCount}
                     onChange={(e) => setModalUnverCount(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                    disabled={!isEditMode}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 disabled:bg-slate-100 disabled:cursor-not-allowed font-mono"
                   />
                 </div>
                 <div>
@@ -2006,7 +2113,8 @@ export default function NSAPDataTab() {
                     value={modalUnverReason}
                     onChange={(e) => setModalUnverReason(e.target.value)}
                     placeholder="उदा० घर पर ताला बंद मिला"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                    disabled={!isEditMode}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 disabled:bg-slate-100 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -2015,16 +2123,18 @@ export default function NSAPDataTab() {
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer"
                 >
-                  रद्द करें
+                  {isEditMode ? 'रद्द करें' : 'बंद करें'}
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm"
-                >
-                  डेटा सुरक्षित करें
-                </button>
+                {isEditMode && (
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm cursor-pointer"
+                  >
+                    डेटा सुरक्षित करें
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -2039,8 +2149,15 @@ export default function NSAPDataTab() {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2 text-blue-800 font-bold text-base">
-                <Edit3 className="w-5 h-5 text-blue-600" />
-                <span>ग्राम पंचायत सोशल ऑडिट डेटा एडिट करें: {editingGpName}</span>
+                {isEditMode ? (
+                  <Edit3 className="w-5 h-5 text-blue-600" />
+                ) : (
+                  <Lock className="w-5 h-5 text-slate-500" />
+                )}
+                <span>
+                  {isEditMode ? 'ग्राम पंचायत सोशल ऑडिट डेटा एडिट करें: ' : 'ग्राम पंचायत सोशल ऑडिट विवरण (केवल पठन): '}
+                  {editingGpName}
+                </span>
               </div>
               <button
                 onClick={() => setIsEditModalOpen(false)}
@@ -2049,6 +2166,15 @@ export default function NSAPDataTab() {
                 ✕
               </button>
             </div>
+
+            {!isEditMode && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium text-xs">
+                <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>
+                  <strong>केवल पठन मोड (Read Only):</strong> संपादन मोड बंद है। बैठक तिथि या पेंशन डेटा में बदलाव करने के लिए कृपया पहले Header से Edit Mode ON करें।
+                </span>
+              </div>
+            )}
 
             <form onSubmit={handleSaveEditGp} className="space-y-4">
               <div className="flex items-center gap-2 text-xs">
@@ -2066,7 +2192,13 @@ export default function NSAPDataTab() {
                   type="date"
                   value={editMeetingDate}
                   onChange={(e) => setEditMeetingDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                  disabled={!isEditMode}
+                  readOnly={!isEditMode}
+                  className={`w-full border rounded-xl p-2 text-xs font-mono ${
+                    !isEditMode
+                      ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed select-none'
+                      : 'bg-slate-50 border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500'
+                  }`}
                   required
                 />
               </div>
@@ -2078,7 +2210,11 @@ export default function NSAPDataTab() {
                     type="number"
                     value={editTotalBens}
                     onChange={(e) => setEditTotalBens(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-mono"
+                    disabled={!isEditMode}
+                    readOnly={!isEditMode}
+                    className={`w-full border rounded-xl p-2 text-xs font-mono ${
+                      !isEditMode ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
                     required
                   />
                 </div>
@@ -2088,7 +2224,11 @@ export default function NSAPDataTab() {
                     type="number"
                     value={editVerDirect}
                     onChange={(e) => setEditVerDirect(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-mono"
+                    disabled={!isEditMode}
+                    readOnly={!isEditMode}
+                    className={`w-full border rounded-xl p-2 text-xs font-mono ${
+                      !isEditMode ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
                     required
                   />
                 </div>
@@ -2098,7 +2238,11 @@ export default function NSAPDataTab() {
                     type="number"
                     value={editVerFamily}
                     onChange={(e) => setEditVerFamily(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-mono"
+                    disabled={!isEditMode}
+                    readOnly={!isEditMode}
+                    className={`w-full border rounded-xl p-2 text-xs font-mono ${
+                      !isEditMode ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
                   />
                 </div>
               </div>
@@ -2118,7 +2262,11 @@ export default function NSAPDataTab() {
                     type="number"
                     value={editUnverCount}
                     onChange={(e) => setEditUnverCount(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-mono"
+                    disabled={!isEditMode}
+                    readOnly={!isEditMode}
+                    className={`w-full border rounded-xl p-2 text-xs font-mono ${
+                      !isEditMode ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
                   />
                 </div>
                 <div>
@@ -2128,7 +2276,11 @@ export default function NSAPDataTab() {
                     value={editUnverReason}
                     onChange={(e) => setEditUnverReason(e.target.value)}
                     placeholder="उदा० घर पर ताला बंद मिला"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                    disabled={!isEditMode}
+                    readOnly={!isEditMode}
+                    className={`w-full border rounded-xl p-2 text-xs ${
+                      !isEditMode ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
                   />
                 </div>
               </div>
@@ -2140,7 +2292,11 @@ export default function NSAPDataTab() {
                     type="number"
                     value={editFinIrreg}
                     onChange={(e) => setEditFinIrreg(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 font-mono"
+                    disabled={!isEditMode}
+                    readOnly={!isEditMode}
+                    className={`w-full border rounded-xl p-2 text-xs font-mono ${
+                      !isEditMode ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
                   />
                 </div>
                 <div>
@@ -2150,7 +2306,11 @@ export default function NSAPDataTab() {
                     value={editRespPersons}
                     onChange={(e) => setEditRespPersons(e.target.value)}
                     placeholder="उदा० ग्राम प्रधान / सचिव"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                    disabled={!isEditMode}
+                    readOnly={!isEditMode}
+                    className={`w-full border rounded-xl p-2 text-xs ${
+                      !isEditMode ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-slate-200 text-slate-800'
+                    }`}
                   />
                 </div>
               </div>
@@ -2162,7 +2322,11 @@ export default function NSAPDataTab() {
                   onChange={(e) => setEditIrregNotes(e.target.value)}
                   placeholder="अतिरिक्त विवरण या बैठक की विशेष टिप्पणी..."
                   rows={2}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                  disabled={!isEditMode}
+                  readOnly={!isEditMode}
+                  className={`w-full border rounded-xl p-2 text-xs ${
+                    !isEditMode ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
                 />
               </div>
 
@@ -2170,16 +2334,28 @@ export default function NSAPDataTab() {
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer"
                 >
-                  रद्द करें
+                  {isEditMode ? 'रद्द करें' : 'बंद करें'}
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm"
-                >
-                  डेटा अपडेट करें
-                </button>
+                {isEditMode ? (
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm cursor-pointer"
+                  >
+                    डेटा अपडेट करें
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed border border-slate-200 flex items-center gap-1.5"
+                    title="डेटा संपादित करने के लिए Edit Mode ON करें।"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>केवल पठन (Read Only)</span>
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -2431,19 +2607,30 @@ export default function NSAPDataTab() {
                 <button
                   type="button"
                   onClick={() => setIsExcelPasteModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer"
                 >
-                  रद्द करें
+                  {isEditMode ? 'रद्द करें' : 'बंद करें'}
                 </button>
-                <button
-                  type="button"
-                  disabled={parsedBeneficiaries.length === 0}
-                  onClick={handleSaveExcelBatch}
-                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black shadow-sm flex items-center gap-1.5"
-                >
-                  <Check className="w-4 h-4 stroke-[3]" />
-                  <span>सुरक्षित करें (कुल {parsedBeneficiaries.length} लाभार्थी आयात करें)</span>
-                </button>
+                {isEditMode ? (
+                  <button
+                    type="button"
+                    disabled={parsedBeneficiaries.length === 0}
+                    onClick={handleSaveExcelBatch}
+                    className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black shadow-sm flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>सुरक्षित करें (कुल {parsedBeneficiaries.length} लाभार्थी आयात करें)</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed border border-slate-200 flex items-center gap-1.5"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>केवल पठन (Read Only)</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -2458,8 +2645,12 @@ export default function NSAPDataTab() {
           <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2 text-emerald-800 font-bold text-base">
-                <Plus className="w-5 h-5 text-emerald-600" />
-                <span>लाभार्थी जोड़ें (कारण सहित)</span>
+                {isEditMode ? (
+                  <Plus className="w-5 h-5 text-emerald-600" />
+                ) : (
+                  <Lock className="w-5 h-5 text-slate-500" />
+                )}
+                <span>{isEditMode ? 'लाभार्थी जोड़ें (कारण सहित)' : 'लाभार्थी विवरण (केवल पठन)'}</span>
               </div>
               <button
                 onClick={() => setIsBenModalOpen(false)}
@@ -2469,6 +2660,15 @@ export default function NSAPDataTab() {
               </button>
             </div>
 
+            {!isEditMode && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium text-xs">
+                <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>
+                  <strong>केवल पठन मोड (Read Only):</strong> लाभार्थी जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।
+                </span>
+              </div>
+            )}
+
             <form onSubmit={handleSaveSingleBeneficiary} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">लाभार्थी का नाम:</label>
@@ -2476,8 +2676,10 @@ export default function NSAPDataTab() {
                   type="text"
                   value={newBenName}
                   onChange={(e) => setNewBenName(e.target.value)}
+                  disabled={!isEditMode}
+                  readOnly={!isEditMode}
                   placeholder="उदा० अनीता शर्मा"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -2488,8 +2690,10 @@ export default function NSAPDataTab() {
                   type="text"
                   value={newBenRegId}
                   onChange={(e) => setNewBenRegId(e.target.value)}
+                  disabled={!isEditMode}
+                  readOnly={!isEditMode}
                   placeholder="उदा० 316510599211"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 font-mono focus:outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -2500,7 +2704,8 @@ export default function NSAPDataTab() {
                   <select
                     value={newBenCategory}
                     onChange={(e) => setNewBenCategory(e.target.value as any)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                    disabled={!isEditMode}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
                   >
                     <option value="ineligible">अपात्र लाभार्थी</option>
                     <option value="deceased">सत्यापित में मृतक</option>
@@ -2515,7 +2720,9 @@ export default function NSAPDataTab() {
                       type="date"
                       value={newBenDeathDate}
                       onChange={(e) => setNewBenDeathDate(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800"
+                      disabled={!isEditMode}
+                      readOnly={!isEditMode}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 disabled:bg-slate-100 disabled:cursor-not-allowed"
                     />
                   </div>
                 )}
@@ -2527,8 +2734,10 @@ export default function NSAPDataTab() {
                   type="text"
                   value={newBenReason}
                   onChange={(e) => setNewBenReason(e.target.value)}
+                  disabled={!isEditMode}
+                  readOnly={!isEditMode}
                   placeholder="उदा० एक से अधिक पेंशन प्राप्त कर रहे हैं / गाँव से बाहर"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -2537,16 +2746,18 @@ export default function NSAPDataTab() {
                 <button
                   type="button"
                   onClick={() => setIsBenModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer"
                 >
-                  रद्द करें
+                  {isEditMode ? 'रद्द करें' : 'बंद करें'}
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm"
-                >
-                  लाभार्थी जोड़ें
-                </button>
+                {isEditMode && (
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm cursor-pointer"
+                  >
+                    लाभार्थी जोड़ें
+                  </button>
+                )}
               </div>
             </form>
           </div>

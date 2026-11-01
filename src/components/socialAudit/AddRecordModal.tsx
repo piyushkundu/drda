@@ -158,7 +158,8 @@ export default function AddRecordModal() {
               <select
                 value={block}
                 onChange={(e) => setBlock(e.target.value as AuditBlock)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold outline-none focus:bg-white focus:border-blue-500"
+                disabled={!isEditMode}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold outline-none focus:bg-white focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               >
                 <option value="Baghpat">विकास खण्ड बागपत</option>
                 <option value="Baraut">विकास खण्ड बड़ौत</option>
@@ -171,8 +172,10 @@ export default function AddRecordModal() {
                 required
                 value={gpName}
                 onChange={(e) => setGpName(e.target.value)}
+                disabled={!isEditMode}
+                readOnly={!isEditMode}
                 placeholder="उदा० ग्राम पंचायत का नाम"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -185,7 +188,9 @@ export default function AddRecordModal() {
                 required
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500"
+                disabled={!isEditMode}
+                readOnly={!isEditMode}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
             <div>
@@ -195,7 +200,9 @@ export default function AddRecordModal() {
                 required
                 value={meetingDate}
                 onChange={(e) => setMeetingDate(e.target.value)}
-                className="w-full bg-blue-50/70 border-2 border-blue-400 rounded-xl px-3 py-2 text-blue-950 font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                disabled={!isEditMode}
+                readOnly={!isEditMode}
+                className="w-full bg-blue-50/70 border-2 border-blue-400 rounded-xl px-3 py-2 text-blue-950 font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:cursor-not-allowed font-mono"
               />
             </div>
           </div>
@@ -207,7 +214,9 @@ export default function AddRecordModal() {
                 type="text"
                 value={brpName}
                 onChange={(e) => setBrpName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:bg-white focus:border-blue-500"
+                disabled={!isEditMode}
+                readOnly={!isEditMode}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:bg-white focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
             <div>
@@ -216,7 +225,9 @@ export default function AddRecordModal() {
                 type="text"
                 value={brpPhone}
                 onChange={(e) => setBrpPhone(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono outline-none focus:bg-white focus:border-blue-500"
+                disabled={!isEditMode}
+                readOnly={!isEditMode}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono outline-none focus:bg-white focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -227,8 +238,10 @@ export default function AddRecordModal() {
               type="text"
               value={teamMembers}
               onChange={(e) => setTeamMembers(e.target.value)}
+              disabled={!isEditMode}
+              readOnly={!isEditMode}
               placeholder="उदा० सदस्य 1 (गाँव), सदस्य 2 (गाँव)..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -238,27 +251,31 @@ export default function AddRecordModal() {
               type="text"
               value={supervisorOfficer}
               onChange={(e) => setSupervisorOfficer(e.target.value)}
+              disabled={!isEditMode}
+              readOnly={!isEditMode}
               placeholder="उदा० अधिशासी अभियन्ता..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
             />
           </div>
 
           <div className="flex items-center gap-4 pt-2">
-            <label className="flex items-center gap-1.5 cursor-pointer text-slate-800">
+            <label className={`flex items-center gap-1.5 text-slate-800 ${!isEditMode ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 checked={hasMGNREGA}
                 onChange={(e) => setHasMGNREGA(e.target.checked)}
-                className="rounded accent-blue-600"
+                disabled={!isEditMode}
+                className="rounded accent-blue-600 disabled:cursor-not-allowed"
               />
               <span className="font-medium">मनरेगा</span>
             </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-emerald-800 font-bold">
+            <label className={`flex items-center gap-1.5 text-emerald-800 font-bold ${!isEditMode ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
               <input
                 type="checkbox"
                 checked={hasNSAP}
                 onChange={(e) => setHasNSAP(e.target.checked)}
-                className="rounded accent-emerald-600"
+                disabled={!isEditMode}
+                className="rounded accent-emerald-600 disabled:cursor-not-allowed"
               />
               <span>NSAP पेंशन योजना</span>
             </label>
