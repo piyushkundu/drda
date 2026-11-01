@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { MisAuditStatus, SocialAuditRecord } from '@/types/socialAudit';
 import { matchesBRP } from '@/lib/brpHelper';
+import { filterRecordsByGlobalFilters } from '@/lib/globalFilterHelper';
 import { 
   CheckCircle2, Clock, XCircle, Search, Filter, 
   Download, Building2, ShieldCheck, 
@@ -15,6 +16,8 @@ export default function MisFeedingTab() {
   const { 
     records, 
     selectedBRP,
+    selectedBlock,
+    dateRange,
     asOfDate, 
     fontViewMode, 
     isEditMode,
@@ -61,11 +64,10 @@ export default function MisFeedingTab() {
     return <span>{unicodeText}</span>;
   };
 
-  // Filter records by global selectedBRP
+  // Filter records by global filters (BRP + Block + Date Range)
   const effectiveRecords = useMemo(() => {
-    if (!selectedBRP || selectedBRP === 'all') return records;
-    return records.filter((r) => matchesBRP(r, selectedBRP));
-  }, [records, selectedBRP]);
+    return filterRecordsByGlobalFilters(records, selectedBRP, selectedBlock, dateRange);
+  }, [records, selectedBRP, selectedBlock, dateRange]);
 
   // Detailed Metrics computation strictly respecting asOfDate and selected BRP
   const metrics = useMemo(() => {

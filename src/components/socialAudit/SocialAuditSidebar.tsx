@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Clock, Calendar, Smartphone, FileSpreadsheet, 
   Users, FileText, Briefcase, ChevronLeft, ChevronRight, X, 
   Building2, ShieldCheck, UserCheck, CheckCircle2, AlertCircle,
-  FileBarChart2, History, Sparkles
+  FileBarChart2, History, Sparkles, Languages
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 
@@ -248,63 +248,28 @@ export default function SocialAuditSidebar({
           })}
         </div>
 
-        {/* Desktop Sidebar Footer */}
-        <div className="p-3 border-t border-slate-200/90 bg-slate-50/80 shrink-0 space-y-2">
-          {/* Switch to Page Hindi Button */}
+        {/* Desktop Sidebar Footer: Clean Switch to Page Hindi Button (DDO Card Removed) */}
+        <div className="p-3 border-t border-slate-200/90 bg-slate-50/80 shrink-0">
           {!isCollapsed ? (
             <button
               type="button"
               onClick={() => useUIStore.getState().setSidebarPanel('dashboard')}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
-              title="पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं"
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white font-bold text-xs shadow-sm hover:shadow-md hover:shadow-indigo-950/20 transition-all active:scale-[0.98] cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 border border-indigo-600/30"
+              title="पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं (Switch to Page Hindi)"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-              <span>Switch to Page Hindi</span>
+              <Languages className="w-4 h-4 text-amber-300 shrink-0" />
+              <span className="tracking-wide">Switch to Page Hindi</span>
             </button>
           ) : (
             <button
               type="button"
               onClick={() => useUIStore.getState().setSidebarPanel('dashboard')}
-              className="w-full flex items-center justify-center p-2 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-xs hover:from-blue-800 transition-all cursor-pointer"
+              className="w-full flex items-center justify-center p-2.5 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
               title="Switch to Page Hindi (पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं)"
+              aria-label="Switch to Page Hindi"
             >
-              <Sparkles className="w-4 h-4 text-amber-300" />
+              <Languages className="w-4 h-4 text-amber-300" />
             </button>
-          )}
-
-          {!isCollapsed ? (
-            <div className="space-y-2">
-              <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs shrink-0">
-                  DDO
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-black text-slate-900 truncate">
-                    जिला विकास अधिकारी
-                  </div>
-                  <div className="text-[10px] text-slate-500 truncate">
-                    DRDA बागपत, उत्तर प्रदेश
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[10px] text-slate-600 px-1 font-medium">
-                <span>Enterprise v3.0</span>
-                <span className="flex items-center gap-1 text-emerald-700 font-bold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  सक्रिय
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-center">
-              <div
-                className="w-7 h-7 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs"
-                title="जिला विकास अधिकारी (DDO) बागपत"
-              >
-                DDO
-              </div>
-            </div>
           )}
         </div>
       </aside>
@@ -423,8 +388,8 @@ export default function SocialAuditSidebar({
               })}
             </nav>
 
-            {/* Fixed Bottom Footer (DDO Identity Card & System Active Status) */}
-            <div className="p-3.5 border-t border-slate-200/90 bg-slate-50/95 backdrop-blur-md shrink-0 pb-[max(0.875rem,env(safe-area-inset-bottom))] space-y-2">
+            {/* Fixed Bottom Footer: Clean Switch to Page Hindi Button (DDO Card Removed) */}
+            <div className="p-3.5 border-t border-slate-200/90 bg-slate-50/95 backdrop-blur-md shrink-0 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
               {/* Switch to Page Hindi Button on Mobile */}
               <button
                 type="button"
@@ -432,37 +397,13 @@ export default function SocialAuditSidebar({
                   useUIStore.getState().setSidebarPanel('dashboard');
                   setIsOpenMobile(false);
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
-                title="पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं"
+                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white font-bold text-xs shadow-sm hover:shadow-md hover:shadow-indigo-950/20 transition-all active:scale-[0.98] cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 border border-indigo-600/30"
+                title="पेज हिंदी शासकीय ड्राफ्टिंग सुइट में जाएं (Switch to Page Hindi)"
+                aria-label="Switch to Page Hindi"
               >
-                <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
-                <span>Switch to Page Hindi</span>
+                <Languages className="w-4 h-4 text-amber-300 shrink-0" />
+                <span className="tracking-wide">Switch to Page Hindi</span>
               </button>
-
-              <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-700 to-indigo-800 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                  DDO
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-black text-slate-900 truncate">
-                    जिला विकास अधिकारी
-                  </div>
-                  <div className="text-[10px] text-slate-600 truncate font-medium">
-                    DRDA बागपत, उत्तर प्रदेश
-                  </div>
-                  <div className="text-[9px] text-slate-400 truncate">
-                    प्रशासनिक नोडल अधिकारी
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-slate-600 px-1 font-medium">
-                <span className="font-mono text-slate-500 text-[10px]">Enterprise v3.0</span>
-                <span className="flex items-center gap-1.5 text-emerald-700 font-bold text-[10px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                  सक्रिय पोर्टल
-                </span>
-              </div>
             </div>
           </aside>
         </div>,

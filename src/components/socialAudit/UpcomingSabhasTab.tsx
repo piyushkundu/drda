@@ -20,6 +20,8 @@ export default function UpcomingSabhasTab() {
   const { 
     records, 
     selectedBRP,
+    selectedBlock,
+    dateRange,
     asOfDate, 
     isLiveSync,
     liveDelhiTime,
@@ -62,12 +64,21 @@ export default function UpcomingSabhasTab() {
     }
   };
 
-  // All upcoming meetings (meetingDate >= asOfDate and not completed) filtered by selectedBRP
+  // All upcoming meetings (meetingDate >= asOfDate and not completed) filtered by global filters (BRP, Block, Date Range)
   const allUpcoming = useMemo(() => {
     return records
-      .filter((r) => r.meetingDate >= asOfDate && r.status !== 'completed' && matchesBRP(r, selectedBRP))
+      .filter((r) => {
+        if (r.meetingDate < asOfDate || r.status === 'completed') return false;
+        if (!matchesBRP(r, selectedBRP)) return false;
+        if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
+        if (dateRange && (dateRange.startDate || dateRange.endDate)) {
+          if (dateRange.startDate && r.meetingDate < dateRange.startDate) return false;
+          if (dateRange.endDate && r.meetingDate > dateRange.endDate) return false;
+        }
+        return true;
+      })
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
-  }, [records, asOfDate, selectedBRP]);
+  }, [records, asOfDate, selectedBRP, selectedBlock, dateRange]);
 
   // Counts
   const upcomingCountTotal = allUpcoming.length;

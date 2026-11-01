@@ -9,6 +9,7 @@ import {
   AuditBlock
 } from '@/types/socialAudit';
 import { matchesBRP } from '@/lib/brpHelper';
+import { filterRecordsByGlobalFilters } from '@/lib/globalFilterHelper';
 import { 
   FileSpreadsheet, Users, CheckCircle2, AlertTriangle, Clock, 
   Search, Filter, Plus, Printer, Download, Sparkles, Building2, 
@@ -21,6 +22,8 @@ export default function NSAPDataTab() {
   const { 
     records, 
     selectedBRP,
+    selectedBlock,
+    dateRange,
     nsapRecords, 
     asOfDate, 
     fontViewMode,
@@ -156,11 +159,10 @@ export default function NSAPDataTab() {
     'baraut-16'   // ढिकाना
   ]), []);
 
-  // Global selectedBRP filtering for NSAP Data
+  // Global filtering (BRP + Block + Date Range) for NSAP Data
   const effectiveRecords = useMemo(() => {
-    if (!selectedBRP || selectedBRP === 'all') return records;
-    return records.filter((r) => matchesBRP(r, selectedBRP));
-  }, [records, selectedBRP]);
+    return filterRecordsByGlobalFilters(records, selectedBRP, selectedBlock, dateRange);
+  }, [records, selectedBRP, selectedBlock, dateRange]);
 
   const assignedGpRecordIds = useMemo(() => new Set(effectiveRecords.map((r) => r.id)), [effectiveRecords]);
   const assignedGpNames = useMemo(() => new Set(effectiveRecords.map((r) => r.gpNameUnicode?.trim())), [effectiveRecords]);

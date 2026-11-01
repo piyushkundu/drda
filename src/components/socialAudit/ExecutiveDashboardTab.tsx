@@ -7,12 +7,16 @@ import { DISTRICT_META } from '@/data/socialAuditInitialData';
 import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
 import { matchesBRP, getBRPDisplayName } from '@/lib/brpHelper';
 import { 
+  filterRecordsByGlobalFilters, 
+  formatRangeLabel 
+} from '@/lib/globalFilterHelper';
+import { 
   Landmark, Building2, Calendar, CheckCircle2, Clock, 
   AlertTriangle, Smartphone, FileSpreadsheet, Users, UserCheck,
   Search, X, ChevronRight, RefreshCw, Cloud, MapPin, 
   Phone, ArrowRight, ExternalLink, ShieldCheck, Check, 
   Layers, AlertCircle, Info, FileText, Filter, CalendarDays,
-  CheckCircle, ArrowUpRight
+  CheckCircle, ArrowUpRight, RotateCcw
 } from 'lucide-react';
 
 export default function ExecutiveDashboardTab() {
@@ -22,13 +26,16 @@ export default function ExecutiveDashboardTab() {
     selectedBRP,
     setSelectedBRP,
     resetSelectedBRP,
+    selectedBlock,
+    setSelectedBlock,
+    dateRange,
+    resetAllGlobalFilters,
     asOfDate, 
     liveDelhiTime, 
     liveDelhiDate,
     fontViewMode, 
     openEditModal, 
     setActiveTab,
-    setSelectedBlock,
     syncWithDelhiTime,
     forceSyncToFirebase,
     firebaseSyncStatus,
@@ -105,11 +112,10 @@ export default function ExecutiveDashboardTab() {
     return <span>{unicodeText}</span>;
   };
 
-  // Filter records by global selectedBRP
+  // Filter records by centralized global filters (BRP + Block + Date Range)
   const effectiveRecords = useMemo(() => {
-    if (!selectedBRP || selectedBRP === 'all') return records;
-    return records.filter((r) => matchesBRP(r, selectedBRP));
-  }, [records, selectedBRP]);
+    return filterRecordsByGlobalFilters(records, selectedBRP, selectedBlock, dateRange);
+  }, [records, selectedBRP, selectedBlock, dateRange]);
 
   // Compute assigned GP set for NSAP beneficiary filtering
   const assignedGpRecordIds = useMemo(() => new Set(effectiveRecords.map((r) => r.id)), [effectiveRecords]);
@@ -351,61 +357,97 @@ export default function ExecutiveDashboardTab() {
     <div className="bg-slate-50 text-slate-800 rounded-3xl p-4 sm:p-6 md:p-8 space-y-6 border border-slate-200/90 shadow-sm font-sans">
       
       {/* ========================================================================= */}
-      {/* SECTION A: DASHBOARD HEADER (Compact Title Section Without Duplicate Stats) */}
+      {/* SECTION A: DASHBOARD HEADER (Executive Enterprise Hero Section)           */}
       {/* ========================================================================= */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-900 border border-blue-200">
+      <div className="relative overflow-hidden bg-gradient-to-br from-white via-slate-50 to-blue-50/40 rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-900 border border-blue-200 shadow-2xs">
               <Landmark className="w-3.5 h-3.5 text-blue-800" />
               उत्तर प्रदेश शासन • जिला विकास अधिकारी (DDO)
             </span>
-            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-              वित्तीय वर्ष: <strong className="text-slate-800">{DISTRICT_META.financialYear || '2026-2027'}</strong>
+            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+              वित्तीय वर्ष: {DISTRICT_META.financialYear || '2026-27'}
             </span>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <span>सोशल ऑडिट डैशबोर्ड</span>
-            <span className="text-sm font-semibold text-slate-500">
+            <span className="text-base sm:text-lg font-bold text-slate-500">
               — जनपद बागपत, उत्तर प्रदेश
             </span>
-          </h2>
-          <p className="text-xs text-slate-600 mt-0.5 font-medium">
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-600 font-medium max-w-2xl">
             विकास खंड बागपत एवं बड़ौत की ग्राम पंचायतों का प्रशासनिक अनुश्रवण।
           </p>
         </div>
+
+        {/* District Meta Snapshot Badge */}
+        <div className="flex items-center gap-2 shrink-0 bg-white/80 backdrop-blur-xs p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center justify-center font-bold text-sm">
+            UP
+          </div>
+          <div className="text-xs leading-tight">
+            <div className="font-extrabold text-slate-900">जनपद बागपत (088)</div>
+            <div className="text-[11px] text-slate-500 font-medium">बागपत (44) + बड़ौत (44) = 88 GP</div>
+          </div>
+        </div>
       </div>
 
-      {/* Active BRP Filter Banner */}
-      {selectedBRP && selectedBRP !== 'all' && (
-        <div className="bg-gradient-to-r from-indigo-50/90 via-blue-50/80 to-indigo-50/90 border border-indigo-200/90 rounded-2xl p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm animate-in fade-in duration-200">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs shrink-0">
-              <UserCheck className="w-4 h-4" />
+      {/* ========================================================================= */}
+      {/* ACTIVE GLOBAL FILTER BANNER (BRP + BLOCK + DATE RANGE)                    */}
+      {/* ========================================================================= */}
+      {(selectedBRP !== 'all' || selectedBlock !== 'all' || (dateRange && dateRange.preset !== 'all') || Boolean(dateRange?.startDate) || Boolean(dateRange?.endDate)) && (
+        <div className="bg-gradient-to-r from-indigo-50/90 via-blue-50/80 to-indigo-50/90 border border-indigo-200/90 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm animate-in fade-in duration-200">
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <span className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs shrink-0 mt-0.5 sm:mt-0">
+              <Filter className="w-4 h-4" />
             </span>
             <div>
               <div className="font-black text-indigo-950 flex items-center gap-2 flex-wrap">
-                <span>बी०आर०पी० फ़िल्टर सक्रिय:</span>
-                <span className="text-indigo-900 bg-white px-2.5 py-0.5 rounded-lg border border-indigo-200 shadow-2xs font-bold">
-                  {getBRPDisplayName(selectedBRP, records)}
-                </span>
-                <span className="text-xs font-semibold text-indigo-700">
-                  (आवंटित: {metrics.totalGPs} ग्राम पंचायतें)
+                <span>ग्लोबल फ़िल्टर सक्रिय:</span>
+
+                {/* BRP Pill */}
+                {selectedBRP !== 'all' && (
+                  <span className="inline-flex items-center gap-1 text-indigo-900 bg-white px-2.5 py-0.5 rounded-lg border border-indigo-200 shadow-2xs font-bold text-xs">
+                    <Users className="w-3 h-3 text-indigo-600" />
+                    <span>BRP: {getBRPDisplayName(selectedBRP, records)}</span>
+                  </span>
+                )}
+
+                {/* Block Pill */}
+                {selectedBlock !== 'all' && (
+                  <span className="inline-flex items-center gap-1 text-blue-900 bg-white px-2.5 py-0.5 rounded-lg border border-blue-200 shadow-2xs font-bold text-xs">
+                    <Building2 className="w-3 h-3 text-blue-600" />
+                    <span>ब्लॉक: {selectedBlock === 'Baghpat' ? 'बागपत' : 'बड़ौत'}</span>
+                  </span>
+                )}
+
+                {/* Date Range Pill */}
+                {((dateRange && dateRange.preset !== 'all') || Boolean(dateRange?.startDate) || Boolean(dateRange?.endDate)) && (
+                  <span className="inline-flex items-center gap-1 text-amber-900 bg-white px-2.5 py-0.5 rounded-lg border border-amber-200 shadow-2xs font-bold text-xs">
+                    <Calendar className="w-3 h-3 text-amber-600" />
+                    <span>तिथि: {formatRangeLabel(dateRange)}</span>
+                  </span>
+                )}
+
+                <span className="text-xs font-semibold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-md">
+                  {effectiveRecords.length} / {records.length} पंचायतें प्रदर्शित
                 </span>
               </div>
-              <p className="text-[11px] text-indigo-800/80 mt-0.5">
-                डैशबोर्ड के सभी 8 KPI संकेतक, ब्लॉक मैट्रिक्स एवं NSAP आंकड़े केवल इस बी०आर०पी० के अनुसार प्रदर्शित हो रहे हैं।
+              <p className="text-[11px] text-indigo-800/80 mt-1 font-medium">
+                डैशबोर्ड के समस्त 8 KPI संकेतक, ब्लॉक मैट्रिक्स एवं सूचियां केवल इस फ़िल्टर के अनुसार परिकलित हैं।
               </p>
             </div>
           </div>
           <button
             type="button"
-            onClick={resetSelectedBRP}
-            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-indigo-950 border border-indigo-300 font-bold text-xs shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 shrink-0"
+            onClick={resetAllGlobalFilters}
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
+            title="सभी फ़िल्टर हटाएं और संपूर्ण जनपद डेटा देखें"
           >
-            <X className="w-3.5 h-3.5 text-indigo-600" />
-            <span>सभी बी०आर०पी० दिखाएं (Reset)</span>
+            <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+            <span>फ़िल्टर रीसेट करें (Reset All)</span>
           </button>
         </div>
       )}

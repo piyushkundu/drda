@@ -15,6 +15,11 @@ import { INITIAL_ACTIVITY_LOGS } from '@/data/initialActivityLogs';
 import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/lib/delhiTime';
 import { NirnaySyncPayload } from '@/lib/nirnaySyncBookmarklet';
 import { MisSyncPayload } from '@/lib/misSyncBookmarklet';
+import { extractBRPOptions } from '@/lib/brpHelper';
+import { 
+  GlobalDateRange, DEFAULT_DATE_RANGE, 
+  shouldResetBRPOnBlockChange 
+} from '@/lib/globalFilterHelper';
 import { 
   loadSocialAuditFromFirestore, 
   saveSocialAuditToFirestore, 
@@ -44,6 +49,7 @@ interface SocialAuditState {
   fontViewMode: FontViewMode;
   selectedBlock: 'all' | AuditBlock;
   selectedBRP: string; // 'all' or BRP phone / name
+  dateRange: GlobalDateRange;
   selectedScheme: 'all' | 'nsap' | 'mgnrega' | 'pmayg';
   selectedStatus: 'all' | AuditStatus | 'upcoming' | 'overdue';
   searchQuery: string;
@@ -73,6 +79,9 @@ interface SocialAuditState {
   setSelectedBlock: (block: 'all' | AuditBlock) => void;
   setSelectedBRP: (brp: string) => void;
   resetSelectedBRP: () => void;
+  setDateRange: (range: Partial<GlobalDateRange>) => void;
+  resetDateRange: () => void;
+  resetAllGlobalFilters: () => void;
   setSelectedScheme: (scheme: 'all' | 'nsap' | 'mgnrega' | 'pmayg') => void;
   setSelectedStatus: (status: 'all' | AuditStatus | 'upcoming' | 'overdue') => void;
   setSearchQuery: (query: string) => void;
@@ -160,6 +169,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       fontViewMode: 'unicode',
       selectedBlock: 'all',
       selectedBRP: 'all',
+      dateRange: DEFAULT_DATE_RANGE,
       selectedScheme: 'all',
       selectedStatus: 'all',
       searchQuery: '',
@@ -275,9 +285,28 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       setFontViewMode: (mode) => set({ fontViewMode: mode }),
-      setSelectedBlock: (block) => set({ selectedBlock: block }),
+      setSelectedBlock: (block) => {
+        const state = get();
+        const brpOptions = extractBRPOptions(state.records);
+        const mustResetBRP = shouldResetBRPOnBlockChange(state.selectedBRP, block, brpOptions);
+        set({
+          selectedBlock: block,
+          selectedBRP: mustResetBRP ? 'all' : state.selectedBRP,
+        });
+      },
       setSelectedBRP: (brp) => set({ selectedBRP: brp }),
       resetSelectedBRP: () => set({ selectedBRP: 'all' }),
+      setDateRange: (range) =>
+        set((prev) => ({
+          dateRange: { ...prev.dateRange, ...range },
+        })),
+      resetDateRange: () => set({ dateRange: DEFAULT_DATE_RANGE }),
+      resetAllGlobalFilters: () =>
+        set({
+          selectedBRP: 'all',
+          selectedBlock: 'all',
+          dateRange: DEFAULT_DATE_RANGE,
+        }),
       setSelectedScheme: (scheme) => set({ selectedScheme: scheme }),
       setSelectedStatus: (status) => set({ selectedStatus: status }),
       setSearchQuery: (query) => set({ searchQuery: query }),

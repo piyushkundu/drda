@@ -17,6 +17,7 @@ export default function CalendarTableTab() {
   const {
     records,
     selectedBRP,
+    dateRange,
     fontViewMode,
     selectedBlock,
     setSelectedBlock,
@@ -71,11 +72,17 @@ export default function CalendarTableTab() {
     return <span>{unicodeText}</span>;
   };
 
-  // Effective records filtered by global BRP
+  // Effective records filtered by global BRP and Date Range
   const effectiveRecords = useMemo(() => {
-    if (!selectedBRP || selectedBRP === 'all') return records;
-    return records.filter((r) => matchesBRP(r, selectedBRP));
-  }, [records, selectedBRP]);
+    return records.filter((r) => {
+      if (!matchesBRP(r, selectedBRP)) return false;
+      if (dateRange && (dateRange.startDate || dateRange.endDate)) {
+        if (dateRange.startDate && r.meetingDate < dateRange.startDate) return false;
+        if (dateRange.endDate && r.meetingDate > dateRange.endDate) return false;
+      }
+      return true;
+    });
+  }, [records, selectedBRP, dateRange]);
 
   // Helper to determine if a meeting is completed:
   // Rule: All non-amended meetings up to asOfDate (or status === 'completed') are completed.

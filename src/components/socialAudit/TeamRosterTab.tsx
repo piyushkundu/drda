@@ -6,12 +6,15 @@ import { matchesBRP } from '@/lib/brpHelper';
 import { Phone, Users, Shield, Calendar, MapPin, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
 
 export default function TeamRosterTab() {
-  const { records, asOfDate, openEditModal, openGPProfile, isEditMode, selectedBRP } = useSocialAuditStore();
+  const { records, asOfDate, openEditModal, openGPProfile, isEditMode, selectedBRP, selectedBlock } = useSocialAuditStore();
 
   const effectiveRecords = useMemo(() => {
-    if (!selectedBRP || selectedBRP === 'all') return records;
-    return records.filter((r) => matchesBRP(r, selectedBRP));
-  }, [records, selectedBRP]);
+    return records.filter((r) => {
+      if (!matchesBRP(r, selectedBRP)) return false;
+      if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
+      return true;
+    });
+  }, [records, selectedBRP, selectedBlock]);
 
   // Group by BRP
   const brpDirectory = useMemo(() => {
@@ -44,7 +47,7 @@ export default function TeamRosterTab() {
       });
     });
 
-    records.forEach((r) => {
+    effectiveRecords.forEach((r) => {
       const phone = r.brpPhone || '';
       if (!map.has(phone) && r.brpName) {
         map.set(phone, {
@@ -67,7 +70,7 @@ export default function TeamRosterTab() {
     });
 
     return Array.from(map.values()).sort((a, b) => b.allGPs.length - a.allGPs.length);
-  }, [records, asOfDate]);
+  }, [effectiveRecords, asOfDate]);
 
   // Filter BRP Directory by selected BRP if active
   const filteredBrpDirectory = useMemo(() => {
