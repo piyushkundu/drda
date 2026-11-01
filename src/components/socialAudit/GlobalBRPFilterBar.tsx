@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
-import { AuditBlock } from '@/types/socialAudit';
 import { extractBRPOptions, getBRPDisplayName } from '@/lib/brpHelper';
 import { 
   getAvailableBRPOptionsForBlock, 
@@ -13,8 +12,8 @@ import {
   DateRangePreset
 } from '@/lib/globalFilterHelper';
 import { 
-  Users, Building2, Calendar, X, ChevronDown, Search, 
-  Check, RotateCcw, Filter, AlertCircle, CalendarDays 
+  Users, Building2, Calendar, ChevronDown, Search, 
+  Check, RotateCcw, AlertCircle, CalendarDays 
 } from 'lucide-react';
 
 export default function GlobalBRPFilterBar() {
@@ -123,7 +122,7 @@ export default function GlobalBRPFilterBar() {
   );
   const isAnyFilterActive = isBRPFiltered || isBlockFiltered || isDateFiltered;
 
-  // Active BRP display name
+  // Active BRP full display name for desktop
   const activeBRPName = useMemo(() => {
     if (!isBRPFiltered) return 'सभी BRP';
     const found = brpOptions.find((o) => o.id === selectedBRP || o.phone === selectedBRP || o.name.includes(selectedBRP));
@@ -137,17 +136,50 @@ export default function GlobalBRPFilterBar() {
     return found ? found.totalGPs : 0;
   }, [isBRPFiltered, selectedBRP, brpOptions, records]);
 
-  // Block display name
+  // Block display name for desktop
   const activeBlockLabel = useMemo(() => {
     if (selectedBlock === 'Baghpat') return 'बागपत';
     if (selectedBlock === 'Baraut') return 'बड़ौत';
     return 'सभी विकास खंड';
   }, [selectedBlock]);
 
-  // Date range display label
+  // Date range display label for desktop
   const activeDateLabel = useMemo(() => {
     return formatRangeLabel(dateRange);
   }, [dateRange]);
+
+  // =========================================================================
+  // COMPACT MOBILE LABELS (Single Row: BRP | Block | Date)
+  // Short format: "BRP: All" / "BRP: तेजपाल", "Block: All" / "Block: बागपत", "Date: All" / "Date: आज"
+  // =========================================================================
+  const mobileBRPLabel = useMemo(() => {
+    if (!isBRPFiltered) return 'BRP: All';
+    const found = brpOptions.find((o) => o.id === selectedBRP || o.phone === selectedBRP || o.name.includes(selectedBRP));
+    const fullName = found?.name || getBRPDisplayName(selectedBRP, records);
+    const shortName = fullName.split(' ')[0] || fullName;
+    return `BRP: ${shortName}`;
+  }, [isBRPFiltered, selectedBRP, brpOptions, records]);
+
+  const mobileBlockLabel = useMemo(() => {
+    if (selectedBlock === 'Baghpat') return 'Block: बागपत';
+    if (selectedBlock === 'Baraut') return 'Block: बड़ौत';
+    return 'Block: All';
+  }, [selectedBlock]);
+
+  const mobileDateLabel = useMemo(() => {
+    if (!isDateFiltered || dateRange.preset === 'all') return 'Date: All';
+    if (dateRange.preset === 'today') return 'Date: आज';
+    if (dateRange.preset === 'next7') return 'Date: 7 दिन';
+    if (dateRange.preset === 'next30') return 'Date: 30 दिन';
+    if (dateRange.preset === 'thisMonth') return 'Date: इस माह';
+    if (dateRange.startDate && dateRange.endDate) {
+      const s = dateRange.startDate.split('-').slice(1).join('/');
+      const e = dateRange.endDate.split('-').slice(1).join('/');
+      return `Date: ${s}-${e}`;
+    }
+    if (dateRange.startDate) return `Date: ≥${dateRange.startDate.split('-').slice(1).join('/')}`;
+    return 'Date: कस्टम';
+  }, [isDateFiltered, dateRange]);
 
   // Handle Preset selection
   const handleSelectPreset = (preset: DateRangePreset) => {
@@ -185,22 +217,22 @@ export default function GlobalBRPFilterBar() {
 
   return (
     <div
-      className={`relative w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs px-3 sm:px-5 py-2 transition-all ${
+      className={`relative w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs px-2 sm:px-4 md:px-5 py-1.5 sm:py-2 transition-all select-none ${
         isAnyDropdownOpen ? 'z-50' : 'z-30'
       }`}
     >
-      <div className="w-full max-w-[1920px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+      <div className="w-full max-w-[1920px] mx-auto flex items-center justify-between gap-1.5 sm:gap-3">
         
         {/* ================================================================= */}
-        {/* LEFT / CENTER: The 4 Toolbar Controls                             */}
-        {/* Layout: BRP Filter | Block Filter | Date Range | Reset Filters    */}
+        {/* ONE HORIZONTAL ROW FOR FILTERS ACROSS ALL SCREENS (320px - 430px) */}
+        {/* Layout: [ BRP ▼ ] [ Block ▼ ] [ Date ▼ ] + Optional [↺]            */}
         {/* ================================================================= */}
-        <div className="flex items-center flex-wrap gap-2 min-w-0">
+        <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
 
           {/* ------------------------------------------------------------- */}
           {/* 1. BRP FILTER DROPDOWN                                        */}
           {/* ------------------------------------------------------------- */}
-          <div className="relative" ref={brpRef}>
+          <div className="flex-1 sm:flex-initial sm:min-w-[180px] md:min-w-[200px] min-w-0 relative" ref={brpRef}>
             <button
               type="button"
               onClick={() => {
@@ -208,35 +240,39 @@ export default function GlobalBRPFilterBar() {
                 setIsBlockOpen(false);
                 setIsDateOpen(false);
               }}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+              className={`w-full h-8 sm:h-9 px-1.5 sm:px-3 rounded-lg sm:rounded-xl border text-[11px] sm:text-xs font-semibold transition-all shadow-2xs cursor-pointer flex items-center justify-between gap-1 sm:gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                 isBRPFiltered
                   ? 'bg-indigo-50 border-indigo-300 text-indigo-950 font-bold'
                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
               }`}
-              title="बी०आर०पी० के अनुसार फ़िल्टर करें"
+              title="बी०आर०पी० फ़िल्टर (BRP Filter)"
+              aria-label="Filter by BRP"
             >
-              <div className={`p-1 rounded-md ${isBRPFiltered ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <Users className="w-3.5 h-3.5" />
+              {/* Mobile View: Compact short label */}
+              <span className="sm:hidden truncate font-bold text-slate-900">
+                {mobileBRPLabel}
+              </span>
+
+              {/* Desktop View: Full icon, label, and GP badge */}
+              <div className="hidden sm:flex items-center gap-2 truncate">
+                <div className={`p-1 rounded-md shrink-0 ${isBRPFiltered ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  <Users className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="text-[11px] text-slate-500 font-medium">BRP:</span>
+                  <span className="truncate max-w-[140px] text-slate-900 font-bold">{activeBRPName}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 text-left truncate">
-                <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">BRP:</span>
-                <span className="truncate max-w-[130px] sm:max-w-[170px] text-slate-900 font-bold">
-                  {activeBRPName}
-                </span>
-              </div>
-              <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                  isBRPFiltered ? 'bg-indigo-200 text-indigo-950' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
+              <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 bg-slate-100 text-slate-600">
                 {activeBRPGpCount} GP
               </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isBRPOpen ? 'rotate-180' : ''}`} />
+
+              <ChevronDown className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-500 shrink-0 transition-transform ${isBRPOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* BRP Dropdown Menu */}
+            {/* BRP Dropdown Menu - Left aligned */}
             {isBRPOpen && (
-              <div className="absolute left-0 top-full mt-1.5 w-68 sm:w-76 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute left-0 top-full mt-1.5 w-64 sm:w-76 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
                 {/* Search Box */}
                 <div className="px-3 pb-2 pt-0.5 border-b border-slate-100">
                   <div className="relative">
@@ -342,7 +378,7 @@ export default function GlobalBRPFilterBar() {
           {/* ------------------------------------------------------------- */}
           {/* 2. BLOCK FILTER DROPDOWN                                      */}
           {/* ------------------------------------------------------------- */}
-          <div className="relative" ref={blockRef}>
+          <div className="flex-1 sm:flex-initial sm:min-w-[150px] md:min-w-[170px] min-w-0 relative" ref={blockRef}>
             <button
               type="button"
               onClick={() => {
@@ -350,37 +386,43 @@ export default function GlobalBRPFilterBar() {
                 setIsBRPOpen(false);
                 setIsDateOpen(false);
               }}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full h-8 sm:h-9 px-1.5 sm:px-3 rounded-lg sm:rounded-xl border text-[11px] sm:text-xs font-semibold transition-all shadow-2xs cursor-pointer flex items-center justify-between gap-1 sm:gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 isBlockFiltered
                   ? 'bg-blue-50 border-blue-300 text-blue-950 font-bold'
                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
               }`}
-              title="विकास खंड (Block) के अनुसार फ़िल्टर करें"
+              title="विकास खंड फ़िल्टर (Block Filter)"
+              aria-label="Filter by Block"
             >
-              <div className={`p-1 rounded-md ${isBlockFiltered ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <Building2 className="w-3.5 h-3.5" />
+              {/* Mobile View: Compact short label */}
+              <span className="sm:hidden truncate font-bold text-slate-900">
+                {mobileBlockLabel}
+              </span>
+
+              {/* Desktop View: Full icon, label, and GP badge */}
+              <div className="hidden sm:flex items-center gap-2 truncate">
+                <div className={`p-1 rounded-md shrink-0 ${isBlockFiltered ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  <Building2 className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="text-[11px] text-slate-500 font-medium">ब्लॉक:</span>
+                  <span className="truncate text-slate-900 font-bold">{activeBlockLabel}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 text-left">
-                <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">ब्लॉक:</span>
-                <span className="text-slate-900 font-bold">{activeBlockLabel}</span>
-              </div>
-              <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                  isBlockFiltered ? 'bg-blue-200 text-blue-950' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
+              <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 bg-slate-100 text-slate-600">
                 {selectedBlock === 'all'
                   ? `${records.length} GP`
                   : selectedBlock === 'Baghpat'
                   ? `${totalBaghpat} GP`
                   : `${totalBaraut} GP`}
               </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isBlockOpen ? 'rotate-180' : ''}`} />
+
+              <ChevronDown className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-500 shrink-0 transition-transform ${isBlockOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Block Dropdown Menu */}
+            {/* Block Dropdown Menu - Centered on mobile to prevent overflow */}
             {isBlockOpen && (
-              <div className="absolute left-0 top-full mt-1.5 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
+              <div className="absolute left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 top-full mt-1.5 w-56 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-1">
                 {/* All Blocks */}
                 <button
                   type="button"
@@ -465,7 +507,7 @@ export default function GlobalBRPFilterBar() {
           {/* ------------------------------------------------------------- */}
           {/* 3. DATE RANGE FILTER POPOVER                                  */}
           {/* ------------------------------------------------------------- */}
-          <div className="relative" ref={dateRef}>
+          <div className="flex-1 sm:flex-initial sm:min-w-[150px] md:min-w-[170px] min-w-0 relative" ref={dateRef}>
             <button
               type="button"
               onClick={() => {
@@ -473,28 +515,36 @@ export default function GlobalBRPFilterBar() {
                 setIsBRPOpen(false);
                 setIsBlockOpen(false);
               }}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+              className={`w-full h-8 sm:h-9 px-1.5 sm:px-3 rounded-lg sm:rounded-xl border text-[11px] sm:text-xs font-semibold transition-all shadow-2xs cursor-pointer flex items-center justify-between gap-1 sm:gap-2 focus:outline-none focus:ring-2 focus:ring-amber-500 ${
                 isDateFiltered
                   ? 'bg-amber-50 border-amber-300 text-amber-950 font-bold'
                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
               }`}
-              title="बैठक तिथि अवधि (Date Range) के अनुसार फ़िल्टर करें"
+              title="बैठक तिथि फ़िल्टर (Date Filter)"
+              aria-label="Filter by Date"
             >
-              <div className={`p-1 rounded-md ${isDateFiltered ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <Calendar className="w-3.5 h-3.5" />
+              {/* Mobile View: Compact short label */}
+              <span className="sm:hidden truncate font-bold text-slate-900">
+                {mobileDateLabel}
+              </span>
+
+              {/* Desktop View: Full icon and label */}
+              <div className="hidden sm:flex items-center gap-2 truncate">
+                <div className={`p-1 rounded-md shrink-0 ${isDateFiltered ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  <Calendar className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="text-[11px] text-slate-500 font-medium">तिथि:</span>
+                  <span className="truncate text-slate-900 font-bold">{activeDateLabel}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 text-left truncate">
-                <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">तिथि:</span>
-                <span className="truncate max-w-[120px] sm:max-w-[160px] text-slate-900 font-bold">
-                  {activeDateLabel}
-                </span>
-              </div>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isDateOpen ? 'rotate-180' : ''}`} />
+
+              <ChevronDown className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-500 shrink-0 transition-transform ${isDateOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Date Range Popover */}
+            {/* Date Range Popover - Right aligned to stay inside viewport */}
             {isDateOpen && (
-              <div className="absolute left-0 sm:left-auto sm:right-0 md:left-0 top-full mt-1.5 w-76 sm:w-84 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-4 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-3">
+              <div className="absolute right-0 top-full mt-1.5 w-72 sm:w-84 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-3.5 sm:p-4 z-50 animate-in fade-in zoom-in-95 duration-100 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                     <CalendarDays className="w-4 h-4 text-amber-600" />
@@ -639,52 +689,46 @@ export default function GlobalBRPFilterBar() {
           </div>
 
           {/* ------------------------------------------------------------- */}
-          {/* 4. ACTIVE FILTER BADGE & ONE-CLICK RESET BUTTON                */}
+          {/* 4. COMPACT ONE-CLICK RESET BUTTON (Shown when filter active)  */}
           {/* ------------------------------------------------------------- */}
           {isAnyFilterActive && (
-            <div className="flex items-center gap-1.5 animate-in fade-in duration-150">
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-100 text-indigo-950 border border-indigo-200 text-[11px] font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
-                <span>फ़िल्टर सक्रिय</span>
-              </span>
-              <button
-                type="button"
-                onClick={resetAllGlobalFilters}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-95"
-                title="सभी फ़िल्टर (BRP, ब्लॉक, तिथि) हटाएं"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>रीसेट</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={resetAllGlobalFilters}
+              className="shrink-0 h-8 sm:h-9 px-2 sm:px-2.5 rounded-lg sm:rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] sm:text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer flex items-center justify-center gap-1 active:scale-95"
+              title="सभी फ़िल्टर हटाएं (Reset All Filters)"
+              aria-label="Reset all filters"
+            >
+              <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-600 shrink-0" />
+              <span className="hidden sm:inline">रीसेट</span>
+            </button>
           )}
+
         </div>
 
         {/* ================================================================= */}
-        {/* RIGHT: Status Indicator & Visible GP Count                        */}
+        {/* RIGHT SECTION: Visible/Filtered GP Summary (Desktop Only)         */}
         {/* ================================================================= */}
-        <div className="flex items-center justify-between md:justify-end gap-2 text-xs font-medium shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-slate-100">
-          <div className="flex items-center gap-2">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isAnyFilterActive ? 'bg-indigo-600 animate-pulse' : 'bg-emerald-500'
-              }`}
-            />
-            <span className="text-slate-600 font-semibold text-[11px] sm:text-xs">
-              {isAnyFilterActive ? (
-                <>
-                  फ़िल्टर्ड दृश्य:{' '}
-                  <strong className="text-indigo-950 font-black">{filteredRecords.length}</strong>
-                  <span className="text-slate-400 font-mono"> / {records.length} बैठकें</span>
-                </>
-              ) : (
-                <>
-                  सम्पूर्ण जनपद:{' '}
-                  <strong className="text-slate-900 font-black">{records.length}</strong> बैठकें दृश्यमान
-                </>
-              )}
-            </span>
-          </div>
+        <div className="hidden md:flex items-center gap-2 text-xs font-medium shrink-0">
+          <span
+            className={`w-2 h-2 rounded-full ${
+              isAnyFilterActive ? 'bg-indigo-600 animate-pulse' : 'bg-emerald-500'
+            }`}
+          />
+          <span className="text-slate-600 font-semibold text-xs">
+            {isAnyFilterActive ? (
+              <>
+                फ़िल्टर्ड दृश्य:{' '}
+                <strong className="text-indigo-950 font-black">{filteredRecords.length}</strong>
+                <span className="text-slate-400 font-mono"> / {records.length} बैठकें</span>
+              </>
+            ) : (
+              <>
+                सम्पूर्ण जनपद:{' '}
+                <strong className="text-slate-900 font-black">{records.length}</strong> बैठकें दृश्यमान
+              </>
+            )}
+          </span>
         </div>
 
       </div>
