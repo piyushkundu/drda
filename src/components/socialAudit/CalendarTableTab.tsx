@@ -73,12 +73,30 @@ export default function CalendarTableTab() {
     return records.filter((r) => matchesBRP(r, selectedBRP));
   }, [records, selectedBRP]);
 
+  // Helper to determine if a meeting is completed:
+  // Rule: All non-amended meetings up to asOfDate (or status === 'completed') are completed.
+  // For amended meetings, Khadki (खेड़की - 2026-10-29) is completed; remaining 9 are upcoming.
+  const isMeetingCompleted = (
+    r: { status?: string; meetingDate: string; isAmended?: boolean; gpNameUnicode?: string },
+    cutoff: string
+  ): boolean => {
+    if (r.status === 'completed') return true;
+    if (r.isAmended) {
+      return (
+        r.meetingDate <= cutoff ||
+        (r.gpNameUnicode?.includes('खेड़की') ?? false) ||
+        (r.gpNameUnicode?.includes('खड़की') ?? false)
+      );
+    }
+    return r.meetingDate <= cutoff;
+  };
+
   // Status counts for filter buttons
   const statusCounts = useMemo(() => {
     const amended = effectiveRecords.filter(r => r.isAmended).length;
-    const completed = effectiveRecords.filter(r => r.status === 'completed').length;
-    const upcoming = effectiveRecords.filter(r => r.meetingDate > asOfDate && r.status !== 'completed').length;
-    const overdue = effectiveRecords.filter(r => r.meetingDate <= asOfDate && r.status !== 'completed').length;
+    const completed = effectiveRecords.filter(r => isMeetingCompleted(r, asOfDate)).length;
+    const upcoming = effectiveRecords.filter(r => !isMeetingCompleted(r, asOfDate) && r.meetingDate > asOfDate).length;
+    const overdue = effectiveRecords.filter(r => !isMeetingCompleted(r, asOfDate) && r.meetingDate <= asOfDate).length;
     return {
       all: effectiveRecords.length,
       amended,
@@ -101,9 +119,9 @@ export default function CalendarTableTab() {
 
       // Status filter
       if (selectedStatus === 'amended' && !r.isAmended) return false;
-      if (selectedStatus === 'completed' && r.status !== 'completed') return false;
-      if (selectedStatus === 'upcoming' && (r.status === 'completed' || r.meetingDate <= asOfDate)) return false;
-      if (selectedStatus === 'overdue' && (r.status === 'completed' || r.meetingDate > asOfDate)) return false;
+      if (selectedStatus === 'completed' && !isMeetingCompleted(r, asOfDate)) return false;
+      if (selectedStatus === 'upcoming' && (isMeetingCompleted(r, asOfDate) || r.meetingDate <= asOfDate)) return false;
+      if (selectedStatus === 'overdue' && (isMeetingCompleted(r, asOfDate) || r.meetingDate > asOfDate)) return false;
 
       // Global BRP filter
       if (!matchesBRP(r, selectedBRP)) return false;
@@ -398,7 +416,7 @@ export default function CalendarTableTab() {
               { id: 'all', label: `सभी (${statusCounts.all})` },
               { id: 'completed', label: `🟢 सम्पन्न (${statusCounts.completed})` },
               { id: 'upcoming', label: `🔵 प्रस्तावित (${statusCounts.upcoming})` },
-              { id: 'overdue', label: `🔴 लंबित (${statusCounts.overdue})` },
+              ...(statusCounts.overdue > 0 ? [{ id: 'overdue', label: `🔴 लंबित (${statusCounts.overdue})` }] : []),
               { id: 'amended', label: `🟠 संशोधित (${statusCounts.amended})` }
             ].map((st) => (
               <button
@@ -507,9 +525,9 @@ export default function CalendarTableTab() {
                   </tr>
                 ) : (
                   filteredRecords.map((r, index) => {
-                    const isCompleted = r.status === 'completed';
-                    const isOverdue = r.meetingDate <= asOfDate && !isCompleted;
-                    const isUpcoming = r.meetingDate > asOfDate && !isCompleted;
+                    const isCompleted = isMeetingCompleted(r, asOfDate);
+                    const isOverdue = !isCompleted && r.meetingDate <= asOfDate;
+                    const isUpcoming = !isCompleted && r.meetingDate > asOfDate;
                     const isAmended = Boolean(r.isAmended);
 
                     // Row subtle background & left status indicator
@@ -673,9 +691,9 @@ export default function CalendarTableTab() {
                                 <Edit3 className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={() => markCompleted(r.id, r.status !== 'completed')}
+                                onClick={() => markCompleted(r.id, !isCompleted)}
                                 className={`p-1.5 rounded-lg transition-colors ${
-                                  r.status === 'completed'
+                                  isCompleted
                                     ? 'bg-emerald-600 text-white'
                                     : 'bg-slate-100 hover:bg-emerald-100 text-slate-700 border border-slate-200'
                                 }`}
@@ -852,8 +870,8 @@ export default function CalendarTableTab() {
                     {hasMeetings && (
                       <div className="flex md:hidden items-center gap-1 mt-1 flex-wrap">
                         {day.meetings.slice(0, 3).map((m) => {
-                          const isComp = m.status === 'completed';
-                          const isOver = m.meetingDate <= asOfDate && !isComp;
+                          const isComp = isMeetingCompleted(m, asOfDate);
+                          const isOver = !isComp && m.meetingDate <= asOfDate;
                           const isAm = Boolean(m.isAmended);
 
                           let dotColor = 'bg-blue-500';
@@ -878,8 +896,8 @@ export default function CalendarTableTab() {
                     {/* Desktop Meetings preview inside cell with status color badges */}
                     <div className="hidden md:block overflow-y-auto space-y-1 text-[10px] scrollbar-none flex-1 mt-1">
                       {day.meetings.slice(0, 2).map((m) => {
-                        const isComp = m.status === 'completed';
-                        const isOver = m.meetingDate <= asOfDate && !isComp;
+                        const isComp = isMeetingCompleted(m, asOfDate);
+                        const isOver = !isComp && m.meetingDate <= asOfDate;
                         const isAm = Boolean(m.isAmended);
 
                         let pillClass = 'bg-blue-50/90 text-blue-900 border-blue-200 hover:bg-blue-100';
@@ -966,9 +984,9 @@ export default function CalendarTableTab() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {selectedDateMeetings.map((r, i) => {
-                        const isCompleted = r.status === 'completed';
-                        const isOverdue = r.meetingDate <= asOfDate && !isCompleted;
-                        const isUpcoming = r.meetingDate > asOfDate && !isCompleted;
+                        const isCompleted = isMeetingCompleted(r, asOfDate);
+                        const isOverdue = !isCompleted && r.meetingDate <= asOfDate;
+                        const isUpcoming = !isCompleted && r.meetingDate > asOfDate;
                         const isAmended = Boolean(r.isAmended);
 
                         let rowBorder = 'border-l-4 border-l-transparent';
