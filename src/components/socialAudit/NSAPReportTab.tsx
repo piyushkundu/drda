@@ -222,12 +222,12 @@ export default function NSAPReportTab() {
 
         {/* The Official Report Table (Single Semantic Table for Desktop, Tablet and Mobile) */}
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs">
-          <table className="w-full text-center border-collapse text-xs">
+          <table className="w-full text-center border-collapse text-xs min-w-[780px]">
             <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
               <tr>
-                <th className="py-3 px-2 border-r border-slate-200 w-12 sticky left-0 bg-slate-100 z-10">क्रम सं०</th>
+                <th className="py-3 px-2 border-r border-slate-200 w-12 static lg:sticky lg:left-0 bg-slate-100 z-auto lg:z-10">क्रम सं०</th>
                 <th className="py-3 px-3 border-r border-slate-200">जनपद का नाम</th>
-                <th className="py-3 px-3 border-r border-slate-200 sticky left-12 bg-slate-100 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">विकास खंड का नाम</th>
+                <th className="py-3 px-3 border-r border-slate-200 static lg:sticky lg:left-12 bg-slate-100 z-auto lg:z-10 lg:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">विकास खंड का नाम</th>
                 <th className="py-3 px-3 border-r border-slate-200 leading-tight">
                   वित्तीय वर्ष 2026-27 में प्रस्तावित कुल<br />ग्राम पंचायतों/सोशल ऑडिट की संख्या
                 </th>
@@ -245,13 +245,13 @@ export default function NSAPReportTab() {
             <tbody className="divide-y divide-slate-100 font-medium">
               {reportSummary.rows.map((row) => (
                 <tr key={row.sno} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-2 border-r border-slate-200 font-bold text-slate-500 sticky left-0 bg-white z-10">
+                  <td className="py-3 px-2 border-r border-slate-200 font-bold text-slate-500 static lg:sticky lg:left-0 bg-white z-auto lg:z-10">
                     {row.sno}
                   </td>
                   <td className="py-3 px-3 border-r border-slate-200 font-bold text-slate-900 text-left">
                     {row.districtHindi}
                   </td>
-                  <td className="py-3 px-3 border-r border-slate-200 font-bold text-slate-900 text-left sticky left-12 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
+                  <td className="py-3 px-3 border-r border-slate-200 font-bold text-slate-900 text-left static lg:sticky lg:left-12 bg-white z-auto lg:z-10 lg:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
                     {row.blockHindi}
                   </td>
                   <td className="py-3 px-3 border-r border-slate-200 font-bold text-slate-700">

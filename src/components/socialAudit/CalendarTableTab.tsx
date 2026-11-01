@@ -441,20 +441,20 @@ export default function CalendarTableTab() {
 
           {/* Single Semantic Responsive Table for Desktop, Tablet and Mobile */}
           <div className="overflow-x-auto max-h-[700px] scrollbar-thin">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[980px]">
               <thead className="bg-slate-100 text-slate-700 sticky top-0 z-20 font-bold border-b border-slate-200 shadow-xs">
                 <tr>
-                  <th className="py-3 px-3 w-12 text-center sticky left-0 bg-slate-100 z-30">क्र०</th>
-                  <th className="py-3 px-3 min-w-[140px] sticky left-12 bg-slate-100 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">ग्राम पंचायत</th>
-                  <th className="py-3 px-3">विकास खण्ड</th>
-                  <th className="py-3 px-3 text-center">प्रारम्भ तिथि</th>
-                  <th className="py-3 px-3 text-center">बैठक तिथि</th>
-                  <th className="py-3 px-3">बी०आर०पी० (मो० नं०)</th>
-                  <th className="py-3 px-3">सोशल ऑडिट टीम सदस्य</th>
-                  <th className="py-3 px-3">पर्यवेक्षक अधिकारी</th>
-                  <th className="py-3 px-3">योजना</th>
-                  <th className="py-3 px-3 text-center">स्थिति</th>
-                  {isEditMode && <th className="py-3 px-3 text-center">कार्य</th>}
+                  <th className="py-3 px-3 w-12 min-w-[48px] text-center static lg:sticky lg:left-0 bg-slate-100 z-10 lg:z-30">क्र०</th>
+                  <th className="py-3 px-3 min-w-[140px] static lg:sticky lg:left-12 bg-slate-100 z-10 lg:z-30 lg:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">ग्राम पंचायत</th>
+                  <th className="py-3 px-3 min-w-[85px]">विकास खण्ड</th>
+                  <th className="py-3 px-3 text-center min-w-[100px]">प्रारम्भ तिथि</th>
+                  <th className="py-3 px-3 text-center min-w-[105px]">बैठक तिथि</th>
+                  <th className="py-3 px-3 min-w-[140px]">बी०आर०पी० (मो० नं०)</th>
+                  <th className="py-3 px-3 min-w-[160px]">सोशल ऑडिट टीम सदस्य</th>
+                  <th className="py-3 px-3 min-w-[150px]">पर्यवेक्षक अधिकारी</th>
+                  <th className="py-3 px-3 min-w-[90px] text-center">योजना</th>
+                  <th className="py-3 px-3 text-center min-w-[95px]">स्थिति</th>
+                  {isEditMode && <th className="py-3 px-3 text-center min-w-[80px]">कार्य</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -480,13 +480,13 @@ export default function CalendarTableTab() {
                             : 'bg-slate-50/50 hover:bg-blue-50/40'
                         }`}
                       >
-                        {/* SNo - Sticky */}
-                        <td className="py-3.5 px-3 text-center text-slate-500 font-mono sticky left-0 bg-inherit z-10 font-semibold">
-                          {r.sno}
+                        {/* SNo - Sequential restarting from 1, static on mobile/tablet, sticky on desktop */}
+                        <td className="py-3.5 px-3 text-center text-slate-500 font-mono static lg:sticky lg:left-0 bg-inherit z-auto lg:z-10 font-semibold">
+                          {index + 1}
                         </td>
 
-                        {/* Gram Panchayat Name - Sticky */}
-                        <td className="py-3.5 px-3 font-bold text-slate-900 whitespace-nowrap sticky left-12 bg-inherit z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
+                        {/* Gram Panchayat Name - Static on mobile/tablet, sticky on desktop */}
+                        <td className="py-3.5 px-3 font-bold text-slate-900 whitespace-nowrap static lg:sticky lg:left-12 bg-inherit z-auto lg:z-10 lg:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
                           {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
                         </td>
 
@@ -811,8 +811,8 @@ export default function CalendarTableTab() {
                   <table className="w-full text-left border-collapse text-xs">
                     <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
                       <tr>
-                        <th className="py-2.5 px-3 w-10 text-center sticky left-0 bg-slate-100 z-10">क्र०</th>
-                        <th className="py-2.5 px-3 min-w-[120px] sticky left-10 bg-slate-100 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">ग्राम पंचायत</th>
+                        <th className="py-2.5 px-3 w-10 text-center static lg:sticky lg:left-0 bg-slate-100 z-10">क्र०</th>
+                        <th className="py-2.5 px-3 min-w-[120px] static lg:sticky lg:left-10 bg-slate-100 z-10 lg:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">ग्राम पंचायत</th>
                         <th className="py-2.5 px-2.5">विकास खण्ड</th>
                         <th className="py-2.5 px-3">बी०आर०पी० (मो० नं०)</th>
                         <th className="py-2.5 px-3">पर्यवेक्षक अधिकारी</th>
@@ -825,8 +825,8 @@ export default function CalendarTableTab() {
                     <tbody className="divide-y divide-slate-100">
                       {selectedDateMeetings.map((r, i) => (
                         <tr key={r.id} className="hover:bg-blue-50/40 transition-colors">
-                          <td className="py-2 px-3 text-center font-mono text-slate-500 sticky left-0 bg-white z-10">#{r.sno}</td>
-                          <td className="py-2 px-3 font-bold text-slate-900 sticky left-10 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
+                          <td className="py-2 px-3 text-center font-mono text-slate-500 static lg:sticky lg:left-0 bg-white z-auto lg:z-10 font-semibold">{i + 1}</td>
+                          <td className="py-2 px-3 font-bold text-slate-900 static lg:sticky lg:left-10 bg-white z-auto lg:z-10 lg:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.08)]">
                             {renderText(r.gpNameUnicode, r.gpNameKrutiDev)}
                           </td>
                           <td className="py-2 px-2.5 text-slate-600">{r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}</td>

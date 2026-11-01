@@ -459,7 +459,7 @@ export default function MisFeedingTab() {
         {/* List of Pending Box GPs */}
         {pendingBoxRecords.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {pendingBoxRecords.map((r) => {
+            {pendingBoxRecords.map((r, i) => {
               const isPastMeeting = r.meetingDate <= asOfDate;
               return (
               <div
@@ -472,7 +472,7 @@ export default function MisFeedingTab() {
                   <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                        SR# {r.sno}
+                        SR# {i + 1}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
                         {r.block === 'Baghpat' ? 'विकास खण्ड बागपत' : 'विकास खण्ड बड़ौत'}
@@ -567,7 +567,7 @@ export default function MisFeedingTab() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
-              {upcomingScheduledRecords.map((r) => (
+              {upcomingScheduledRecords.map((r, i) => (
                 <div
                   key={r.id}
                   className="p-2.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between text-xs shadow-sm"
@@ -584,7 +584,7 @@ export default function MisFeedingTab() {
                       )}
                     </div>
                     <div className="text-[10px] text-slate-500 font-medium">
-                      SR# {r.sno} • {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
+                      SR# {i + 1} • {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                     </div>
                   </div>
                   <div className="text-right">
@@ -673,7 +673,7 @@ export default function MisFeedingTab() {
 
         {/* Single Responsive Table for Desktop, Tablet and Mobile */}
         <div className="overflow-x-auto max-h-[700px] scrollbar-thin rounded-2xl border border-slate-200">
-          <table className="w-full text-left text-xs text-slate-700">
+          <table className="w-full text-left text-xs text-slate-700 min-w-[760px]">
             <thead className="bg-slate-100/90 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
               <tr>
                 <th className="py-3 px-3 w-12 text-center">SR#</th>
@@ -686,7 +686,7 @@ export default function MisFeedingTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {filteredRecords.map((r) => {
+              {filteredRecords.map((r, idx) => {
                 const isFed = r.misStatus === 'fed';
                 const isDuePending = !isFed && r.meetingDate <= asOfDate;
                 const isUpcoming = !isFed && r.meetingDate > asOfDate;
@@ -700,7 +700,7 @@ export default function MisFeedingTab() {
                     } ${isDuePending ? 'bg-amber-50/40' : ''}`}
                   >
                     <td className="py-3 px-3 text-center font-mono text-slate-500 font-bold">
-                      {r.sno}
+                      {idx + 1}
                     </td>
 
                     <td className="py-3 px-4">

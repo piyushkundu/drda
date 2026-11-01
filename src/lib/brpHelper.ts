@@ -149,3 +149,4 @@ export function getAssignedGPRelationship(records: SocialAuditRecord[], selected
     count: matchingRecords.length,
   };
 }
+

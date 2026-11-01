@@ -980,7 +980,7 @@ export default function NSAPDataTab() {
           {/* Cards Grid View */}
           {recordedViewMode === 'cards' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {filteredRecordedGps.map(gp => {
+              {filteredRecordedGps.map((gp, idx) => {
                 const inelCount = gp.beneficiaries.filter(b => b.category === 'ineligible').length;
                 const decCount = gp.beneficiaries.filter(b => b.category === 'deceased').length;
                 const hasDeceased = decCount > 0;
@@ -998,7 +998,7 @@ export default function NSAPDataTab() {
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                            SR# {gp.sno}
+                            SR# {idx + 1}
                           </span>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                             gp.block === 'Baghpat' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
@@ -1143,7 +1143,7 @@ export default function NSAPDataTab() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {filteredRecordedGps.map(gp => {
+                  {filteredRecordedGps.map((gp, idx) => {
                     const inelCount = gp.beneficiaries.filter(b => b.category === 'ineligible').length;
                     const decCount = gp.beneficiaries.filter(b => b.category === 'deceased').length;
                     const unverCount = gp.beneficiaries.filter(b => b.category === 'unverified').length;
@@ -1155,7 +1155,7 @@ export default function NSAPDataTab() {
                         <tr className={`hover:bg-slate-50 transition-colors ${
                           !hasDeceased ? 'bg-amber-50/60 border-l-4 border-l-amber-500' : ''
                         }`}>
-                          <td className="py-3 px-3 text-center font-mono text-slate-500 font-bold">{gp.sno}</td>
+                          <td className="py-3 px-3 text-center font-mono text-slate-500 font-bold">{idx + 1}</td>
                           <td className="py-3 px-3">
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               gp.block === 'Baghpat' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
@@ -1422,7 +1422,7 @@ export default function NSAPDataTab() {
           {/* Cards of Pending GPs */}
           {filteredPendingBoxGps.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filteredPendingBoxGps.map(r => {
+              {filteredPendingBoxGps.map((r, idx) => {
                 return (
                   <div
                     key={r.id}
@@ -1432,7 +1432,7 @@ export default function NSAPDataTab() {
                       <div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                            SR# {r.sno}
+                            SR# {idx + 1}
                           </span>
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
                             {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
@@ -1854,7 +1854,7 @@ export default function NSAPDataTab() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredUpcomingGps.map(r => (
+            {filteredUpcomingGps.map((r, idx) => (
               <div
                 key={r.id}
                 className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-teal-400 transition-all space-y-2.5 shadow-sm"
@@ -1863,7 +1863,7 @@ export default function NSAPDataTab() {
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                        SR# {r.sno}
+                        SR# {idx + 1}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
                         {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
