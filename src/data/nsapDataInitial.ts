@@ -2870,5 +2870,845 @@ export const INITIAL_NSAP_DATA_RECORDS: NSAPGramPanchayatData[] = [
     ],
     "block": "Baraut",
     "meetingDate": "2026-10-16"
+  },
+  {
+    "id": "nsap-gp-17",
+    "rosterRecordId": "baghpat-30",
+    "sno": 17,
+    "gpNameKrutiDev": "fUkjkstiqj xqtZj",
+    "gpNameUnicode": "निरोजपुर गूर्जर",
+    "totalBeneficiaries": 184,
+    "verifiedDirect": 147,
+    "verifiedFamily": 0,
+    "verifiedTotal": 147,
+    "unverifiedReason": "",
+    "financialIrregularityAmount": 0,
+    "irregularityNotes": "",
+    "responsiblePersons": "",
+    "otherNotes": "",
+    "beneficiaries": [
+      {
+        "id": "ben-nsap-gp-17-inel-1",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "txks",
+        "nameUnicode": "जगो",
+        "registrationId": "31651015808",
+        "reason": "पति-पत्नी दोनों पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-2",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "vyhtku",
+        "nameUnicode": "अलीजान",
+        "registrationId": "316510513881",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-inel-3",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "lrohj",
+        "nameUnicode": "सतवीर",
+        "registrationId": "316510296081",
+        "reason": "पति-पत्नी दोनों पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-4",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "ckyk",
+        "nameUnicode": "बाला",
+        "registrationId": "316510305691",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-inel-5",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "dkyw",
+        "nameUnicode": "कालू",
+        "registrationId": "316510533181",
+        "reason": "परिवार के सदस्य सरकारी सेवा में हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-6",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "Hkkxorh",
+        "nameUnicode": "भागवती",
+        "registrationId": "31651015811",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-inel-7",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "dEeks",
+        "nameUnicode": "कम्मो",
+        "registrationId": "316510488001",
+        "reason": "परिवार के सदस्य सरकारी सेवा में हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-8",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "foeys'k",
+        "nameUnicode": "विमलेश",
+        "registrationId": "316510483581",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-9",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "geksnu",
+        "nameUnicode": "हमोदन",
+        "registrationId": "316510291401",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-10",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "gfjjke",
+        "nameUnicode": "हरिराम",
+        "registrationId": "31651005977",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-11",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "gks';kjh nsoh",
+        "nameUnicode": "होश्यारी देवी",
+        "registrationId": "316510313911",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-12",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "txnhl",
+        "nameUnicode": "जगदीस",
+        "registrationId": "316510464861",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-13",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "tksx[kjh",
+        "nameUnicode": "जोगखरी",
+        "registrationId": "31651002360",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-14",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "t;iky flag",
+        "nameUnicode": "जयपाल सिंह",
+        "registrationId": "316510704601",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-15",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "f[kykjh",
+        "nameUnicode": "खिलारी",
+        "registrationId": "31651002370",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-16",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "egUnz",
+        "nameUnicode": "महन्द्र",
+        "registrationId": "316510291351",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-17",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "ek;k nsoh",
+        "nameUnicode": "माया देवी",
+        "registrationId": "316510473251",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-18",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "izseorh",
+        "nameUnicode": "प्रेमवती",
+        "registrationId": "316510468501",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-19",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "jxchj",
+        "nameUnicode": "रगबीर",
+        "registrationId": "316510568821",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-20",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "jktsUnz",
+        "nameUnicode": "राजेन्द्र",
+        "registrationId": "316510703361",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-21",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "ljkst",
+        "nameUnicode": "सरोज",
+        "registrationId": "316570130880",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-22",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "lkfo=h",
+        "nameUnicode": "सावित्री",
+        "registrationId": "316510466321",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-23",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "Jhfuokl",
+        "nameUnicode": "श्रीनिवास",
+        "registrationId": "316510356281",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-24",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "lq[kohj",
+        "nameUnicode": "सुखवीर",
+        "registrationId": "31657002355",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-25",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "fln~d",
+        "nameUnicode": "सिद्क",
+        "registrationId": "316510703301",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-26",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "lkseiky",
+        "nameUnicode": "सोमपाल",
+        "registrationId": "316510481201",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-27",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "lqjs'kiky",
+        "nameUnicode": "सुरेशपाल",
+        "registrationId": "316510400481",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-28",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "lq'khyk",
+        "nameUnicode": "सुशीला",
+        "registrationId": "31651013874",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-17-dec-29",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "foØe",
+        "nameUnicode": "विक्रम",
+        "registrationId": "31651002338",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      }
+    ],
+    "block": "Baghpat",
+    "meetingDate": "2026-10-27"
+  },
+  {
+    "id": "nsap-gp-18",
+    "rosterRecordId": "baghpat-28",
+    "sno": 18,
+    "gpNameKrutiDev": "usFkyk",
+    "gpNameUnicode": "नैथला",
+    "totalBeneficiaries": 92,
+    "verifiedDirect": 90,
+    "verifiedFamily": 0,
+    "verifiedTotal": 90,
+    "unverifiedReason": "",
+    "financialIrregularityAmount": 0,
+    "irregularityNotes": "",
+    "responsiblePersons": "",
+    "otherNotes": "",
+    "beneficiaries": [
+      {
+        "id": "ben-nsap-gp-18-unver-1",
+        "category": "unverified",
+        "categoryHindi": "सत्यापन नहीं हो सका",
+        "nameKrutiDev": "ccyh",
+        "nameUnicode": "बबली",
+        "registrationId": "316510452981",
+        "reason": "संपर्क नहीं हो सका / ताला बंद",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-inel-2",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "deZpUn",
+        "nameUnicode": "कर्मचन्द",
+        "registrationId": "316510445511",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-3",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "ckyewdqUn",
+        "nameUnicode": "बालमूकुन्द",
+        "registrationId": "316510464501",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-unver-4",
+        "category": "unverified",
+        "categoryHindi": "सत्यापन नहीं हो सका",
+        "nameKrutiDev": "gfj'kpUæ",
+        "nameUnicode": "हरिशचन्द्र",
+        "registrationId": "316510614091",
+        "reason": "संपर्क नहीं हो सका / ताला बंद",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-inel-5",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "ferys'k",
+        "nameUnicode": "मितलेश",
+        "registrationId": "316510565511",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-6",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "nkrkjke",
+        "nameUnicode": "दाताराम",
+        "registrationId": "316510402571",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-inel-7",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "iwue",
+        "nameUnicode": "पूनम",
+        "registrationId": "316510650671",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-8",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "xts",
+        "nameUnicode": "गजे",
+        "registrationId": "316510678501",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-inel-9",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "lfork",
+        "nameUnicode": "सविता",
+        "registrationId": "316510671051",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-10",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "tsyh",
+        "nameUnicode": "जेली",
+        "registrationId": "31651005960",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-inel-11",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "f'koukFk",
+        "nameUnicode": "शिवनाथ",
+        "registrationId": "316510519441",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-12",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "deys'k",
+        "nameUnicode": "कमलेश",
+        "registrationId": "316510592281",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-inel-13",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "fo|kuUn",
+        "nameUnicode": "विद्यानन्द",
+        "registrationId": "316510565761",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-14",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "eg'sk",
+        "nameUnicode": "महश्ेा",
+        "registrationId": "316510524301",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-inel-15",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "ckyk",
+        "nameUnicode": "बाला",
+        "registrationId": "316510288161",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-16",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "eqds'k",
+        "nameUnicode": "मुकेश",
+        "registrationId": "316510618981",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-inel-17",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "ckys'oj",
+        "nameUnicode": "बालेश्वर",
+        "registrationId": "316510601611",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-18",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "ihre",
+        "nameUnicode": "पीतम",
+        "registrationId": "316510692671",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-inel-19",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "'kekZuan R;kxh",
+        "nameUnicode": "शर्मानंद त्यागी",
+        "registrationId": "316510690291",
+        "reason": "गांव से बाहर रहने वाले लाभार्थी",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-20",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "lUrks\"k",
+        "nameUnicode": "सन्तोष",
+        "registrationId": "316510426211",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-inel-21",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "f'kodqekj",
+        "nameUnicode": "शिवकुमार",
+        "registrationId": "316510478981",
+        "reason": "गांव से बाहर रहने वाले लाभार्थी",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-22",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "'kkUrh",
+        "nameUnicode": "शान्ती",
+        "registrationId": "316510564331",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-23",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "lqjs'k pUnz",
+        "nameUnicode": "सुरेश चन्द्र",
+        "registrationId": "316510478971",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-24",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "osxorh",
+        "nameUnicode": "वेगवती",
+        "registrationId": "316510627391",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-18-dec-25",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "foeyk",
+        "nameUnicode": "विमला",
+        "registrationId": "316510494261",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      }
+    ],
+    "block": "Baghpat",
+    "meetingDate": "2026-10-27"
+  },
+  {
+    "id": "nsap-gp-19",
+    "rosterRecordId": "baghpat-25",
+    "sno": 19,
+    "gpNameKrutiDev": "[ksMdh",
+    "gpNameUnicode": "खेड़की",
+    "totalBeneficiaries": 90,
+    "verifiedDirect": 88,
+    "verifiedFamily": 0,
+    "verifiedTotal": 88,
+    "unverifiedReason": "",
+    "financialIrregularityAmount": 0,
+    "irregularityNotes": "",
+    "responsiblePersons": "",
+    "otherNotes": "",
+    "beneficiaries": [
+      {
+        "id": "ben-nsap-gp-19-unver-1",
+        "category": "unverified",
+        "categoryHindi": "सत्यापन नहीं हो सका",
+        "nameKrutiDev": "—\".k dqekj",
+        "nameUnicode": "कृष्ण कुमार",
+        "registrationId": "316510655271",
+        "reason": "संपर्क नहीं हो सका / ताला बंद",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-inel-2",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "chjferh",
+        "nameUnicode": "बीरमिती",
+        "registrationId": "316510577631",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-3",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "ckys'k",
+        "nameUnicode": "बालेश",
+        "registrationId": "316510516771",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-unver-4",
+        "category": "unverified",
+        "categoryHindi": "सत्यापन नहीं हो सका",
+        "nameKrutiDev": "m\"kk 'kekZ",
+        "nameUnicode": "उषा शर्मा",
+        "registrationId": "316510666641",
+        "reason": "संपर्क नहीं हो सका / ताला बंद",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-inel-5",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "cq/k izdk'k",
+        "nameUnicode": "बुध प्रकाश",
+        "registrationId": "316510597761",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-6",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "Hkxor",
+        "nameUnicode": "भगवत",
+        "registrationId": "316510561481",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-inel-7",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "fxjh jktflga",
+        "nameUnicode": "गिरी राजसिहं",
+        "registrationId": "316510577611",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-8",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "Hkksiky",
+        "nameUnicode": "भोपाल",
+        "registrationId": "316510563901",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-inel-9",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "t; izdk'k",
+        "nameUnicode": "जय प्रकाश",
+        "registrationId": "31651001178",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-10",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "gjh'pUnz",
+        "nameUnicode": "हरीश्चन्द्र",
+        "registrationId": "316510551911",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-inel-11",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "lq[kohjh nsoh",
+        "nameUnicode": "सुखवीरी देवी",
+        "registrationId": "316510584431",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-12",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "t;iky",
+        "nameUnicode": "जयपाल",
+        "registrationId": "316510552221",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-inel-13",
+        "category": "ineligible",
+        "categoryHindi": "अपात्र लाभार्थी",
+        "nameKrutiDev": "foeyk nsoh",
+        "nameUnicode": "विमला देवी",
+        "registrationId": "316510307861",
+        "reason": "लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-14",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "deys'k",
+        "nameUnicode": "कमलेश",
+        "registrationId": "316510609031",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-15",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "dkS'kY;k",
+        "nameUnicode": "कौशल्या",
+        "registrationId": "316510597771",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-16",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "—\".k pUnu nso",
+        "nameUnicode": "कृष्ण चन्दन देव",
+        "registrationId": "316510608551",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-17",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "eqfrZ nsoh",
+        "nameUnicode": "मुर्ति देवी",
+        "registrationId": "316510432271",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-18",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "jQhdu",
+        "nameUnicode": "रफीकन",
+        "registrationId": "31650317631",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-19",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "jkejsrh",
+        "nameUnicode": "रामरेती",
+        "registrationId": "316510573281",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-20",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "lR;izdk'k",
+        "nameUnicode": "सत्यप्रकाश",
+        "registrationId": "316510245841",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-21",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "f'keyk",
+        "nameUnicode": "शिमला",
+        "registrationId": "316510639411",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-22",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "f'kockyk",
+        "nameUnicode": "शिवबाला",
+        "registrationId": "316510643341",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-23",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "Jh Hkxoku",
+        "nameUnicode": "श्री भगवान",
+        "registrationId": "316510572501",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      },
+      {
+        "id": "ben-nsap-gp-19-dec-24",
+        "category": "deceased",
+        "categoryHindi": "सत्यापित में मृतक",
+        "nameKrutiDev": "mfeZyk",
+        "nameUnicode": "उर्मिला",
+        "registrationId": "316510549931",
+        "reason": "मृत्यु",
+        "deathDate": ""
+      }
+    ],
+    "block": "Baghpat",
+    "meetingDate": "2026-10-29"
   }
 ];

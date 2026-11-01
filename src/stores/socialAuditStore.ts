@@ -206,11 +206,19 @@ export const useSocialAuditStore = create<SocialAuditState>()(
 
           if (remoteDoc && remoteDoc.records && remoteDoc.records.length > 0) {
             _localChangeTimestamp = remoteDoc.version || Date.now();
+            const remoteNsap = (remoteDoc.nsapRecords && remoteDoc.nsapRecords.length > 0) 
+              ? remoteDoc.nsapRecords 
+              : get().nsapRecords;
+            const existingIds = new Set(remoteNsap.map((r: any) => r.id));
+            const existingRosterIds = new Set(remoteNsap.map((r: any) => r.rosterRecordId).filter(Boolean));
+            const missingBase = INITIAL_NSAP_DATA_RECORDS.filter(init => 
+              !existingIds.has(init.id) && !existingRosterIds.has(init.rosterRecordId)
+            );
+            const mergedNsap = missingBase.length > 0 ? [...remoteNsap, ...missingBase] : remoteNsap;
+
             set({
               records: remoteDoc.records,
-              nsapRecords: (remoteDoc.nsapRecords && remoteDoc.nsapRecords.length > 0) 
-                ? remoteDoc.nsapRecords 
-                : get().nsapRecords,
+              nsapRecords: mergedNsap,
               activityLogs: (remoteDoc.activityLogs && remoteDoc.activityLogs.length > 0)
                 ? remoteDoc.activityLogs
                 : get().activityLogs,
@@ -219,6 +227,18 @@ export const useSocialAuditStore = create<SocialAuditState>()(
                 ? new Date(remoteDoc.updatedAt).toLocaleTimeString('hi-IN') 
                 : new Date().toLocaleTimeString('hi-IN')
             });
+
+            if (missingBase.length > 0) {
+              const currentState = get();
+              saveSocialAuditToFirestore(
+                currentState.records,
+                mergedNsap,
+                currentState.asOfDate,
+                currentState.isLiveSync,
+                true,
+                currentState.activityLogs
+              ).catch((e) => console.warn('Auto-persisting merged NSAP baseline records failed:', e));
+            }
           } else {
             // Document does not exist yet on server: seed current local state to Firestore
             const state = get();
@@ -242,11 +262,19 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             // Adopt if remote version is newer than our local mutation timestamp
             if (remoteData.version && remoteData.version > _localChangeTimestamp) {
               _localChangeTimestamp = remoteData.version;
+              const remoteNsap = (remoteData.nsapRecords && remoteData.nsapRecords.length > 0)
+                ? remoteData.nsapRecords
+                : get().nsapRecords;
+              const existingIds = new Set(remoteNsap.map((r: any) => r.id));
+              const existingRosterIds = new Set(remoteNsap.map((r: any) => r.rosterRecordId).filter(Boolean));
+              const missingBase = INITIAL_NSAP_DATA_RECORDS.filter(init => 
+                !existingIds.has(init.id) && !existingRosterIds.has(init.rosterRecordId)
+              );
+              const mergedNsap = missingBase.length > 0 ? [...remoteNsap, ...missingBase] : remoteNsap;
+
               set({
                 records: remoteData.records,
-                nsapRecords: (remoteData.nsapRecords && remoteData.nsapRecords.length > 0)
-                  ? remoteData.nsapRecords
-                  : get().nsapRecords,
+                nsapRecords: mergedNsap,
                 activityLogs: (remoteData.activityLogs && remoteData.activityLogs.length > 0)
                   ? remoteData.activityLogs
                   : get().activityLogs,
@@ -993,13 +1021,20 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           if (!state.activityLogs || !Array.isArray(state.activityLogs) || state.activityLogs.length === 0) {
             state.activityLogs = INITIAL_ACTIVITY_LOGS;
           }
-          // Rehydrate NSAP data records if missing in local storage
+          // Rehydrate NSAP data records if missing in local storage, or merge missing baseline records
           if (!state.nsapRecords || !Array.isArray(state.nsapRecords) || state.nsapRecords.length === 0) {
             state.nsapRecords = INITIAL_NSAP_DATA_RECORDS;
           } else {
+            // Merge any missing baseline records from INITIAL_NSAP_DATA_RECORDS
+            const existingIds = new Set(state.nsapRecords.map(r => r.id));
+            const existingRosterIds = new Set(state.nsapRecords.map(r => r.rosterRecordId).filter(Boolean));
+            const missingBaseline = INITIAL_NSAP_DATA_RECORDS.filter(init =>
+              !existingIds.has(init.id) && !existingRosterIds.has(init.rosterRecordId)
+            );
+
             // Attach rosterRecordId and ensure correct block for baseline records
-            state.nsapRecords = state.nsapRecords.map(r => {
-              const baseMatch = INITIAL_NSAP_DATA_RECORDS.find(init => init.id === r.id);
+            const updatedExisting = state.nsapRecords.map(r => {
+              const baseMatch = INITIAL_NSAP_DATA_RECORDS.find(init => init.id === r.id || (r.rosterRecordId && init.rosterRecordId === r.rosterRecordId));
               if (baseMatch) {
                 return {
                   ...r,
@@ -1010,6 +1045,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               }
               return r;
             });
+            state.nsapRecords = [...updatedExisting, ...missingBaseline];
           }
 
           // If live sync is true (default) or undefined, ensure asOfDate is synced to today's Delhi date

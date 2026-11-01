@@ -348,7 +348,7 @@ export default function SocialAuditHeader() {
           <Users className="w-4 h-4 text-emerald-300" />
           <span>NSAP डेटा</span>
           <span className="text-[10px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 px-1.5 py-0.2 rounded-full font-bold">
-            {nsapRecords?.length || 16} रिकॉर्डेड
+            {nsapRecords?.length || 19} रिकॉर्डेड
           </span>
         </button>
 

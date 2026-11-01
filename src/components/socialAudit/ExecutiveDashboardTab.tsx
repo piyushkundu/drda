@@ -600,7 +600,7 @@ export default function ExecutiveDashboardTab() {
                 {metrics.totalBeneficiaries}
               </span>
               <span className="text-xs font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-200">
-                16 GP
+                {filteredNsapList.length} GP
               </span>
             </div>
             <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">

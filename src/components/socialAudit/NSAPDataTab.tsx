@@ -139,7 +139,7 @@ export default function NSAPDataTab() {
     return <span>{unicodeText}</span>;
   };
 
-  // Baseline recorded Roster IDs (16 Gram Panchayats from Excel data)
+  // Baseline recorded Roster IDs (19 Gram Panchayats from Excel data)
   const baselineRecordedRosterIds = useMemo(() => new Set([
     'baghpat-1',  // अ0 शाहपुर पदडा (अहमदपुर शाहपुर पदडा)
     'baghpat-4',  // बाधू / बाघू
@@ -150,6 +150,9 @@ export default function NSAPDataTab() {
     'baghpat-17', // गाध़ी / गांधी
     'baghpat-19', // गौरीपुरजवाहरनगर
     'baghpat-20', // ग्वालीखेड़ा / ग्वालीखेड़ा
+    'baghpat-25', // खेड़की
+    'baghpat-28', // नैथला
+    'baghpat-30', // निरोजपुर गूर्जर
     'baraut-7',   // बावली
     'baraut-9',   // बड़का देवीगढ़ / बड़का
     'baraut-11',  // भूड़पुर / बुढपुर
@@ -1715,7 +1718,7 @@ export default function NSAPDataTab() {
                 </h3>
               </div>
               <p className="text-xs text-slate-600 mt-1">
-                एक्सेल एवं सोशल ऑडिट निष्कर्षों के आधार पर दर्ज सभी अपात्र (54) एवं मृतक (194) लाभार्थियों का विवरण।
+                एक्सेल एवं सोशल ऑडिट निष्कर्षों के आधार पर दर्ज सभी अपात्र ({allBeneficiaries.filter(b => b.category === 'ineligible').length}) एवं मृतक ({allBeneficiaries.filter(b => b.category === 'deceased').length}) लाभार्थियों का विवरण।
               </p>
             </div>
 

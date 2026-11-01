@@ -64,7 +64,7 @@ export default function SocialAuditSidebar({
     (r) => r.panchayatNirnayStatus === 'captured'
   ).length;
   const misFedCount = records.filter((r) => r.misStatus === 'fed').length;
-  const nsapRecordedCount = nsapRecords?.length || 16;
+  const nsapRecordedCount = nsapRecords?.length || 19;
   const nsapRosterCount = records.filter((r) => r.hasNSAP).length;
 
   // Exact 8 items in requested order
