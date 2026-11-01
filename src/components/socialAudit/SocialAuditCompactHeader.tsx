@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { DISTRICT_META } from '@/data/socialAuditInitialData';
 import { 
@@ -24,6 +25,21 @@ export default function SocialAuditCompactHeader({
   const [mounted, setMounted] = useState(false);
   const [syncToast, setSyncToast] = useState<string | null>(null);
   const [isMobileSettingsOpen, setIsMobileSettingsOpen] = useState(false);
+  const [isMobileDateOpen, setIsMobileDateOpen] = useState(false);
+
+  // Short formatted date for compact mobile button (e.g. "01 Nov")
+  const formatMobileDatePill = (dStr: string) => {
+    if (!dStr) return '';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    try {
+      const parts = dStr.split('-');
+      const day = parts[2] || '';
+      const mIdx = parseInt(parts[1], 10) - 1;
+      return `${day} ${months[mIdx] || parts[1]}`;
+    } catch {
+      return dStr;
+    }
+  };
 
   const { 
     fontViewMode, 
@@ -111,20 +127,26 @@ export default function SocialAuditCompactHeader({
               <Search className="w-4 h-4" />
             </button>
 
-            {/* Mobile Reference Date Picker */}
-            <div 
-              className="flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
-              title="प्रगति संदर्भ तिथि"
+            {/* Mobile Reference Date Compact Pill Button (<640px) */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileDateOpen((prev) => !prev);
+                setIsMobileSettingsOpen(false);
+              }}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-xl border text-xs font-bold transition-all shrink-0 cursor-pointer active:scale-95 ${
+                isMobileDateOpen
+                  ? 'bg-blue-100 text-blue-900 border-blue-400 ring-2 ring-blue-300'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+              }`}
+              title="प्रगति संदर्भ तिथि बदलें"
+              aria-label="Change Progress Date"
             >
               <Calendar className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-              <input
-                type="date"
-                value={asOfDate}
-                onChange={(e) => setAsOfDate(e.target.value)}
-                className="bg-transparent text-slate-800 text-[11px] outline-none cursor-pointer font-bold font-mono w-22"
-                title="संदर्भ तिथि बदलें"
-              />
-            </div>
+              <span className="font-mono text-[11px] font-bold text-slate-800">
+                {formatMobileDatePill(asOfDate)}
+              </span>
+            </button>
 
             {/* Mobile Font Selector Popover Toggle */}
             <button
@@ -196,6 +218,77 @@ export default function SocialAuditCompactHeader({
                 }`}
               >
                 द्विभाषी
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Reference Date Selector Dropdown */}
+        {isMobileDateOpen && (
+          <div className="border-t border-slate-100 bg-slate-50 px-3 py-2.5 flex flex-col gap-2 animate-in slide-in-from-top-1 shadow-inner">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-blue-700" />
+                <span>प्रगति संदर्भ तिथि चुनें:</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsMobileDateOpen(false)}
+                className="text-[11px] font-bold text-slate-500 hover:text-slate-800"
+              >
+                ✕ बंद करें
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={asOfDate}
+                onChange={(e) => {
+                  setAsOfDate(e.target.value);
+                  setIsMobileDateOpen(false);
+                }}
+                className="flex-1 bg-white border border-slate-300 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-xl outline-none focus:border-blue-500 font-mono shadow-2xs"
+              />
+            </div>
+
+            {/* Quick Presets for Mobile */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              <button
+                type="button"
+                onClick={() => { setAsOfDate('2026-11-01'); setIsMobileDateOpen(false); }}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                  asOfDate === '2026-11-01' ? 'bg-blue-700 text-white' : 'bg-white border text-slate-700'
+                }`}
+              >
+                01 Nov (आज)
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAsOfDate('2026-10-08'); setIsMobileDateOpen(false); }}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                  asOfDate === '2026-10-08' ? 'bg-blue-700 text-white' : 'bg-white border text-slate-700'
+                }`}
+              >
+                08 Oct (बेसलाइन)
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAsOfDate('2026-11-30'); setIsMobileDateOpen(false); }}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                  asOfDate === '2026-11-30' ? 'bg-blue-700 text-white' : 'bg-white border text-slate-700'
+                }`}
+              >
+                30 Nov
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAsOfDate('2026-12-31'); setIsMobileDateOpen(false); }}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                  asOfDate === '2026-12-31' ? 'bg-blue-700 text-white' : 'bg-white border text-slate-700'
+                }`}
+              >
+                31 Dec
               </button>
             </div>
           </div>
@@ -361,12 +454,27 @@ export default function SocialAuditCompactHeader({
         </div>
       </div>
 
-      {/* Floating Sync Toast Notification */}
-      {syncToast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white border border-emerald-500 text-xs font-bold px-4 py-2 rounded-2xl shadow-xl flex items-center gap-2 animate-bounce">
-          <Check className="w-4 h-4 text-emerald-400" />
-          <span>{syncToast}</span>
-        </div>
+      {/* Global Floating Edit Mode Toast Notification (Rendered via React Portal at body root) */}
+      {mounted && typeof document !== 'undefined' && syncToast && createPortal(
+        <div 
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none transition-all duration-300 ease-out animate-in fade-in slide-in-from-top-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className={`px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-black border backdrop-blur-md ${
+            isEditMode
+              ? 'bg-slate-900/95 text-emerald-400 border-emerald-500/80 shadow-emerald-950/40'
+              : 'bg-slate-900/95 text-slate-200 border-rose-500/80 shadow-rose-950/40'
+          }`}>
+            {isEditMode ? (
+              <Unlock className="w-4 h-4 text-emerald-400 shrink-0 animate-bounce" />
+            ) : (
+              <Lock className="w-4 h-4 text-rose-400 shrink-0" />
+            )}
+            <span className="tracking-wide">{syncToast}</span>
+          </div>
+        </div>,
+        document.body
       )}
     </header>
   );

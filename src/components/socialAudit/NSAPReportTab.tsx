@@ -443,13 +443,13 @@ export default function NSAPReportTab() {
                 <th className="py-3 px-3">पर्यवेक्षक अधिकारी</th>
                 <th className="py-3 px-3 text-center">योजना</th>
                 <th className="py-3 px-3 text-center">स्थिति</th>
-                <th className="py-3 px-3 text-center">संशोधन</th>
+                {isEditMode && <th className="py-3 px-3 text-center">संशोधन</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-amber-100">
               {displayedAmendedRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="py-8 text-center text-slate-400">
+                  <td colSpan={isEditMode ? 12 : 11} className="py-8 text-center text-slate-400">
                     चयनित फ़िल्टर में कोई संशोधित ग्राम पंचायत नहीं है।
                   </td>
                 </tr>
@@ -550,17 +550,9 @@ export default function NSAPReportTab() {
                         )}
                       </td>
 
-                      {/* Quick Edit */}
-                      <td className="py-3 px-3 text-center whitespace-nowrap">
-                        {!isEditMode ? (
-                          <button
-                            disabled
-                            className="p-1.5 bg-slate-100 text-slate-400 rounded-lg border border-slate-200 cursor-not-allowed"
-                            title="संपादन करने के लिए पहले Header से Edit Mode ON करें।"
-                          >
-                            <Lock className="w-3.5 h-3.5 text-rose-400" />
-                          </button>
-                        ) : (
+                      {/* Quick Edit (Visible only in Edit Mode) */}
+                      {isEditMode && (
+                        <td className="py-3 px-3 text-center whitespace-nowrap">
                           <button
                             onClick={() => openEditModal(gp)}
                             className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-200"
@@ -568,8 +560,8 @@ export default function NSAPReportTab() {
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
-                        )}
-                      </td>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
