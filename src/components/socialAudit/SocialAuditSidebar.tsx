@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSocialAuditStore, SocialAuditTab } from '@/stores/socialAuditStore';
 import { 
   LayoutDashboard, Clock, Calendar, Smartphone, FileSpreadsheet, 
@@ -21,11 +22,40 @@ export default function SocialAuditSidebar({
   isOpenMobile,
   setIsOpenMobile,
 }: SidebarProps) {
+  const [mounted, setMounted] = useState(false);
   const { activeTab, setActiveTab, records, nsapRecords, asOfDate } = useSocialAuditStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock background body scroll and listen for Escape key when mobile drawer is open
+  useEffect(() => {
+    if (!isOpenMobile) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpenMobile(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpenMobile, setIsOpenMobile]);
 
   // Dynamic counts for navigation badges
   const upcomingCount = records.filter(
-    (r) => r.meetingDate >= asOfDate && r.status !== 'completed'
+    (r) => r.meetingDate > asOfDate && r.status !== 'completed'
   ).length;
   const amendedCount = records.filter((r) => r.isAmended).length;
   const nirnayCapturedCount = records.filter(
@@ -122,52 +152,18 @@ export default function SocialAuditSidebar({
 
   return (
     <>
-      {/* Mobile Backdrop Overlay - Positioned over remaining viewport below header */}
-      {isOpenMobile && (
-        <div
-          onClick={() => setIsOpenMobile(false)}
-          className="absolute inset-0 z-40 bg-slate-900/50 backdrop-blur-2xs lg:hidden transition-opacity duration-300 animate-in fade-in"
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sidebar Container */}
+      {/* ===================================================================== */}
+      {/* 1. DESKTOP COLLAPSIBLE SIDEBAR (Hidden on mobile, static in layout) */}
+      {/* ===================================================================== */}
       <aside
-        className={`absolute lg:static inset-y-0 left-0 h-full z-50 bg-white/95 backdrop-blur-md border-r border-slate-200/90 flex flex-col justify-between transition-all duration-300 ease-in-out select-none ${
-          /* Mobile Drawer */
-          isOpenMobile
-            ? 'translate-x-0 w-72 max-w-[85vw] shadow-2xl visible'
-            : '-translate-x-full lg:translate-x-0 invisible lg:visible shadow-none'
-        } ${
-          /* Desktop Width: 72px collapsed, 260px expanded */
-          isCollapsed ? 'lg:w-[72px]' : 'lg:w-[260px]'
+        className={`hidden lg:flex flex-col justify-between h-full bg-white/95 backdrop-blur-md border-r border-slate-200/90 transition-all duration-300 ease-in-out select-none shrink-0 ${
+          isCollapsed ? 'w-[72px]' : 'w-[260px]'
         }`}
       >
-        {/* Top: Mobile Close Button & Header Branding for Mobile (Always visible at top of drawer) */}
-        <div className="flex items-center justify-between p-3.5 border-b border-slate-200 lg:hidden bg-slate-50 shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-blue-700 text-white flex items-center justify-center font-bold shrink-0">
-              <Building2 className="w-4 h-4 text-amber-300" />
-            </div>
-            <div className="min-w-0">
-              <span className="font-black text-slate-900 text-sm block leading-tight truncate">सोशल ऑडिट बागपत</span>
-              <span className="text-[10px] text-slate-500 font-medium block truncate">प्रशासनिक नेविगेशन मेन्यू</span>
-            </div>
-          </div>
-          <button
-            onClick={() => setIsOpenMobile(false)}
-            className="p-1.5 rounded-xl bg-white text-slate-700 hover:bg-slate-200 border border-slate-200 shadow-xs shrink-0"
-            title="मेन्यू बंद करें"
-            aria-label="Close Navigation Menu"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
         {/* Navigation Items List */}
         <div className="flex-1 overflow-y-auto p-2 sm:p-2.5 space-y-1 scrollbar-thin">
           {!isCollapsed && (
-            <div className="hidden lg:block px-3 py-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+            <div className="px-3 py-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
               प्रशासनिक मॉड्यूल्स (Navigation)
             </div>
           )}
@@ -181,6 +177,7 @@ export default function SocialAuditSidebar({
             return (
               <div key={item.id} className="relative group">
                 <button
+                  type="button"
                   onClick={() => handleSelectTab(item.id)}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all text-left text-xs font-bold relative ${
                     isActive
@@ -233,7 +230,7 @@ export default function SocialAuditSidebar({
           })}
         </div>
 
-        {/* Sidebar Footer: User / Role & Version */}
+        {/* Desktop Sidebar Footer */}
         <div className="p-3 border-t border-slate-200/90 bg-slate-50/80 shrink-0">
           {!isCollapsed ? (
             <div className="space-y-2">
@@ -271,7 +268,152 @@ export default function SocialAuditSidebar({
           )}
         </div>
       </aside>
+
+      {/* ===================================================================== */}
+      {/* 2. FULL-SCREEN MOBILE DRAWER (Portal rendered directly to document.body) */}
+      {/* ===================================================================== */}
+      {mounted && typeof document !== 'undefined' && createPortal(
+        <div
+          className={`fixed inset-0 z-[100] lg:hidden transition-all duration-300 ${
+            isOpenMobile ? 'pointer-events-auto visible' : 'pointer-events-none invisible'
+          }`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="प्रशासनिक नेविगेशन मेन्यू"
+        >
+          {/* Full-Screen Dark Translucent Backdrop (z-index 100) */}
+          <div
+            onClick={() => setIsOpenMobile(false)}
+            className={`fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity duration-300 ${
+              isOpenMobile ? 'opacity-100' : 'opacity-0'
+            }`}
+            aria-hidden="true"
+          />
+
+          {/* Full-Screen Mobile Drawer Panel (z-index 101, top: 0, height: 100dvh, width: 100vw on mobile) */}
+          <aside
+            className={`fixed inset-y-0 left-0 z-[101] w-full sm:max-w-sm h-[100dvh] bg-white shadow-2xl flex flex-col justify-between transition-transform duration-300 ease-in-out select-none ${
+              isOpenMobile ? 'translate-x-0' : '-translate-x-full'
+            }`}
+          >
+            {/* Top Fixed Header with Government Logo and Accessible Close Button */}
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-200 bg-slate-50/95 backdrop-blur-md shrink-0 pt-[max(0.875rem,env(safe-area-inset-top))]">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-800 to-indigo-900 text-white flex items-center justify-center shadow-md shadow-blue-900/20 shrink-0">
+                  <Building2 className="w-5 h-5 text-amber-300" />
+                </div>
+                <div className="min-w-0">
+                  <span className="font-black text-slate-900 text-base block leading-tight tracking-tight truncate">
+                    सोशल ऑडिट बागपत
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-semibold block truncate">
+                    प्रशासनिक नेविगेशन
+                  </span>
+                </div>
+              </div>
+
+              {/* Close Button with Clear Touch Target */}
+              <button
+                type="button"
+                onClick={() => setIsOpenMobile(false)}
+                className="p-2.5 rounded-xl bg-white hover:bg-slate-100 active:scale-95 text-slate-700 hover:text-slate-900 border border-slate-200 shadow-xs shrink-0 transition-all"
+                title="मेन्यू बंद करें"
+                aria-label="नेविगेशन मेन्यू बंद करें"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Navigation List (All 8 Options in Exact Requested Order) */}
+            <nav className="flex-1 overflow-y-auto overscroll-contain p-3 space-y-1.5 scrollbar-thin">
+              <div className="px-2 py-1 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                प्रशासनिक मॉड्यूल्स (Navigation)
+              </div>
+
+              {navItems.map((item) => {
+                const IconComponent = item.icon;
+                const isActive =
+                  activeTab === item.id ||
+                  (item.id === 'dashboard' && activeTab === 'overview');
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSelectTab(item.id)}
+                    className={`w-full flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl transition-all text-left text-xs ${
+                      isActive
+                        ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/25 ring-1 ring-blue-500'
+                        : 'bg-slate-50/70 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200/60 font-semibold active:bg-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+                          isActive
+                            ? 'bg-white/20 text-white border-white/20'
+                            : item.iconColor
+                        }`}
+                      >
+                        <IconComponent className="w-4 h-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className={`truncate text-[13px] ${isActive ? 'font-black text-white' : 'font-bold text-slate-900'}`}>
+                          {item.label}
+                        </div>
+                        <div className={`truncate text-[10px] ${isActive ? 'text-blue-100' : 'text-slate-500'}`}>
+                          {item.sublabel}
+                        </div>
+                      </div>
+                    </div>
+
+                    {item.badge && (
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 border ${
+                          isActive
+                            ? 'bg-white text-blue-900 border-white font-black'
+                            : item.badgeColor || 'bg-slate-100 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Fixed Bottom Footer (DDO Identity Card & System Active Status) */}
+            <div className="p-3.5 border-t border-slate-200/90 bg-slate-50/95 backdrop-blur-md shrink-0 pb-[max(0.875rem,env(safe-area-inset-bottom))] space-y-2">
+              <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-700 to-indigo-800 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                  DDO
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-black text-slate-900 truncate">
+                    जिला विकास अधिकारी
+                  </div>
+                  <div className="text-[10px] text-slate-600 truncate font-medium">
+                    DRDA बागपत, उत्तर प्रदेश
+                  </div>
+                  <div className="text-[9px] text-slate-400 truncate">
+                    प्रशासनिक नोडल अधिकारी
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-slate-600 px-1 font-medium">
+                <span className="font-mono text-slate-500 text-[10px]">Enterprise v3.0</span>
+                <span className="flex items-center gap-1.5 text-emerald-700 font-bold text-[10px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                  सक्रिय पोर्टल
+                </span>
+              </div>
+            </div>
+          </aside>
+        </div>,
+        document.body
+      )}
     </>
   );
 }
-
