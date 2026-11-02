@@ -189,6 +189,25 @@ export default function ExecutiveDashboardTab() {
     const amendedCompleted = amendedRecords.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
     const amendedRemaining = amendedRecords.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
 
+    // Original proposed meetings if NO amendment had taken place (using original date if amended)
+    const originalProposedUpToDateRecords = effectiveRecords.filter((r) => {
+      const origDate = (r.isAmended && (r.originalMeetingDate || r.amendmentDetails?.originalDate))
+        ? (r.originalMeetingDate || r.amendmentDetails?.originalDate)!
+        : r.meetingDate;
+      return origDate <= asOfDate;
+    });
+
+    // Amended meetings that were originally scheduled on or before asOfDate
+    const amendedOriginallyDueRecords = amendedRecords.filter((r) => {
+      const origDate = r.originalMeetingDate || r.amendmentDetails?.originalDate;
+      return Boolean(origDate && origDate <= asOfDate);
+    });
+
+    // Amended meetings that were pushed to future dates (> asOfDate) and are pending
+    const amendedShiftedToFutureRecords = amendedOriginallyDueRecords.filter((r) => {
+      return r.meetingDate > asOfDate && r.status !== 'completed';
+    });
+
     // Recent Completed (last 5)
     const recentlyCompleted = [...completedRecords]
       .sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))
@@ -236,9 +255,13 @@ export default function ExecutiveDashboardTab() {
       totalDeceased,
       totalIneligible,
       totalFinancialIrreg,
+      originalProposedUpToDateCount: originalProposedUpToDateRecords.length,
+      originalProposedUpToDateRecords,
       amendedCount: amendedRecords.length,
       amendedCompletedCount: amendedCompleted.length,
       amendedRemainingCount: amendedRemaining.length,
+      amendedShiftedToFutureCount: amendedShiftedToFutureRecords.length,
+      amendedRecords,
       completedRecords,
       upcomingRecords,
       duePendingRecords,
@@ -276,6 +299,8 @@ export default function ExecutiveDashboardTab() {
     else if (activeModal === 'nirnay') list = metrics.nirnayCapturedRecords;
     else if (activeModal === 'mis') list = metrics.misFedRecords;
     else if (activeModal === 'mis-due') list = metrics.misDuePendingRecords;
+    else if (activeModal === 'amended') list = metrics.amendedRecords;
+    else if (activeModal === 'original-proposed') list = metrics.originalProposedUpToDateRecords;
 
     if (modalBlockFilter !== 'all') {
       list = list.filter((r) => r.block === modalBlockFilter);
@@ -492,23 +517,62 @@ export default function ExecutiveDashboardTab() {
           {/* KPI 3: Completed Audits */}
           <div
             onClick={() => { setActiveModal('completed'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="social-audit-kpi bg-gradient-to-b from-white to-emerald-50/20 p-4.5 rounded-2xl border border-emerald-200 hover:border-emerald-400 cursor-pointer group"
+            className="social-audit-kpi bg-gradient-to-b from-white to-emerald-50/20 p-4.5 rounded-2xl border border-emerald-200 hover:border-emerald-400 cursor-pointer group flex flex-col justify-between"
           >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-950">सम्पन्न सोशल ऑडिट बैठकें</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-105 transition-transform">
-                <CheckCircle2 className="w-4 h-4" />
+            <div>
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-950">सम्पन्न सोशल ऑडिट बैठकें</span>
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-105 transition-transform">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-emerald-900 tracking-tight font-mono">
+                  {metrics.completedCount}
+                </span>
+                <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                  {metrics.completedPercent}%
+                </span>
+              </div>
+
+              {/* Comparative Original vs Amended Insights Box */}
+              <div className="mt-2.5 pt-2 border-t border-emerald-100 space-y-1.5 text-xs">
+                <div className="flex items-center justify-between text-slate-600 font-medium">
+                  <span title="यदि रोस्टर में संशोधन नहीं होता तो आज तक 55 बैठकें प्रस्तावित थीं">
+                    यदि संशोधन न होता:
+                  </span>
+                  <span className="font-extrabold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 font-mono text-[11px]">
+                    {metrics.originalProposedUpToDateCount} प्रस्तावित
+                  </span>
+                </div>
+
+                {/* Clickable pill to inspect amended panchayats */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveModal('amended');
+                    setModalSearch('');
+                    setModalBlockFilter('all');
+                  }}
+                  className="flex items-center justify-between bg-amber-50 hover:bg-amber-100/90 text-amber-900 border border-amber-200/90 px-2.5 py-1.5 rounded-xl cursor-pointer transition-all group/amend shadow-2xs"
+                  title="क्लिक करें: सभी 10 संशोधित ग्राम पंचायतों की सूची एवं मूल/नवीन तिथियां देखें"
+                >
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+                    <span>कुल संशोधित: <strong className="text-amber-950 font-black">{metrics.amendedCount} GP</strong></span>
+                    <span className="text-[10px] text-amber-700 font-medium">
+                      ({metrics.amendedShiftedToFutureCount} आगे खिसकीं)
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-black text-amber-800 group-hover/amend:text-amber-950 underline flex items-center gap-0.5 shrink-0">
+                    <span>देखें</span>
+                    <ArrowUpRight className="w-3 h-3" />
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-emerald-900 tracking-tight font-mono">
-                {metrics.completedCount}
-              </span>
-              <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
-                {metrics.completedPercent}%
-              </span>
-            </div>
-            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
+
+            <div className="text-xs text-slate-500 mt-2.5 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>बागपत: <strong className="text-slate-800">{metrics.baghpatCompletedCount}</strong> | बड़ौत: <strong className="text-slate-800">{metrics.barautCompletedCount}</strong></span>
               <span className="text-[11px] text-emerald-700 font-bold group-hover:underline">सूची देखें →</span>
             </div>
@@ -1421,10 +1485,14 @@ export default function ExecutiveDashboardTab() {
                     {activeModal === 'nirnay' && `पंचायत निर्णय ऐप सत्यापित बैठकें (${metrics.nirnayCapturedCount} ग्राम पंचायतें)`}
                     {activeModal === 'mis' && `MIS पोर्टल पर फीडेड बैठकें (${metrics.misFedCount} / ${metrics.completedCount} सम्पन्न ग्राम पंचायतें - ${metrics.misFedPercent}%)`}
                     {activeModal === 'nsap' && `NSAP पेंशन डेटा रजिस्टर (${metrics.nsapRecordedCount} ग्राम पंचायतें / ${metrics.totalBeneficiaries} पेंशनर्स)`}
+                    {activeModal === 'amended' && `संशोधित रोस्टर सोशल ऑडिट बैठकें (${metrics.amendedCount} ग्राम पंचायतें)`}
+                    {activeModal === 'original-proposed' && `मूल रोस्टर अनुसार प्रस्तावित बैठकें (${metrics.originalProposedUpToDateCount} ग्राम पंचायतें)`}
                   </span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  दिनांक {formatDateHi(asOfDate)} के अनुसार वास्तविक शासकीय रिकॉर्ड
+                  {activeModal === 'amended'
+                    ? `यदि रोस्टर में संशोधन नहीं होता तो आज तक ${metrics.originalProposedUpToDateCount} बैठकें प्रस्तावित थीं। कुल ${metrics.amendedCount} संशोधित (सम्पन्न: ${metrics.amendedCompletedCount}, आगामी खिसकीं: ${metrics.amendedShiftedToFutureCount})`
+                    : `दिनांक ${formatDateHi(asOfDate)} के अनुसार वास्तविक शासकीय रिकॉर्ड`}
                 </p>
               </div>
 
@@ -1436,6 +1504,61 @@ export default function ExecutiveDashboardTab() {
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Amended Meetings Overview Tiles */}
+            {activeModal === 'amended' && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 sm:px-5 bg-amber-50/70 border-b border-amber-200 text-xs">
+                <div className="bg-white p-2.5 rounded-xl border border-amber-200 shadow-2xs">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">कुल संशोधित बैठकें</div>
+                  <div className="text-xl font-black text-amber-900 font-mono">{metrics.amendedCount} GP</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">बागपत: 6 | बड़ौत: 4</div>
+                </div>
+                <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">यदि संशोधन न होता</div>
+                  <div className="text-xl font-black text-slate-900 font-mono">{metrics.originalProposedUpToDateCount} GP</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">आज तक मूल तिथिनुसार</div>
+                </div>
+                <div className="bg-white p-2.5 rounded-xl border border-emerald-200 shadow-2xs">
+                  <div className="text-[10px] font-bold text-emerald-800 uppercase">संशोधित में सम्पन्न</div>
+                  <div className="text-xl font-black text-emerald-700 font-mono">{metrics.amendedCompletedCount} GP</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">खेड़की (29/10/2026)</div>
+                </div>
+                <div className="bg-white p-2.5 rounded-xl border border-blue-200 shadow-2xs">
+                  <div className="text-[10px] font-bold text-blue-800 uppercase">आगामी तिथियों में खिसकीं</div>
+                  <div className="text-xl font-black text-blue-700 font-mono">{metrics.amendedShiftedToFutureCount} GP</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">क्यामपुर, निवाड़ा, गुराना</div>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Switcher between Completed, Amended, and All */}
+            {(activeModal === 'completed' || activeModal === 'amended') && (
+              <div className="px-3 sm:px-5 py-2 bg-slate-100/80 border-b border-slate-200 flex items-center gap-2 overflow-x-auto text-xs">
+                <span className="text-slate-500 font-bold shrink-0 text-[11px]">दृश्य बदलें:</span>
+                <button
+                  onClick={() => { setActiveModal('completed'); setModalPage(1); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                    activeModal === 'completed'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>सम्पन्न सोशल ऑडिट ({metrics.completedCount})</span>
+                </button>
+                <button
+                  onClick={() => { setActiveModal('amended'); setModalPage(1); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                    activeModal === 'amended'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-white text-amber-900 hover:bg-amber-50 border border-amber-300'
+                  }`}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>संशोधित रोस्टर ({metrics.amendedCount})</span>
+                </button>
+              </div>
+            )}
 
             {/* Modal Search & Filter Toolbar */}
             {activeModal !== 'nsap' && (
@@ -1554,16 +1677,24 @@ export default function ExecutiveDashboardTab() {
                         ग्राम पंचायत {modalSortBy === 'name' ? (modalSortOrder === 'asc' ? '↑' : '↓') : ''}
                       </th>
                       <th className="py-2.5 px-2">विकास खंड</th>
-                      <th 
-                        className="py-2.5 px-2 cursor-pointer hover:bg-slate-200/80 transition-colors"
-                        onClick={() => {
-                          setModalSortBy('date');
-                          setModalSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-                        }}
-                        title="दिनांक से क्रमबद्ध करें"
-                      >
-                        बैठक तिथि {modalSortBy === 'date' ? (modalSortOrder === 'asc' ? '↑' : '↓') : ''}
-                      </th>
+                      {activeModal === 'amended' ? (
+                        <>
+                          <th className="py-2.5 px-2 text-rose-700 font-bold">मूल प्रस्तावित तिथि</th>
+                          <th className="py-2.5 px-2 text-blue-800 font-extrabold">संशोधित नवीन तिथि</th>
+                          <th className="py-2.5 px-3 text-slate-700">संशोधन का कारण</th>
+                        </>
+                      ) : (
+                        <th 
+                          className="py-2.5 px-2 cursor-pointer hover:bg-slate-200/80 transition-colors"
+                          onClick={() => {
+                            setModalSortBy('date');
+                            setModalSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                          }}
+                          title="दिनांक से क्रमबद्ध करें"
+                        >
+                          बैठक तिथि {modalSortBy === 'date' ? (modalSortOrder === 'asc' ? '↑' : '↓') : ''}
+                        </th>
+                      )}
                       <th className="py-2.5 px-3">BRP / फोन</th>
                       <th 
                         className="py-2.5 px-2 text-right cursor-pointer hover:bg-slate-200/80 transition-colors"
@@ -1580,7 +1711,7 @@ export default function ExecutiveDashboardTab() {
                   <tbody className="divide-y divide-slate-100">
                     {paginatedModalRecords.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-slate-400">
+                        <td colSpan={activeModal === 'amended' ? 8 : 6} className="py-8 text-center text-slate-400">
                           कोई रिकॉर्ड नहीं मिला।
                         </td>
                       </tr>
@@ -1588,6 +1719,7 @@ export default function ExecutiveDashboardTab() {
                       paginatedModalRecords.map((r, i) => {
                         const isCompleted = r.meetingDate <= asOfDate || r.status === 'completed';
                         const displayIndex = (modalPage - 1) * modalPageSize + i + 1;
+                        const origDate = r.originalMeetingDate || r.amendmentDetails?.originalDate;
                         return (
                           <tr 
                             key={r.id} 
@@ -1599,21 +1731,62 @@ export default function ExecutiveDashboardTab() {
                             title="ग्राम पंचायत प्रोफाइल देखने हेतु क्लिक करें"
                           >
                             <td className="py-2.5 px-3 font-mono text-slate-500">{displayIndex}</td>
-                            <td className="py-2.5 px-3 font-bold text-slate-900 group-hover:text-blue-700 flex items-center justify-between">
-                              <span>{renderText(r.gpNameUnicode, r.gpNameKrutiDev)}</span>
-                              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600 transition-transform group-hover:translate-x-0.5" />
+                            <td className="py-2.5 px-3 font-bold text-slate-900 group-hover:text-blue-700">
+                              <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                  <span>{renderText(r.gpNameUnicode, r.gpNameKrutiDev)}</span>
+                                  {r.isAmended && activeModal !== 'amended' && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                                      संशोधित
+                                    </span>
+                                  )}
+                                </span>
+                                <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600 transition-transform group-hover:translate-x-0.5" />
+                              </div>
                             </td>
                             <td className="py-2.5 px-2 text-slate-600">
                               {r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                             </td>
-                            <td className="py-2.5 px-2 font-mono text-slate-700">
-                              {formatDateHi(r.meetingDate)}
-                            </td>
-                            <td className="py-2.5 px-3 text-slate-600">
+
+                            {/* Date columns */}
+                            {activeModal === 'amended' ? (
+                              <>
+                                <td className="py-2.5 px-2 whitespace-nowrap">
+                                  <span className="inline-block px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200 font-mono font-bold text-[11px] line-through">
+                                    {origDate ? formatDateHi(origDate) : '-'}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-2 whitespace-nowrap">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-blue-900 border border-blue-200 font-mono font-extrabold text-[11px]">
+                                    <span className="text-blue-600 font-normal">➔</span>
+                                    <span>{formatDateHi(r.meetingDate)}</span>
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-slate-600 text-[11px] max-w-[200px]" title={r.amendmentDetails?.reason || 'बी०आर०पी० कार्यमुक्त / संशोधित रोस्टर'}>
+                                  <div className="truncate font-medium text-slate-700">{r.amendmentDetails?.reason || 'बी०आर०पी० कार्यमुक्त / संशोधित रोस्टर'}</div>
+                                  {r.amendmentDetails?.previousBRP && (
+                                    <div className="text-[10px] text-slate-400 font-medium truncate">पूर्व BRP: {r.amendmentDetails.previousBRP}</div>
+                                  )}
+                                </td>
+                              </>
+                            ) : (
+                              <td className="py-2.5 px-2 font-mono text-slate-700 whitespace-nowrap">
+                                {r.isAmended && origDate ? (
+                                  <div className="flex flex-col">
+                                    <span className="line-through text-slate-400 text-[10px]">{formatDateHi(origDate)}</span>
+                                    <span className="font-bold text-amber-900">{formatDateHi(r.meetingDate)}</span>
+                                  </div>
+                                ) : (
+                                  formatDateHi(r.meetingDate)
+                                )}
+                              </td>
+                            )}
+
+                            <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">
                               <div>{r.brpName}</div>
                               <div className="text-[10px] font-mono text-slate-500">{r.brpPhone}</div>
                             </td>
-                            <td className="py-2.5 px-2 text-right">
+                            <td className="py-2.5 px-2 text-right whitespace-nowrap">
                               <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                                 isCompleted
                                   ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
