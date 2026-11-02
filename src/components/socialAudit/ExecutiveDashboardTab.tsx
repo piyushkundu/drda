@@ -64,18 +64,19 @@ export default function ExecutiveDashboardTab() {
     }
   };
 
-  // Helper to format date and short month e.g. "1 Nov"
+  // Helper to format date and short month e.g. "02 Nov"
   const formatDateAndMonth = (dateStr: string) => {
     if (!dateStr) return '';
     try {
       const [y, m, d] = dateStr.split('-');
       const day = parseInt(d, 10);
+      const dayStr = day < 10 ? `0${day}` : `${day}`;
       const monthShortNames: Record<string, string> = {
         '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun',
         '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec'
       };
       const month = monthShortNames[m] || m;
-      return `${day} ${month}`;
+      return `${dayStr} ${month}`;
     } catch {
       return dateStr;
     }
@@ -494,58 +495,55 @@ export default function ExecutiveDashboardTab() {
             </div>
           </div>
 
-          {/* KPI 2: Total Scheduled */}
+          {/* KPI 2: Proposed Audits Up To Date */}
           <div
-            onClick={() => { setActiveModal('all'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="social-audit-kpi bg-white p-4.5 rounded-2xl border border-slate-200 hover:border-indigo-400 cursor-pointer group"
+            onClick={() => { setActiveModal('original-proposed'); setModalSearch(''); setModalBlockFilter('all'); }}
+            className="social-audit-kpi bg-gradient-to-b from-white to-blue-50/20 p-4.5 rounded-2xl border border-blue-200 hover:border-blue-400 cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">कुल निर्धारित सोशल ऑडिट</span>
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700 group-hover:scale-105 transition-transform">
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-950 truncate" title={`${formatDateAndMonth(asOfDate)} तक प्रस्तावित ग्राम पंचायतें`}>
+                {formatDateAndMonth(asOfDate)} तक प्रस्तावित ग्राम पंचायतें
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 group-hover:scale-105 transition-transform shrink-0">
                 <Calendar className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-3xl font-black text-slate-900 tracking-tight font-mono">
-              {metrics.totalGPs}
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-blue-900 tracking-tight font-mono">
+                {metrics.completedCount}
+              </span>
+              {metrics.originalProposedUpToDateCount !== metrics.completedCount && (
+                <span className="text-xs font-bold text-slate-500 font-mono" title={`यदि संशोधन न होता: ${metrics.originalProposedUpToDateCount} मूल`}>
+                  ({metrics.originalProposedUpToDateCount} मूल)
+                </span>
+              )}
+              <span className="text-xs font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200 ml-auto">
+                {metrics.totalGPs > 0 ? Math.round((metrics.completedCount / metrics.totalGPs) * 100) : 0}% कुल
+              </span>
             </div>
             <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
-              <span>2 ब्लॉक स्तरीय सभाएं सम्मिलित</span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-indigo-700 opacity-60 group-hover:opacity-100 transition-opacity" />
+              <span>बागपत: <strong className="text-slate-800">{metrics.baghpatCompletedCount}</strong> | बड़ौत: <strong className="text-slate-800">{metrics.barautCompletedCount}</strong></span>
+              <span className="text-[11px] text-blue-700 font-bold group-hover:underline">सूची देखें →</span>
             </div>
           </div>
 
-          {/* KPI 3: Completed Audits */}
+          {/* KPI 3: Completed Audits Up To Date */}
           <div
             onClick={() => { setActiveModal('completed'); setModalSearch(''); setModalBlockFilter('all'); }}
             className="social-audit-kpi bg-gradient-to-b from-white to-emerald-50/20 p-4.5 rounded-2xl border border-emerald-200 hover:border-emerald-400 cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-950">सम्पन्न सोशल ऑडिट बैठकें</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-105 transition-transform">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-950 truncate" title={`${formatDateAndMonth(asOfDate)} तक सम्पन्न`}>
+                {formatDateAndMonth(asOfDate)} तक सम्पन्न
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-105 transition-transform shrink-0">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
-            <div className="flex items-baseline gap-2 flex-wrap">
+            <div className="flex items-baseline gap-2">
               <span className="text-3xl font-black text-emerald-900 tracking-tight font-mono">
                 {metrics.completedCount}
               </span>
-              <span className="text-base font-bold text-slate-400 font-mono" title="यदि संशोधन न होता तो आज तक 55 बैठकें प्रस्तावित थीं">
-                / {metrics.originalProposedUpToDateCount}
-              </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveModal('amended');
-                  setModalSearch('');
-                  setModalBlockFilter('all');
-                }}
-                className="text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded-full border border-amber-300 transition-colors flex items-center gap-0.5 cursor-pointer shadow-2xs"
-                title="क्लिक करें: संशोधित रोस्टर विवरण (3 बैठकें आगे खिसकीं / कुल 10 संशोधित)"
-              >
-                <span>सं० -{metrics.amendedShiftedToFutureCount}</span>
-                <ArrowUpRight className="w-3 h-3 text-amber-800" />
-              </button>
               <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 ml-auto">
                 {metrics.completedPercent}%
               </span>
@@ -556,23 +554,33 @@ export default function ExecutiveDashboardTab() {
             </div>
           </div>
 
-          {/* KPI 4: Upcoming Audits */}
+          {/* KPI 4: Amended Audits Up To Date */}
           <div
-            onClick={() => { setActiveModal('upcoming'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="social-audit-kpi bg-gradient-to-b from-white to-sky-50/20 p-4.5 rounded-2xl border border-sky-200 hover:border-sky-400 cursor-pointer group"
+            onClick={() => { setActiveModal('amended'); setModalSearch(''); setModalBlockFilter('all'); }}
+            className="social-audit-kpi bg-gradient-to-b from-white to-amber-50/20 p-4.5 rounded-2xl border border-amber-200 hover:border-amber-400 cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-sky-950">आगामी बैठकें</span>
-              <div className="w-8 h-8 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 group-hover:scale-105 transition-transform">
-                <Clock className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-950 truncate" title={`${formatDateAndMonth(asOfDate)} तक संशोधित`}>
+                {formatDateAndMonth(asOfDate)} तक संशोधित
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 group-hover:scale-105 transition-transform shrink-0">
+                <AlertTriangle className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-3xl font-black text-blue-900 tracking-tight font-mono">
-              {metrics.upcomingCount}
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-amber-900 tracking-tight font-mono">
+                {metrics.amendedCompletedCount}
+              </span>
+              <span className="text-sm font-bold text-amber-700 font-mono">
+                / {metrics.amendedCount} संशोधित
+              </span>
+              <span className="text-[11px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 ml-auto">
+                {metrics.amendedCount > 0 ? Math.round((metrics.amendedCompletedCount / metrics.amendedCount) * 100) : 0}% सम्पन्न
+              </span>
             </div>
             <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
-              <span>बागपत: <strong className="text-slate-800">{metrics.baghpatUpcomingCount}</strong> | बड़ौत: <strong className="text-slate-800">{metrics.barautUpcomingCount}</strong></span>
-              <span className="text-[11px] text-blue-700 font-bold group-hover:underline">सूची देखें →</span>
+              <span>{metrics.amendedShiftedToFutureCount} आगे खिसकीं | अवशेष: {metrics.amendedRemainingCount}</span>
+              <span className="text-[11px] text-amber-800 font-bold group-hover:underline">सूची देखें →</span>
             </div>
           </div>
 
