@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { 
   X, Building2, Calendar, User, Phone, ShieldCheck, CheckCircle2, 
@@ -108,57 +109,63 @@ export default function GramPanchayatProfilePanel() {
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex justify-end">
-      {/* Dimmed backdrop */}
-      <div 
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
-        onClick={closeGPProfile}
-      />
+    <SocialAuditPortal>
+      <div className="fixed inset-0 z-[200] flex justify-end">
+        {/* Dimmed backdrop */}
+        <div 
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+          onClick={closeGPProfile}
+        />
 
-      {/* Slide-over panel (Desktop: right side 640px, Mobile: full-screen) */}
-      <div className="relative w-full max-w-full md:max-w-2xl bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300 overflow-hidden">
-        
-        {/* =================================================================== */}
-        {/* TOP HEADER BAR */}
-        {/* =================================================================== */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white shrink-0 shadow-md">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={closeGPProfile}
-                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-                title="बंद करें (Esc)"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <span className="text-xs uppercase tracking-wider text-blue-300 font-bold flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-amber-300" />
-                ग्राम पंचायत विवरण प्रोफाइल
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              {isEditMode && (
+        {/* Slide-over panel (Desktop: right side 640px, Mobile: full-screen) */}
+        <div className="relative w-full max-w-full md:max-w-2xl bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300 overflow-hidden">
+          
+          {/* =================================================================== */}
+          {/* TOP HEADER BAR */}
+          {/* =================================================================== */}
+          <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white shrink-0 shadow-md">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => {
-                    closeGPProfile();
-                    openEditModal(r);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm transition-colors"
+                  type="button"
+                  onClick={closeGPProfile}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-white/20"
+                  title="बंद करें (Esc)"
+                  aria-label="बंद करें"
                 >
-                  <Edit3 className="w-3 h-3" />
-                  <span>संपादित करें</span>
+                  <ArrowLeft className="w-4 h-4" />
                 </button>
-              )}
-              <button
-                onClick={closeGPProfile}
-                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
-                title="बंद करें"
-              >
-                <X className="w-4 h-4" />
-              </button>
+                <span className="text-xs uppercase tracking-wider text-blue-300 font-bold flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-amber-300" />
+                  ग्राम पंचायत विवरण प्रोफाइल
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {isEditMode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeGPProfile();
+                      openEditModal(r);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm transition-colors"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>संपादित करें</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={closeGPProfile}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-rose-500/80 text-slate-200 hover:text-white flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-white/20"
+                  title="बंद करें (Close)"
+                  aria-label="बंद करें"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          </div>
 
           {/* Main Title & Badges */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -720,6 +727,7 @@ export default function GramPanchayatProfilePanel() {
 
       </div>
     </div>
+    </SocialAuditPortal>
   );
 }
 

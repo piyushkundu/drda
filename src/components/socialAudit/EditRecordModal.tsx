@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { SocialAuditRecord, AuditStatus, PanchayatNirnayStatus } from '@/types/socialAudit';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
@@ -56,6 +57,17 @@ export default function EditRecordModal() {
       setNirnayCapturedDate(selectedRecordForEdit.panchayatNirnayCapturedDate || '');
     }
   }, [selectedRecordForEdit]);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedRecordForEdit) {
+        closeEditModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedRecordForEdit, closeEditModal]);
 
   if (!selectedRecordForEdit) return null;
 
@@ -171,33 +183,42 @@ export default function EditRecordModal() {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden my-8">
-        {/* Header */}
-        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-              #{selectedRecordForEdit.sno}
+    <SocialAuditPortal>
+      <div 
+        className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) closeEditModal();
+        }}
+      >
+        <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col">
+          {/* Header */}
+          <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0 gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">
+                #{selectedRecordForEdit.sno}
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-base font-bold text-slate-900 truncate">
+                  सोशल ऑडिट रोस्टर संशोधन: {selectedRecordForEdit.gpNameUnicode}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {selectedRecordForEdit.blockHindi} (जनपद बागपत)
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
-                सोशल ऑडिट रोस्टर संशोधन: {selectedRecordForEdit.gpNameUnicode}
-              </h3>
-              <p className="text-xs text-slate-500">
-                {selectedRecordForEdit.blockHindi} (जनपद बागपत)
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={closeEditModal}
+              className="w-9 h-9 rounded-full bg-slate-200/90 hover:bg-rose-100 hover:text-rose-700 text-slate-700 flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-slate-300/60"
+              title="बंद करें (Close)"
+              aria-label="बंद करें"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={closeEditModal}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSave} className="p-6 space-y-4 text-xs">
+          {/* Form Body */}
+          <form onSubmit={handleSave} className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
           {!isEditMode && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium">
               <Lock className="w-4 h-4 text-amber-700 shrink-0" />
@@ -564,5 +585,6 @@ export default function EditRecordModal() {
         </form>
       </div>
     </div>
+    </SocialAuditPortal>
   );
 }

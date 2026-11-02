@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { 
   NSAPGramPanchayatData, 
@@ -111,6 +112,20 @@ export default function NSAPDataTab() {
   }>>([]);
 
   // Helper date formatter DD/MM/YYYY
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isAddModalOpen) setIsAddModalOpen(false);
+        if (isEditModalOpen) setIsEditModalOpen(false);
+        if (isExcelPasteModalOpen) setIsExcelPasteModalOpen(false);
+        if (isBenModalOpen) setIsBenModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAddModalOpen, isEditModalOpen, isExcelPasteModalOpen, isBenModalOpen]);
+
   const formatDateHi = (dateStr?: string) => {
     if (!dateStr) return '—';
     try {
@@ -1957,31 +1972,41 @@ export default function NSAPDataTab() {
       {/* 6. MODAL: ADD RECORD FOR PENDING GP */}
       {/* ========================================================================= */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <div className="flex items-center gap-2 text-emerald-800 font-bold text-base">
-                <Plus className="w-5 h-5 text-emerald-600" />
-                <span>नया NSAP सोशल ऑडिट डेटा दर्ज करें</span>
+        <SocialAuditPortal>
+          <div 
+            className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsAddModalOpen(false);
+            }}
+          >
+            <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col">
+              <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0 gap-3">
+                <div className="flex items-center gap-2 text-emerald-800 font-bold text-base min-w-0">
+                  <Plus className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span className="truncate">नया NSAP सोशल ऑडिट डेटा दर्ज करें</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-200/90 hover:bg-rose-100 hover:text-rose-700 text-slate-700 flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-slate-300/60"
+                  title="बंद करें (Close)"
+                  aria-label="बंद करें"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
-              >
-                ✕
-              </button>
-            </div>
 
-            {!isEditMode && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium text-xs">
-                <Lock className="w-4 h-4 text-amber-700 shrink-0" />
-                <span>
-                  <strong>केवल पठन मोड (Read Only):</strong> संपादन मोड बंद है। नया डेटा जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।
-                </span>
-              </div>
-            )}
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                {!isEditMode && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium text-xs">
+                    <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>
+                      <strong>केवल पठन मोड (Read Only):</strong> संपादन मोड बंद है। नया डेटा जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।
+                    </span>
+                  </div>
+                )}
 
-            <form onSubmit={handleSaveGpRecord} className="space-y-4">
+                <form onSubmit={handleSaveGpRecord} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">ग्राम पंचायत चुनें (47 NSAP में से):</label>
                 <select
@@ -2079,44 +2104,56 @@ export default function NSAPDataTab() {
             </form>
           </div>
         </div>
-      )}
+      </div>
+      </SocialAuditPortal>
+    )}
 
       {/* ========================================================================= */}
       {/* 7. MODAL: EDIT GP DATA (FEATURE REQUEST 1) */}
       {/* ========================================================================= */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <div className="flex items-center gap-2 text-blue-800 font-bold text-base">
-                {isEditMode ? (
-                  <Edit3 className="w-5 h-5 text-blue-600" />
-                ) : (
-                  <Lock className="w-5 h-5 text-slate-500" />
+        <SocialAuditPortal>
+          <div 
+            className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsEditModalOpen(false);
+            }}
+          >
+            <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col">
+              <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0 gap-3">
+                <div className="flex items-center gap-2 text-blue-800 font-bold text-base min-w-0">
+                  {isEditMode ? (
+                    <Edit3 className="w-5 h-5 text-blue-600 shrink-0" />
+                  ) : (
+                    <Lock className="w-5 h-5 text-slate-500 shrink-0" />
+                  )}
+                  <span className="truncate">
+                    {isEditMode ? 'ग्राम पंचायत सोशल ऑडिट डेटा एडिट करें: ' : 'ग्राम पंचायत सोशल ऑडिट विवरण (केवल पठन): '}
+                    {editingGpName}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-200/90 hover:bg-rose-100 hover:text-rose-700 text-slate-700 flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-slate-300/60"
+                  title="बंद करें (Close)"
+                  aria-label="बंद करें"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                {!isEditMode && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium text-xs">
+                    <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>
+                      <strong>केवल पठन मोड (Read Only):</strong> संपादन मोड बंद है। बैठक तिथि या पेंशन डेटा में बदलाव करने के लिए कृपया पहले Header से Edit Mode ON करें।
+                    </span>
+                  </div>
                 )}
-                <span>
-                  {isEditMode ? 'ग्राम पंचायत सोशल ऑडिट डेटा एडिट करें: ' : 'ग्राम पंचायत सोशल ऑडिट विवरण (केवल पठन): '}
-                  {editingGpName}
-                </span>
-              </div>
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
-              >
-                ✕
-              </button>
-            </div>
 
-            {!isEditMode && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium text-xs">
-                <Lock className="w-4 h-4 text-amber-700 shrink-0" />
-                <span>
-                  <strong>केवल पठन मोड (Read Only):</strong> संपादन मोड बंद है। बैठक तिथि या पेंशन डेटा में बदलाव करने के लिए कृपया पहले Header से Edit Mode ON करें।
-                </span>
-              </div>
-            )}
-
-            <form onSubmit={handleSaveEditGp} className="space-y-4">
+                <form onSubmit={handleSaveEditGp} className="space-y-4">
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1 rounded-xl">
                   ब्लॉक: {editingBlock === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
@@ -2290,28 +2327,39 @@ export default function NSAPDataTab() {
             </form>
           </div>
         </div>
-      )}
+      </div>
+      </SocialAuditPortal>
+    )}
 
       {/* ========================================================================= */}
       {/* 8. MODAL: BATCH EXCEL COPY-PASTE BENEFICIARIES (FEATURE REQUEST 2) */}
       {/* ========================================================================= */}
       {isExcelPasteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <div className="flex items-center gap-2.5 text-teal-800 font-bold text-base">
-                <ClipboardPaste className="w-5 h-5 text-teal-600" />
-                <span>एक्सेल से सीधे कॉपी-पेस्ट आयात करें (Batch Import)</span>
+        <SocialAuditPortal>
+          <div 
+            className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsExcelPasteModalOpen(false);
+            }}
+          >
+            <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
+              <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0 gap-3">
+                <div className="flex items-center gap-2.5 text-teal-800 font-bold text-base min-w-0">
+                  <ClipboardPaste className="w-5 h-5 text-teal-600 shrink-0" />
+                  <span className="truncate">एक्सेल से सीधे कॉपी-पेस्ट आयात करें (Batch Import)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsExcelPasteModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-200/90 hover:bg-rose-100 hover:text-rose-700 text-slate-700 flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-slate-300/60"
+                  title="बंद करें (Close)"
+                  aria-label="बंद करें"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setIsExcelPasteModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
-              >
-                ✕
-              </button>
-            </div>
 
-            <div className="space-y-4">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* Target GP selection */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -2556,26 +2604,38 @@ export default function NSAPDataTab() {
             </div>
           </div>
         </div>
-      )}
+      </SocialAuditPortal>
+    )}
 
       {/* ========================================================================= */}
       {/* 9. MODAL: ADD BENEFICIARY TO GP */}
       {/* ========================================================================= */}
       {isBenModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <div className="flex items-center gap-2 text-emerald-800 font-bold text-base">
-                <Plus className="w-5 h-5 text-emerald-600" />
-                <span>लाभार्थी जोड़ें (कारण सहित)</span>
+        <SocialAuditPortal>
+          <div 
+            className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsBenModalOpen(false);
+            }}
+          >
+            <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col">
+              <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0 gap-3">
+                <div className="flex items-center gap-2 text-emerald-800 font-bold text-base min-w-0">
+                  <Plus className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span className="truncate">लाभार्थी जोड़ें (कारण सहित)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsBenModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-200/90 hover:bg-rose-100 hover:text-rose-700 text-slate-700 flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-slate-300/60"
+                  title="बंद करें (Close)"
+                  aria-label="बंद करें"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setIsBenModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
-              >
-                ✕
-              </button>
-            </div>
+
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
 
             <form onSubmit={handleSaveSingleBeneficiary} className="space-y-4">
               <div>
@@ -2670,7 +2730,9 @@ export default function NSAPDataTab() {
             </form>
           </div>
         </div>
-      )}
+      </div>
+      </SocialAuditPortal>
+    )}
     </div>
   );
 }

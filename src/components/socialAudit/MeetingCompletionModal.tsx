@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { SocialAuditRecord } from '@/types/socialAudit';
 import { validateMeetingCompletionDate } from '@/lib/socialAuditAuth';
@@ -32,6 +33,17 @@ export default function MeetingCompletionModal({
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !loading) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, loading, onClose]);
 
   if (!isOpen || !record) return null;
 
@@ -102,40 +114,48 @@ export default function MeetingCompletionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <SocialAuditPortal>
       <div 
-        className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
+        className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto"
+        onClick={(e) => {
+          if (e.target === e.currentTarget && !loading) onClose();
+        }}
       >
-        {/* Header */}
-        <div className="px-5 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-xs">
-              <CheckCircle2 className="w-5 h-5 text-white" />
+        <div 
+          className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-150"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
+          {/* Header */}
+          <div className="px-5 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between shrink-0 gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-xs shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <h3 id="modal-title" className="text-base font-black tracking-tight leading-none truncate">
+                  बैठक सम्पन्न करें?
+                </h3>
+                <p className="text-[11px] text-emerald-100 font-medium mt-1 truncate">
+                  सोशल ऑडिट बैठक सम्पन्न करने हेतु आधिकारिक पुष्टि
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 id="modal-title" className="text-base font-black tracking-tight leading-none">
-                बैठक सम्पन्न करें?
-              </h3>
-              <p className="text-[11px] text-emerald-100 font-medium mt-1">
-                सोशल ऑडिट बैठक सम्पन्न करने हेतु आधिकारिक पुष्टि
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-white/30"
+              title="बंद करें (Close)"
+              aria-label="बंद करें"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="p-1.5 rounded-xl hover:bg-white/20 text-white/90 hover:text-white transition-colors"
-            title="बंद करें"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Content Body */}
-        <div className="p-5 space-y-4 text-xs">
+          {/* Content Body */}
+          <div className="p-5 space-y-4 text-xs overflow-y-auto flex-1">
           
           {/* Main confirmation alert message */}
           <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs leading-relaxed font-semibold">
@@ -274,6 +294,7 @@ export default function MeetingCompletionModal({
         </div>
       </div>
     </div>
+    </SocialAuditPortal>
   );
 }
 

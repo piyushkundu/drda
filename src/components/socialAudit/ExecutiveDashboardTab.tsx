@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore, SocialAuditTab } from '@/stores/socialAuditStore';
 import { SocialAuditRecord, AuditBlock } from '@/types/socialAudit';
 import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
@@ -52,6 +53,17 @@ export default function ExecutiveDashboardTab() {
   const [modalPage, setModalPage] = useState<number>(1);
   const modalPageSize = 12;
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && activeModal) {
+        setActiveModal(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeModal]);
 
   // Helper to format date in Hindi DD/MM/YYYY
   const formatDateHi = (dateStr: string) => {
@@ -1470,39 +1482,46 @@ export default function ExecutiveDashboardTab() {
       {/* SECTION F: KPI CLICK DRILLDOWN DETAIL MODAL */}
       {/* ========================================================================= */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <div>
-                <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
-                  <span>
-                    {activeModal === 'all' && 'समस्त 88 ग्राम पंचायतें (Total Gram Panchayats)'}
-                    {activeModal === 'completed' && `सम्पन्न सोशल ऑडिट बैठकें (${metrics.completedCount} ग्राम पंचायतें)`}
-                    {activeModal === 'upcoming' && `आगामी सोशल ऑडिट बैठकें (${metrics.upcomingCount} ग्राम पंचायतें)`}
-                    {activeModal === 'pending' && `आज तक देय लंबित बैठकें (${metrics.duePendingCount} ग्राम पंचायतें)`}
-                    {activeModal === 'nirnay' && `पंचायत निर्णय ऐप सत्यापित बैठकें (${metrics.nirnayCapturedCount} ग्राम पंचायतें)`}
-                    {activeModal === 'mis' && `MIS पोर्टल पर फीडेड बैठकें (${metrics.misFedCount} / ${metrics.completedCount} सम्पन्न ग्राम पंचायतें - ${metrics.misFedPercent}%)`}
-                    {activeModal === 'nsap' && `NSAP पेंशन डेटा रजिस्टर (${metrics.nsapRecordedCount} ग्राम पंचायतें / ${metrics.totalBeneficiaries} पेंशनर्स)`}
-                    {activeModal === 'amended' && `संशोधित रोस्टर सोशल ऑडिट बैठकें (${metrics.amendedCount} ग्राम पंचायतें)`}
-                    {activeModal === 'original-proposed' && `मूल रोस्टर अनुसार प्रस्तावित बैठकें (${metrics.originalProposedUpToDateCount} ग्राम पंचायतें)`}
-                  </span>
-                </h3>
-                <p className="text-xs text-slate-500">
-                  {activeModal === 'amended'
-                    ? `यदि रोस्टर में संशोधन नहीं होता तो आज तक ${metrics.originalProposedUpToDateCount} बैठकें प्रस्तावित थीं। कुल ${metrics.amendedCount} संशोधित (सम्पन्न: ${metrics.amendedCompletedCount}, आगामी खिसकीं: ${metrics.amendedShiftedToFutureCount})`
-                    : `दिनांक ${formatDateHi(asOfDate)} के अनुसार वास्तविक शासकीय रिकॉर्ड`}
-                </p>
-              </div>
+        <SocialAuditPortal>
+          <div 
+            className="fixed inset-0 z-[200] bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-150"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setActiveModal(null);
+            }}
+          >
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xl w-full max-w-4xl max-h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 my-auto">
+              {/* Modal Header */}
+              <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0 gap-3">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                    <span className="truncate">
+                      {activeModal === 'all' && 'समस्त 88 ग्राम पंचायतें (Total Gram Panchayats)'}
+                      {activeModal === 'completed' && `सम्पन्न सोशल ऑडिट बैठकें (${metrics.completedCount} ग्राम पंचायतें)`}
+                      {activeModal === 'upcoming' && `आगामी सोशल ऑडिट बैठकें (${metrics.upcomingCount} ग्राम पंचायतें)`}
+                      {activeModal === 'pending' && `आज तक देय लंबित बैठकें (${metrics.duePendingCount} ग्राम पंचायतें)`}
+                      {activeModal === 'nirnay' && `पंचायत निर्णय ऐप सत्यापित बैठकें (${metrics.nirnayCapturedCount} ग्राम पंचायतें)`}
+                      {activeModal === 'mis' && `MIS पोर्टल पर फीडेड बैठकें (${metrics.misFedCount} / ${metrics.completedCount} सम्पन्न ग्राम पंचायतें - ${metrics.misFedPercent}%)`}
+                      {activeModal === 'nsap' && `NSAP पेंशन डेटा रजिस्टर (${metrics.nsapRecordedCount} ग्राम पंचायतें / ${metrics.totalBeneficiaries} पेंशनर्स)`}
+                      {activeModal === 'amended' && `संशोधित रोस्टर सोशल ऑडिट बैठकें (${metrics.amendedCount} ग्राम पंचायतें)`}
+                      {activeModal === 'original-proposed' && `मूल रोस्टर अनुसार प्रस्तावित बैठकें (${metrics.originalProposedUpToDateCount} ग्राम पंचायतें)`}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 truncate sm:whitespace-normal mt-0.5">
+                    {activeModal === 'amended'
+                      ? `यदि रोस्टर में संशोधन नहीं होता तो आज तक ${metrics.originalProposedUpToDateCount} बैठकें प्रस्तावित थीं। कुल ${metrics.amendedCount} संशोधित (सम्पन्न: ${metrics.amendedCompletedCount}, आगामी खिसकीं: ${metrics.amendedShiftedToFutureCount})`
+                      : `दिनांक ${formatDateHi(asOfDate)} के अनुसार वास्तविक शासकीय रिकॉर्ड`}
+                  </p>
+                </div>
 
-              <button
-                onClick={() => setActiveModal(null)}
-                className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center transition-colors"
-                title="बंद करें"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+                <button
+                  onClick={() => setActiveModal(null)}
+                  className="w-9 h-9 rounded-full bg-slate-200/90 hover:bg-rose-100 hover:text-rose-700 text-slate-700 flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-slate-300/60"
+                  title="बंद करें (Close)"
+                  aria-label="बंद करें"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
             {/* Original Proposed Overview Tiles */}
             {activeModal === 'original-proposed' && (
@@ -1876,6 +1895,7 @@ export default function ExecutiveDashboardTab() {
             </div>
           </div>
         </div>
+        </SocialAuditPortal>
       )}
 
     </div>

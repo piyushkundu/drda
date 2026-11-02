@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { 
   Search, X, Building2, User, Calendar, Smartphone, 
@@ -243,45 +244,52 @@ export default function GlobalSearchModal() {
   if (!isGlobalSearchOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[130] flex items-start justify-center pt-14 sm:pt-20 px-3 sm:px-4">
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
-        onClick={() => setIsGlobalSearchOpen(false)}
-      />
+    <SocialAuditPortal>
+      <div className="fixed inset-0 z-[200] flex items-start justify-center pt-14 sm:pt-20 px-3 sm:px-4">
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+          onClick={() => setIsGlobalSearchOpen(false)}
+        />
 
-      {/* Spotlight Search Dialog */}
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-10 animate-in fade-in zoom-in-95 duration-150 max-h-[80vh]">
-        
-        {/* Search Input Bar */}
-        <div className="p-3.5 sm:p-4 border-b border-slate-200 flex items-center gap-3 bg-slate-50/80">
-          <Search className="w-5 h-5 text-blue-700 shrink-0" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setSelectedIndex(0);
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="ग्राम पंचायत, BRP, बैठक तिथि, निर्णय, MIS या NSAP लाभार्थी खोजें..."
-            className="w-full bg-transparent text-sm sm:text-base text-slate-900 font-semibold outline-none placeholder:text-slate-400"
-          />
-          {query ? (
+        {/* Spotlight Search Dialog */}
+        <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-10 animate-in fade-in zoom-in-95 duration-150 max-h-[80vh]">
+          
+          {/* Search Input Bar */}
+          <div className="p-3.5 sm:p-4 border-b border-slate-200 flex items-center gap-3 bg-slate-50/80 shrink-0">
+            <Search className="w-5 h-5 text-blue-700 shrink-0" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setSelectedIndex(0);
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="ग्राम पंचायत, BRP, बैठक तिथि, निर्णय, MIS या NSAP लाभार्थी खोजें..."
+              className="w-full bg-transparent text-sm sm:text-base text-slate-900 font-semibold outline-none placeholder:text-slate-400"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+                title="साफ करें"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
             <button
-              onClick={() => setQuery('')}
-              className="p-1 rounded-lg hover:bg-slate-200 text-slate-500"
-              title="साफ करें"
+              type="button"
+              onClick={() => setIsGlobalSearchOpen(false)}
+              className="w-8 h-8 rounded-full bg-slate-200/90 hover:bg-rose-100 hover:text-rose-700 text-slate-700 flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-slate-300/60 ml-1"
+              title="बंद करें (Close)"
+              aria-label="बंद करें"
             >
               <X className="w-4 h-4" />
             </button>
-          ) : (
-            <span className="hidden sm:inline-block text-[11px] font-mono text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded border border-slate-300/50">
-              ESC
-            </span>
-          )}
-        </div>
+          </div>
 
         {/* Results Container */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin max-h-[60vh]">
@@ -400,6 +408,7 @@ export default function GlobalSearchModal() {
 
       </div>
     </div>
+    </SocialAuditPortal>
   );
 }
 

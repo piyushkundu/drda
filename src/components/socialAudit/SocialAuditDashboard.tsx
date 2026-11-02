@@ -42,7 +42,7 @@ export default function SocialAuditDashboard() {
       <GlobalBRPFilterBar />
 
       {/* 2. Main Shell: Collapsible Left Sidebar + Main Content Area */}
-      <div className="flex flex-1 overflow-hidden relative w-full min-w-0 z-10">
+      <div className="flex flex-1 overflow-hidden relative w-full min-w-0">
         {/* Collapsible Left Sidebar (desktop static, mobile drawer) */}
         <SocialAuditSidebar
           isCollapsed={isSidebarCollapsed}

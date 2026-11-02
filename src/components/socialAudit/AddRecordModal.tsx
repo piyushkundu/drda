@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { AuditBlock, AuditStatus } from '@/types/socialAudit';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
@@ -24,6 +25,17 @@ export default function AddRecordModal() {
   const [hasMGNREGA, setHasMGNREGA] = useState(true);
   const [hasPMAYG, setHasPMAYG] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isAddModalOpen) {
+        closeAddModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAddModalOpen, closeAddModal]);
 
   if (!isAddModalOpen) return null;
 
@@ -122,22 +134,31 @@ export default function AddRecordModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden my-8">
-        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Plus className="w-4 h-4 text-emerald-600" />
-            <span>नई ग्राम सभा बैठक रोस्टर जोड़ें</span>
-          </h3>
-          <button
-            onClick={closeAddModal}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <SocialAuditPortal>
+      <div 
+        className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) closeAddModal();
+        }}
+      >
+        <div className="bg-white border border-slate-200/90 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col">
+          <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0 gap-3">
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-emerald-600" />
+              <span>नई ग्राम सभा बैठक रोस्टर जोड़ें</span>
+            </h3>
+            <button
+              type="button"
+              onClick={closeAddModal}
+              className="w-9 h-9 rounded-full bg-slate-200/90 hover:bg-rose-100 hover:text-rose-700 text-slate-700 flex items-center justify-center transition-colors shrink-0 shadow-xs cursor-pointer border border-slate-300/60"
+              title="बंद करें (Close)"
+              aria-label="बंद करें"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+          <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
           {!isEditMode && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-center gap-2 font-medium">
               <Lock className="w-4 h-4 text-amber-700 shrink-0" />
@@ -311,5 +332,6 @@ export default function AddRecordModal() {
         </form>
       </div>
     </div>
+    </SocialAuditPortal>
   );
 }
