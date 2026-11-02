@@ -517,62 +517,40 @@ export default function ExecutiveDashboardTab() {
           {/* KPI 3: Completed Audits */}
           <div
             onClick={() => { setActiveModal('completed'); setModalSearch(''); setModalBlockFilter('all'); }}
-            className="social-audit-kpi bg-gradient-to-b from-white to-emerald-50/20 p-4.5 rounded-2xl border border-emerald-200 hover:border-emerald-400 cursor-pointer group flex flex-col justify-between"
+            className="social-audit-kpi bg-gradient-to-b from-white to-emerald-50/20 p-4.5 rounded-2xl border border-emerald-200 hover:border-emerald-400 cursor-pointer group"
           >
-            <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-950">सम्पन्न सोशल ऑडिट बैठकें</span>
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-105 transition-transform">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-emerald-900 tracking-tight font-mono">
-                  {metrics.completedCount}
-                </span>
-                <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
-                  {metrics.completedPercent}%
-                </span>
-              </div>
-
-              {/* Comparative Original vs Amended Insights Box */}
-              <div className="mt-2.5 pt-2 border-t border-emerald-100 space-y-1.5 text-xs">
-                <div className="flex items-center justify-between text-slate-600 font-medium">
-                  <span title="यदि रोस्टर में संशोधन नहीं होता तो आज तक 55 बैठकें प्रस्तावित थीं">
-                    यदि संशोधन न होता:
-                  </span>
-                  <span className="font-extrabold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 font-mono text-[11px]">
-                    {metrics.originalProposedUpToDateCount} प्रस्तावित
-                  </span>
-                </div>
-
-                {/* Clickable pill to inspect amended panchayats */}
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveModal('amended');
-                    setModalSearch('');
-                    setModalBlockFilter('all');
-                  }}
-                  className="flex items-center justify-between bg-amber-50 hover:bg-amber-100/90 text-amber-900 border border-amber-200/90 px-2.5 py-1.5 rounded-xl cursor-pointer transition-all group/amend shadow-2xs"
-                  title="क्लिक करें: सभी 10 संशोधित ग्राम पंचायतों की सूची एवं मूल/नवीन तिथियां देखें"
-                >
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
-                    <span>कुल संशोधित: <strong className="text-amber-950 font-black">{metrics.amendedCount} GP</strong></span>
-                    <span className="text-[10px] text-amber-700 font-medium">
-                      ({metrics.amendedShiftedToFutureCount} आगे खिसकीं)
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-black text-amber-800 group-hover/amend:text-amber-950 underline flex items-center gap-0.5 shrink-0">
-                    <span>देखें</span>
-                    <ArrowUpRight className="w-3 h-3" />
-                  </span>
-                </div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-950">सम्पन्न सोशल ऑडिट बैठकें</span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-105 transition-transform">
+                <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
-
-            <div className="text-xs text-slate-500 mt-2.5 flex items-center justify-between pt-2 border-t border-slate-100">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-3xl font-black text-emerald-900 tracking-tight font-mono">
+                {metrics.completedCount}
+              </span>
+              <span className="text-base font-bold text-slate-400 font-mono" title="यदि संशोधन न होता तो आज तक 55 बैठकें प्रस्तावित थीं">
+                / {metrics.originalProposedUpToDateCount}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveModal('amended');
+                  setModalSearch('');
+                  setModalBlockFilter('all');
+                }}
+                className="text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded-full border border-amber-300 transition-colors flex items-center gap-0.5 cursor-pointer shadow-2xs"
+                title="क्लिक करें: संशोधित रोस्टर विवरण (3 बैठकें आगे खिसकीं / कुल 10 संशोधित)"
+              >
+                <span>सं० -{metrics.amendedShiftedToFutureCount}</span>
+                <ArrowUpRight className="w-3 h-3 text-amber-800" />
+              </button>
+              <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 ml-auto">
+                {metrics.completedPercent}%
+              </span>
+            </div>
+            <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
               <span>बागपत: <strong className="text-slate-800">{metrics.baghpatCompletedCount}</strong> | बड़ौत: <strong className="text-slate-800">{metrics.barautCompletedCount}</strong></span>
               <span className="text-[11px] text-emerald-700 font-bold group-hover:underline">सूची देखें →</span>
             </div>
