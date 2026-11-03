@@ -139,6 +139,15 @@ export default function SocialAuditSidebar({
       iconColor: 'text-violet-700 bg-violet-50 border-violet-200',
     },
     {
+      id: 'nsap-workbook',
+      label: 'NSAP एक्सेल वर्कबुक',
+      sublabel: 'Official 24-Column FortuneSheet',
+      icon: FileSpreadsheet,
+      badge: '88 GP',
+      badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+      iconColor: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+    },
+    {
       id: 'roster',
       label: 'टीम एवं BRP रोस्टर',
       sublabel: 'Field Officers & BRP Directory',

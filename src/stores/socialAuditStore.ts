@@ -35,6 +35,7 @@ export type SocialAuditTab =
   | 'mis-feeding' 
   | 'nsap-data' 
   | 'nsap-report' 
+  | 'nsap-workbook'
   | 'roster' 
   | 'reports' 
   | 'activity-log' 
@@ -117,6 +118,7 @@ interface SocialAuditState {
   resetToBaseline: () => void;
 
   // NSAP Detailed Beneficiary Data Management Actions
+  setNsapRecords: (records: NSAPGramPanchayatData[]) => void;
   addNsapRecord: (data: NSAPGramPanchayatData) => void;
   updateNsapRecord: (id: string, updates: Partial<NSAPGramPanchayatData>) => void;
   deleteNsapRecord: (id: string) => void;
@@ -871,6 +873,27 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       // NSAP Detailed Beneficiary Actions
+      setNsapRecords: (newRecords: NSAPGramPanchayatData[]) => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: NSAP डेटा अद्यतन करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return;
+        }
+
+        set({ nsapRecords: newRecords });
+        get().logActivity({
+          module: 'nsap',
+          recordId: 'nsap-workbook-batch',
+          gpName: 'सम्पूर्ण जनपद',
+          actionType: 'update',
+          actionLabel: 'NSAP वर्कबुक डेटा सिंक',
+          userName: get().currentUser.name || 'प्रशासनिक अधिकारी',
+          details: `NSAP एक्सेल वर्कबुक से ${newRecords.length} ग्राम पंचायतों का डेटा अद्यतन किया गया।`
+        });
+        notifyStoreChange(get(), true);
+      },
+
       addNsapRecord: (data: NSAPGramPanchayatData) => {
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {

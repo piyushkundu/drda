@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import SocialAuditCompactHeader from './SocialAuditCompactHeader';
 import GlobalBRPFilterBar from './GlobalBRPFilterBar';
@@ -20,6 +21,15 @@ import AddRecordModal from './AddRecordModal';
 import GramPanchayatProfilePanel from './GramPanchayatProfilePanel';
 import GlobalSearchModal from './GlobalSearchModal';
 import MeetingCompletionModal from './MeetingCompletionModal';
+
+const NSAPWorkbook = dynamic(() => import('./workbook/NSAPWorkbook'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center bg-gray-50 text-gray-500 font-medium">
+      NSAP आधिकारिक एक्सेल वर्कबुक लोड हो रही है...
+    </div>
+  )
+});
 
 export default function SocialAuditDashboard() {
   const { activeTab, selectedRecordForCompletion, closeCompletionModal } = useSocialAuditStore();
@@ -87,6 +97,11 @@ export default function SocialAuditDashboard() {
             {/* 7. NSAP पेंशन रिपोर्ट (मासिक प्रारूप) */}
             {activeTab === 'nsap-report' && (
               <NSAPReportTab />
+            )}
+
+            {/* 7.5. NSAP आधिकारिक एक्सेल वर्कबुक (24 स्तम्भ FortuneSheet) */}
+            {activeTab === 'nsap-workbook' && (
+              <NSAPWorkbook />
             )}
 
             {/* 8. टीम एवं बी०आर०पी० रोस्टर */}

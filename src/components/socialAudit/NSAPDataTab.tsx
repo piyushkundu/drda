@@ -34,7 +34,8 @@ export default function NSAPDataTab() {
     deleteNsapRecord,
     addNsapBeneficiary,
     addNsapBeneficiariesBatch,
-    deleteNsapBeneficiary
+    deleteNsapBeneficiary,
+    setActiveTab
   } = useSocialAuditStore();
 
   // Active section view mode: 'completed' | 'pending' | 'report' | 'beneficiaries' | 'upcoming'
@@ -724,6 +725,15 @@ export default function NSAPDataTab() {
 
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              onClick={() => setActiveTab('nsap-workbook')}
+              className="px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm flex items-center gap-2 transition-all bg-emerald-700 hover:bg-emerald-800 text-white transform active:scale-95 cursor-pointer"
+              title="24-स्तम्भ आधिकारिक NSAP एक्सेल वर्कबुक खोलें"
+            >
+              <FileSpreadsheet className="w-4 h-4 stroke-[2.5]" />
+              <span>NSAP एक्सेल वर्कबुक (88 GP)</span>
+            </button>
+
             {/* Direct Excel Paste Button (Visible only in Edit Mode) */}
             {isEditMode && (
               <button

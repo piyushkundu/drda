@@ -10,11 +10,11 @@ import { getDelhiDateString, formatDelhiDateHindi } from '@/lib/delhiTime';
 import { 
   FileText, Calendar, Download, Printer, CheckCircle2, 
   Layers, ArrowUpRight, ShieldCheck, Landmark, Check,
-  AlertTriangle, Filter, Eye, Phone, Users, Shield, Edit3, Lock
+  AlertTriangle, Filter, Eye, Phone, Users, Shield, Edit3, Lock, FileSpreadsheet
 } from 'lucide-react';
 
 export default function NSAPReportTab() {
-  const { records, selectedBRP, asOfDate, setAsOfDate, fontViewMode, openEditModal, isEditMode } = useSocialAuditStore();
+  const { records, selectedBRP, asOfDate, setAsOfDate, fontViewMode, openEditModal, isEditMode, setActiveTab } = useSocialAuditStore();
   const [downloading, setDownloading] = useState(false);
   const [amendedFilter, setAmendedFilter] = useState<'nsap' | 'uptoDate' | 'all10'>('nsap');
   const [amendedBlockFilter, setAmendedBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
@@ -136,6 +136,15 @@ export default function NSAPReportTab() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setActiveTab('nsap-workbook')}
+              className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
+              title="24-स्तम्भ आधिकारिक NSAP एक्सेल वर्कबुक खोलें"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>NSAP एक्सेल वर्कबुक (88 GP)</span>
+            </button>
+
             <button
               onClick={() => handleDownload('krutidev')}
               disabled={downloading}
