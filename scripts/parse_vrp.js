@@ -136,16 +136,13 @@ const raw = `14,UP-VRP-45009,AMARDEEP,Male,Secondary(upto 1oth std),BAGHPAT,9719
 78,UP-VRP-28236,yogendra singh,Male,Senior Secondary(upto 12th std),BAGHPAT,9634686390,-,-,Working,Verified,Edit
 32,UP-VRP-44493,YOGITA SHARMA,Female,Secondary(upto 1oth std),BAGHPAT,6397137576,-,-,Working,Verified,Edit`;
 
-const baghpatPhones = new Set([
-  "9897985142", "8923046436", "8057991090", "8445047834", 
-  "9761466719", "9808921164", "9897006306", "9997624355", "8979816474"
-]);
+const baghpatTeamA = new Set(["9897985142", "8923046436", "8057991090"]);
+const baghpatTeamB = new Set(["8445047834", "9761466719", "9808921164"]);
+const baghpatTeamC = new Set(["9897006306", "9997624355", "8979816474"]);
 
-const barautPhones = new Set([
-  "9811084457", "9520294933", "7956911245", "8171572225", 
-  "9897691664", "8923804622", "9720719843", "6397137576", 
-  "9410814975", "7895960603", "9548918248", "8077553432"
-]);
+const barautTeamA = new Set(["9811084457", "9520294933", "7956911245", "8171572225"]);
+const barautTeamB = new Set(["9897691664", "8923804622", "9720719843", "6397137576"]);
+const barautTeamC = new Set(["9410814975", "7895960603", "9548918248", "8077553432"]);
 
 // Helper for clean Hindi phonetic name conversion
 const hindiNameMap = {
@@ -298,8 +295,27 @@ const records = lines.map((line, idx) => {
   const aadharStatus = p[10] && p[10].trim().toLowerCase() === "verified" ? "Verified" : "Not Verified";
 
   let assignedBlock = null;
-  if (baghpatPhones.has(mobileNo)) assignedBlock = "Baghpat";
-  else if (barautPhones.has(mobileNo)) assignedBlock = "Baraut";
+  let assignedSubTeam = null;
+
+  if (baghpatTeamA.has(mobileNo)) {
+    assignedBlock = "Baghpat";
+    assignedSubTeam = "Team A";
+  } else if (baghpatTeamB.has(mobileNo)) {
+    assignedBlock = "Baghpat";
+    assignedSubTeam = "Team B";
+  } else if (baghpatTeamC.has(mobileNo)) {
+    assignedBlock = "Baghpat";
+    assignedSubTeam = "Team C";
+  } else if (barautTeamA.has(mobileNo)) {
+    assignedBlock = "Baraut";
+    assignedSubTeam = "Team A";
+  } else if (barautTeamB.has(mobileNo)) {
+    assignedBlock = "Baraut";
+    assignedSubTeam = "Team B";
+  } else if (barautTeamC.has(mobileNo)) {
+    assignedBlock = "Baraut";
+    assignedSubTeam = "Team C";
+  }
 
   const nameHindi = hindiNameMap[name] || name;
 
@@ -317,13 +333,18 @@ const records = lines.map((line, idx) => {
     dateOfBirth,
     employeeStatus,
     aadharStatus,
-    assignedBlock
+    assignedBlock,
+    assignedSubTeam
   };
 });
 
 console.log("Total records:", records.length);
-console.log("Baghpat assigned:", records.filter(r => r.assignedBlock === "Baghpat").length);
-console.log("Baraut assigned:", records.filter(r => r.assignedBlock === "Baraut").length);
+console.log("Baghpat Team A:", records.filter(r => r.assignedBlock === "Baghpat" && r.assignedSubTeam === "Team A").length);
+console.log("Baghpat Team B:", records.filter(r => r.assignedBlock === "Baghpat" && r.assignedSubTeam === "Team B").length);
+console.log("Baghpat Team C:", records.filter(r => r.assignedBlock === "Baghpat" && r.assignedSubTeam === "Team C").length);
+console.log("Baraut Team A:", records.filter(r => r.assignedBlock === "Baraut" && r.assignedSubTeam === "Team A").length);
+console.log("Baraut Team B:", records.filter(r => r.assignedBlock === "Baraut" && r.assignedSubTeam === "Team B").length);
+console.log("Baraut Team C:", records.filter(r => r.assignedBlock === "Baraut" && r.assignedSubTeam === "Team C").length);
 console.log("Reserve pool:", records.filter(r => !r.assignedBlock).length);
 
 const outContent = `// ============================================================================

@@ -213,6 +213,8 @@ export interface ReportFilterState {
 // Village Resource Persons (VRP) & Team Members Definitions
 // ============================================================================
 
+export type VRPTeamCode = 'Team A' | 'Team B' | 'Team C';
+
 export interface VRPMember {
   id: string;
   srNo: number;
@@ -228,6 +230,7 @@ export interface VRPMember {
   employeeStatus: 'Working' | 'Discontinued';
   aadharStatus: 'Verified' | 'Not Verified';
   assignedBlock?: 'Baghpat' | 'Baraut' | null;
+  assignedSubTeam?: VRPTeamCode | null;
   assignedRole?: string;
   assignedDate?: string;
 }

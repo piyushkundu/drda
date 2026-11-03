@@ -96,7 +96,12 @@ export async function exportVRPRosterExcel(
 
   // Data rows
   members.forEach((m, idx) => {
-    const blockText = m.assignedBlock === 'Baghpat' ? 'बागपत (सक्रिय)' : m.assignedBlock === 'Baraut' ? 'बड़ौत (सक्रिय)' : 'रिज़र्व पूल';
+    const subTeamLabel = m.assignedSubTeam ? ` - ${m.assignedSubTeam}` : '';
+    const blockText = m.assignedBlock === 'Baghpat' 
+      ? `बागपत (${m.assignedSubTeam || 'सक्रिय टीम'})` 
+      : m.assignedBlock === 'Baraut' 
+      ? `बड़ौत (${m.assignedSubTeam || 'सक्रिय टीम'})` 
+      : 'रिज़र्व पूल';
     const genderText = m.gender === 'Female' ? 'महिला' : 'पुरुष';
     const aadharText = m.aadharStatus === 'Verified' ? 'सत्यापित' : 'लंबित';
     const statusText = m.employeeStatus === 'Working' ? 'कार्यरत' : 'कार्यमुक्त';
@@ -110,7 +115,7 @@ export async function exportVRPRosterExcel(
       genderText,
       m.qualification,
       blockText,
-      m.assignedRole || (m.assignedBlock ? 'सक्रिय VRP' : 'रिज़र्व'),
+      m.assignedRole || (m.assignedBlock ? `सक्रिय VRP${subTeamLabel}` : 'रिज़र्व'),
       aadharText,
       statusText
     ]);

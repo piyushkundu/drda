@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { 
   SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, 
   PanchayatNirnayStatus, MisAuditStatus, NSAPGramPanchayatData, NSAPBeneficiaryRecord,
-  SocialAuditActivityLog, VRPMember
+  SocialAuditActivityLog, VRPMember, VRPTeamCode
 } from '@/types/socialAudit';
 import { 
   SocialAuditUser, DEFAULT_DDO_USER, canUserEnableEditMode, 
@@ -129,7 +129,7 @@ interface SocialAuditState {
 
   // VRP (Village Resource Person) / Team Management Actions
   vrpMembers: VRPMember[];
-  assignVRPMember: (vrpId: string, block: AuditBlock, role?: string) => void;
+  assignVRPMember: (vrpId: string, block: AuditBlock, subTeam?: VRPTeamCode | null, role?: string) => void;
   unassignVRPMember: (vrpId: string) => void;
   addVRPMember: (member: Omit<VRPMember, 'id' | 'srNo'>) => void;
   updateVRPMember: (vrpId: string, updates: Partial<VRPMember>) => void;
@@ -1039,15 +1039,17 @@ export const useSocialAuditStore = create<SocialAuditState>()(
         notifyStoreChange(get());
       },
 
-      assignVRPMember: (vrpId: string, block: AuditBlock, role?: string) => {
+      assignVRPMember: (vrpId: string, block: AuditBlock, subTeam?: VRPTeamCode | null, role?: string) => {
         set((state) => {
           const target = state.vrpMembers.find((m) => m.id === vrpId);
           const blockHindi = block === 'Baghpat' ? 'बागपत' : 'बड़ौत';
+          const subTeamName = subTeam || target?.assignedSubTeam || 'Team A';
           const updated = state.vrpMembers.map((m) =>
             m.id === vrpId
               ? {
                   ...m,
                   assignedBlock: block,
+                  assignedSubTeam: subTeamName,
                   assignedRole: role || m.assignedRole || 'सक्रिय VRP सदस्य',
                   assignedDate: getDelhiDateString(),
                 }
@@ -1067,9 +1069,9 @@ export const useSocialAuditStore = create<SocialAuditState>()(
                   userName: state.currentUser.name,
                   userId: state.currentUser.id,
                   timestamp: new Date().toISOString(),
-                  details: `VRP सदस्य को ${blockHindi} विकास खंड की सक्रिय टीम में शामिल किया गया।`,
-                  previousValue: target.assignedBlock ? (target.assignedBlock === 'Baghpat' ? 'बागपत' : 'बड़ौत') : 'रिज़र्व पूल',
-                  newValue: blockHindi,
+                  details: `VRP सदस्य को ${blockHindi} विकास खंड की सक्रिय ${subTeamName} में शामिल किया गया।`,
+                  previousValue: target.assignedBlock ? `${target.assignedBlock === 'Baghpat' ? 'बागपत' : 'बड़ौत'} (${target.assignedSubTeam || 'टीम'})` : 'रिज़र्व पूल',
+                  newValue: `${blockHindi} (${subTeamName})`,
                 },
                 ...state.activityLogs,
               ]
@@ -1085,11 +1087,13 @@ export const useSocialAuditStore = create<SocialAuditState>()(
         set((state) => {
           const target = state.vrpMembers.find((m) => m.id === vrpId);
           const prevBlockHindi = target?.assignedBlock === 'Baghpat' ? 'बागपत' : target?.assignedBlock === 'Baraut' ? 'बड़ौत' : 'सक्रिय टीम';
+          const prevSubTeam = target?.assignedSubTeam ? ` (${target.assignedSubTeam})` : '';
           const updated = state.vrpMembers.map((m) =>
             m.id === vrpId
               ? {
                   ...m,
                   assignedBlock: null,
+                  assignedSubTeam: null,
                   assignedRole: undefined,
                   assignedDate: undefined,
                 }
@@ -1108,8 +1112,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
                   userName: state.currentUser.name,
                   userId: state.currentUser.id,
                   timestamp: new Date().toISOString(),
-                  details: `VRP सदस्य को ${prevBlockHindi} की सक्रिय टीम से हटाकर रिज़र्व पूल में वापस भेजा गया।`,
-                  previousValue: prevBlockHindi,
+                  details: `VRP सदस्य को ${prevBlockHindi}${prevSubTeam} से हटाकर रिज़र्व पूल में वापस भेजा गया।`,
+                  previousValue: `${prevBlockHindi}${prevSubTeam}`,
                   newValue: 'रिज़र्व पूल',
                 },
                 ...state.activityLogs,
@@ -1279,10 +1283,23 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           // Rehydrate VRP members if missing in local storage or merge baseline
           if (!state.vrpMembers || !Array.isArray(state.vrpMembers) || state.vrpMembers.length === 0) {
             state.vrpMembers = INITIAL_VRP_RECORDS;
-          } else if (state.vrpMembers.length < INITIAL_VRP_RECORDS.length) {
-            const existingVrpIds = new Set(state.vrpMembers.map(m => m.id));
-            const missingVrps = INITIAL_VRP_RECORDS.filter(m => !existingVrpIds.has(m.id));
-            state.vrpMembers = [...state.vrpMembers, ...missingVrps];
+          } else {
+            const baseMap = new Map(INITIAL_VRP_RECORDS.map(m => [m.id, m]));
+            // Ensure assignedSubTeam is populated for active members from baseline
+            const updatedMembers = state.vrpMembers.map(m => {
+              const base = baseMap.get(m.id);
+              if (base && !m.assignedSubTeam && m.assignedBlock && base.assignedSubTeam) {
+                return { ...m, assignedSubTeam: base.assignedSubTeam };
+              }
+              return m;
+            });
+            if (updatedMembers.length < INITIAL_VRP_RECORDS.length) {
+              const existingVrpIds = new Set(updatedMembers.map(m => m.id));
+              const missingVrps = INITIAL_VRP_RECORDS.filter(m => !existingVrpIds.has(m.id));
+              state.vrpMembers = [...updatedMembers, ...missingVrps];
+            } else {
+              state.vrpMembers = updatedMembers;
+            }
           }
 
           // If live sync is true (default) or undefined, ensure asOfDate is synced to today's Delhi date

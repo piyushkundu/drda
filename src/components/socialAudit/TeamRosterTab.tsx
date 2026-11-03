@@ -2,14 +2,14 @@
 
 import React, { useState, useMemo } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
-import { VRPMember, AuditBlock } from '@/types/socialAudit';
+import { VRPMember, AuditBlock, VRPTeamCode } from '@/types/socialAudit';
 import { exportVRPRosterExcel } from '@/lib/exportVRPExcel';
 import { matchesBRP } from '@/lib/brpHelper';
 import { 
   Users, Phone, PhoneCall, Copy, Check, Plus, Trash2, Edit3, 
-  UserCheck, Search, Filter, Download, Shield, CheckCircle2, 
+  Search, Filter, Download, Shield, CheckCircle2, 
   AlertCircle, RefreshCw, X, ChevronLeft, ChevronRight, Sparkles,
-  UserPlus, MapPin, Building2, UserX
+  UserPlus, MapPin, Building2, UserX, ArrowRight, Layers
 } from 'lucide-react';
 
 export default function TeamRosterTab() {
@@ -38,6 +38,7 @@ export default function TeamRosterTab() {
 
   // Modal states
   const [assignModalBlock, setAssignModalBlock] = useState<AuditBlock | null>(null);
+  const [assignModalSubTeam, setAssignModalSubTeam] = useState<VRPTeamCode>('Team A');
   const [assignSearch, setAssignSearch] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<VRPMember | null>(null);
@@ -51,13 +52,14 @@ export default function TeamRosterTab() {
     gender: 'Male',
     qualification: 'Secondary(upto 10th std)',
     assignedBlock: null,
+    assignedSubTeam: 'Team A',
     aadharStatus: 'Verified',
     employeeStatus: 'Working'
   });
 
   // Master Roster filters & pagination
   const [searchQuery, setSearchQuery] = useState('');
-  const [blockFilter, setBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut' | 'unassigned'>('all');
+  const [blockFilter, setBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut' | 'unassigned' | 'Baghpat_A' | 'Baghpat_B' | 'Baghpat_C' | 'Baraut_A' | 'Baraut_B' | 'Baraut_C'>('all');
   const [genderFilter, setGenderFilter] = useState<'all' | 'Male' | 'Female'>('all');
   const [aadharFilter, setAadharFilter] = useState<'all' | 'Verified' | 'Not Verified'>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -93,6 +95,18 @@ export default function TeamRosterTab() {
     return vrpMembers.filter((m) => m.aadharStatus === 'Verified').length;
   }, [vrpMembers]);
 
+  // Sub-team groups for Baghpat
+  const baghpatTeamA = useMemo(() => vrpMembers.filter(m => m.assignedBlock === 'Baghpat' && m.assignedSubTeam === 'Team A'), [vrpMembers]);
+  const baghpatTeamB = useMemo(() => vrpMembers.filter(m => m.assignedBlock === 'Baghpat' && m.assignedSubTeam === 'Team B'), [vrpMembers]);
+  const baghpatTeamC = useMemo(() => vrpMembers.filter(m => m.assignedBlock === 'Baghpat' && m.assignedSubTeam === 'Team C'), [vrpMembers]);
+  const baghpatUnclassified = useMemo(() => vrpMembers.filter(m => m.assignedBlock === 'Baghpat' && !['Team A', 'Team B', 'Team C'].includes(m.assignedSubTeam || '')), [vrpMembers]);
+
+  // Sub-team groups for Baraut
+  const barautTeamA = useMemo(() => vrpMembers.filter(m => m.assignedBlock === 'Baraut' && m.assignedSubTeam === 'Team A'), [vrpMembers]);
+  const barautTeamB = useMemo(() => vrpMembers.filter(m => m.assignedBlock === 'Baraut' && m.assignedSubTeam === 'Team B'), [vrpMembers]);
+  const barautTeamC = useMemo(() => vrpMembers.filter(m => m.assignedBlock === 'Baraut' && m.assignedSubTeam === 'Team C'), [vrpMembers]);
+  const barautUnclassified = useMemo(() => vrpMembers.filter(m => m.assignedBlock === 'Baraut' && !['Team A', 'Team B', 'Team C'].includes(m.assignedSubTeam || '')), [vrpMembers]);
+
   // Master Roster Filtered List
   const filteredMasterRoster = useMemo(() => {
     return vrpMembers.filter((m) => {
@@ -106,10 +120,16 @@ export default function TeamRosterTab() {
         if (!matchName && !matchPhone && !matchCode && !matchQual) return false;
       }
 
-      // Block filter
+      // Block & Sub-team filter
       if (blockFilter === 'Baghpat' && m.assignedBlock !== 'Baghpat') return false;
       if (blockFilter === 'Baraut' && m.assignedBlock !== 'Baraut') return false;
       if (blockFilter === 'unassigned' && m.assignedBlock !== null) return false;
+      if (blockFilter === 'Baghpat_A' && !(m.assignedBlock === 'Baghpat' && m.assignedSubTeam === 'Team A')) return false;
+      if (blockFilter === 'Baghpat_B' && !(m.assignedBlock === 'Baghpat' && m.assignedSubTeam === 'Team B')) return false;
+      if (blockFilter === 'Baghpat_C' && !(m.assignedBlock === 'Baghpat' && m.assignedSubTeam === 'Team C')) return false;
+      if (blockFilter === 'Baraut_A' && !(m.assignedBlock === 'Baraut' && m.assignedSubTeam === 'Team A')) return false;
+      if (blockFilter === 'Baraut_B' && !(m.assignedBlock === 'Baraut' && m.assignedSubTeam === 'Team B')) return false;
+      if (blockFilter === 'Baraut_C' && !(m.assignedBlock === 'Baraut' && m.assignedSubTeam === 'Team C')) return false;
 
       // Gender filter
       if (genderFilter !== 'all' && m.gender !== genderFilter) return false;
@@ -162,7 +182,8 @@ export default function TeamRosterTab() {
       employeeStatus: newVrpData.employeeStatus || 'Working',
       aadharStatus: newVrpData.aadharStatus || 'Verified',
       assignedBlock: newVrpData.assignedBlock || null,
-      assignedRole: newVrpData.assignedBlock ? 'सक्रिय VRP सदस्य' : undefined
+      assignedSubTeam: newVrpData.assignedBlock ? (newVrpData.assignedSubTeam || 'Team A') : null,
+      assignedRole: newVrpData.assignedBlock ? `सक्रिय VRP (${newVrpData.assignedSubTeam || 'Team A'})` : undefined
     });
 
     setIsAddModalOpen(false);
@@ -174,6 +195,7 @@ export default function TeamRosterTab() {
       gender: 'Male',
       qualification: 'Secondary(upto 10th std)',
       assignedBlock: null,
+      assignedSubTeam: 'Team A',
       aadharStatus: 'Verified',
       employeeStatus: 'Working'
     });
@@ -191,6 +213,7 @@ export default function TeamRosterTab() {
       qualification: editingMember.qualification,
       gender: editingMember.gender,
       assignedBlock: editingMember.assignedBlock,
+      assignedSubTeam: editingMember.assignedBlock ? (editingMember.assignedSubTeam || 'Team A') : null,
       aadharStatus: editingMember.aadharStatus,
       employeeStatus: editingMember.employeeStatus
     });
@@ -284,6 +307,161 @@ export default function TeamRosterTab() {
     return Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length);
   }, [effectiveRecords]);
 
+  // Reusable Sub-team Card Renderer
+  const renderSubTeamCard = (
+    block: AuditBlock,
+    subTeamCode: VRPTeamCode,
+    subTeamHindiName: string,
+    members: VRPMember[],
+    targetCount: number,
+    themeColor: 'emerald' | 'indigo'
+  ) => {
+    const isEmerald = themeColor === 'emerald';
+    const borderClass = isEmerald ? 'border-emerald-200 hover:border-emerald-300' : 'border-indigo-200 hover:border-indigo-300';
+    const headerBg = isEmerald ? 'bg-emerald-50 text-emerald-900 border-emerald-200' : 'bg-indigo-50 text-indigo-900 border-indigo-200';
+    const badgeBg = isEmerald ? 'bg-emerald-600 text-white' : 'bg-indigo-600 text-white';
+    const addBtnColor = isEmerald ? 'text-emerald-700 bg-emerald-100 hover:bg-emerald-200' : 'text-indigo-700 bg-indigo-100 hover:bg-indigo-200';
+
+    return (
+      <div className={`bg-white rounded-xl border ${borderClass} shadow-xs overflow-hidden flex flex-col transition hover:shadow-sm`}>
+        {/* Sub-team Header */}
+        <div className={`px-4 py-3 border-b flex items-center justify-between ${headerBg}`}>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-black px-2 py-0.5 rounded-md ${badgeBg}`}>
+              {subTeamHindiName}
+            </span>
+            <span className="text-xs font-bold text-slate-800">
+              ({subTeamCode})
+            </span>
+            <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-white/80 border border-slate-200 text-slate-700">
+              {members.length} / {targetCount} सदस्य
+            </span>
+          </div>
+
+          <button
+            onClick={() => {
+              setAssignModalBlock(block);
+              setAssignModalSubTeam(subTeamCode);
+              setAssignSearch('');
+            }}
+            className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${addBtnColor}`}
+            title={`${subTeamHindiName} में नया सदस्य जोड़ें`}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>+ सदस्य जोड़ें</span>
+          </button>
+        </div>
+
+        {/* Member Items inside Sub-team */}
+        <div className="p-3.5 space-y-3 flex-1 bg-slate-50/40">
+          {members.length === 0 ? (
+            <div className="text-center py-6 border border-dashed border-slate-200 rounded-lg text-slate-400 text-xs bg-white">
+              इस उप-टीम में वर्तमान में कोई सदस्य नहीं है।
+            </div>
+          ) : (
+            members.map((member, idx) => (
+              <div
+                key={member.id}
+                className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 p-3 shadow-2xs transition group"
+              >
+                {/* Top Row: Index, Emp Code, Badges, Actions */}
+                <div className="flex items-start justify-between gap-1.5 mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-mono text-[11px] font-black flex items-center justify-center">
+                      {idx + 1}
+                    </span>
+                    <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                      {member.empCode}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    {member.aadharStatus === 'Verified' ? (
+                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                        <Check className="w-2.5 h-2.5" />
+                        <span>आधार</span>
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                        लंबित
+                      </span>
+                    )}
+
+                    <button
+                      onClick={() => setEditingMember(member)}
+                      className="p-1 text-slate-400 hover:text-indigo-600 rounded transition cursor-pointer"
+                      title="विवरण संशोधित करें"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (confirm(`क्या आप ${member.nameHindi || member.name} को ${subTeamHindiName} से हटाकर रिज़र्व पूल में भेजना चाहते हैं?`)) {
+                          unassignVRPMember(member.id);
+                        }
+                      }}
+                      className="p-1 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer"
+                      title="टीम से हटाएं"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Member Name */}
+                <div>
+                  <h5 className="text-sm font-black text-slate-900 leading-snug">
+                    {member.nameHindi || member.name}
+                  </h5>
+                  {member.nameHindi && member.name !== member.nameHindi && (
+                    <p className="text-[11px] text-slate-500 font-medium">{member.name}</p>
+                  )}
+                </div>
+
+                {/* Mobile Number Box - Prominently Displayed */}
+                <div className="mt-2 p-1.5 px-2 bg-slate-50 rounded-lg border border-slate-200/80 flex items-center justify-between">
+                  <a
+                    href={`tel:${member.mobileNo}`}
+                    className="flex items-center gap-1.5 text-slate-900 hover:text-blue-700 font-mono font-black text-xs tracking-wide"
+                    title="सीधे कॉल करें"
+                  >
+                    <span className="p-0.5 bg-blue-100 text-blue-700 rounded">
+                      <PhoneCall className="w-3 h-3" />
+                    </span>
+                    <span>{member.mobileNo}</span>
+                  </a>
+
+                  <button
+                    onClick={(e) => handleCopyPhone(member.mobileNo, e)}
+                    className="p-0.5 text-slate-400 hover:text-slate-700 rounded transition cursor-pointer"
+                    title="नंबर कॉपी करें"
+                  >
+                    {copiedPhone === member.mobileNo ? (
+                      <span className="text-[9px] text-emerald-700 font-bold">कॉपी!</span>
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Qualification & Gender tags */}
+                <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
+                  <span className="truncate max-w-[150px]" title={member.qualification}>
+                    {member.qualification}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">
+                    {member.gender === 'Female' ? 'महिला' : 'पुरुष'}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Top Header Card */}
@@ -302,7 +480,7 @@ export default function TeamRosterTab() {
                   </span>
                 </h2>
                 <p className="text-xs md:text-sm text-slate-300 mt-1">
-                  विकास खंड बागपत एवं बड़ौत की सक्रिय सोशल ऑडिट टीमें, VRP कार्मिक पूल (135 सदस्य) एवं BRP पर्यवेक्षण
+                  बागपत (3 टीमें • 3-3 सदस्य) एवं बड़ौत (3 टीमें • 4-4 सदस्य) सक्रिय टीमें, 135 VRP मास्टर पूल एवं BRP रोस्टर
                 </p>
               </div>
             </div>
@@ -329,7 +507,7 @@ export default function TeamRosterTab() {
 
             <button
               onClick={() => {
-                if (confirm('क्या आप VRP रोस्टर को मूल स्थिति (135 रिकॉर्ड) पर रीसेट करना चाहते हैं?')) {
+                if (confirm('क्या आप VRP रोस्टर को मूल स्थिति (135 रिकॉर्ड एवं उप-टीमें) पर रीसेट करना चाहते हैं?')) {
                   resetVRPMembersToBaseline();
                 }
               }}
@@ -346,9 +524,7 @@ export default function TeamRosterTab() {
           <div className="bg-slate-800/80 border border-slate-700 p-3 rounded-xl">
             <div className="text-[11px] text-slate-400 font-medium">कुल VRP कार्मिक</div>
             <div className="text-xl md:text-2xl font-black text-white mt-0.5">{totalVRPs}</div>
-            <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-              <span>SAU मास्टर रोस्टर</span>
-            </div>
+            <div className="text-[10px] text-slate-400 mt-1">SAU मास्टर रोस्टर</div>
           </div>
 
           <div className="bg-emerald-950/40 border border-emerald-500/30 p-3 rounded-xl">
@@ -359,7 +535,7 @@ export default function TeamRosterTab() {
             <div className="text-xl md:text-2xl font-black text-emerald-200 mt-0.5">
               {baghpatActiveMembers.length} <span className="text-xs font-normal text-emerald-400/80">सदस्य</span>
             </div>
-            <div className="text-[10px] text-emerald-400/90 mt-1">44 ग्राम पंचायतें</div>
+            <div className="text-[10px] text-emerald-400/90 mt-1">3 टीमें (3-3 सदस्य)</div>
           </div>
 
           <div className="bg-indigo-950/40 border border-indigo-500/30 p-3 rounded-xl">
@@ -370,7 +546,7 @@ export default function TeamRosterTab() {
             <div className="text-xl md:text-2xl font-black text-indigo-200 mt-0.5">
               {barautActiveMembers.length} <span className="text-xs font-normal text-indigo-400/80">सदस्य</span>
             </div>
-            <div className="text-[10px] text-indigo-400/90 mt-1">44 ग्राम पंचायतें</div>
+            <div className="text-[10px] text-indigo-400/90 mt-1">3 टीमें (4-4 सदस्य)</div>
           </div>
 
           <div className="bg-amber-950/40 border border-amber-500/30 p-3 rounded-xl">
@@ -410,11 +586,11 @@ export default function TeamRosterTab() {
           }`}
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span>🟢 ब्लॉक सक्रिय टीमें (Baghpat & Baraut Teams)</span>
+          <span>🟢 ब्लॉक सक्रिय टीमें (3-3 व 4-4 सदस्य टीमें)</span>
           <span className={`text-[11px] px-2 py-0.5 rounded-full font-mono ${
             activeSubTab === 'active_teams' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700'
           }`}>
-            {baghpatActiveMembers.length + barautActiveMembers.length}
+            6 टीमें • {baghpatActiveMembers.length + barautActiveMembers.length}
           </span>
         </button>
 
@@ -454,343 +630,161 @@ export default function TeamRosterTab() {
       </div>
 
       {/* ===================================================================== */}
-      {/* SUB-TAB 1: ब्लॉक सक्रिय टीमें (Active Teams View) */}
+      {/* SUB-TAB 1: ब्लॉक सक्रिय टीमें (3-3 व 4-4 सदस्य टीमें) */}
       {/* ===================================================================== */}
       {activeSubTab === 'active_teams' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            
-            {/* 1. Baghpat Block Active Team */}
-            <div className="bg-white rounded-2xl border-2 border-emerald-500/40 shadow-sm overflow-hidden flex flex-col">
-              {/* Block Header */}
-              <div className="bg-gradient-to-r from-emerald-700 to-teal-800 text-white p-4 sm:p-5 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 bg-emerald-600/60 rounded-lg text-white">
-                      <Building2 className="w-5 h-5" />
-                    </span>
-                    <h3 className="text-lg font-black tracking-tight">विकास खण्ड: बागपत</h3>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 bg-white/20 rounded-full text-emerald-100">
-                      सक्रिय टीम: {baghpatActiveMembers.length} सदस्य
-                    </span>
-                  </div>
-                  <p className="text-xs text-emerald-100/90 mt-1">
-                    44 ग्राम पंचायतों के सोशल ऑडिट संचालन हेतु अधिकृत फील्ड कार्मिक
-                  </p>
+        <div className="space-y-8">
+          
+          {/* SECTION 1: BAGHPAT BLOCK (3 TEAMS x 3 MEMBERS = 9) */}
+          <div className="bg-white rounded-2xl border-2 border-emerald-500/40 shadow-sm overflow-hidden">
+            {/* Block Banner */}
+            <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <span className="p-1.5 bg-white/20 rounded-lg text-white">
+                    <Building2 className="w-5 h-5" />
+                  </span>
+                  <h3 className="text-lg md:text-xl font-black tracking-tight">
+                    विकास खण्ड: बागपत
+                  </h3>
+                  <span className="text-xs font-bold px-2.5 py-0.5 bg-emerald-950/60 text-emerald-200 border border-emerald-400/30 rounded-full font-mono">
+                    कुल सक्रिय: {baghpatActiveMembers.length} सदस्य
+                  </span>
                 </div>
+                <p className="text-xs text-emerald-100/90 mt-1">
+                  सोशल ऑडिट कैलेंडर अनुसार 3 उप-टीमें (प्रत्येक टीम में 3-3 सदस्य) • 44 ग्राम पंचायतें
+                </p>
+              </div>
 
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
                     setAssignModalBlock('Baghpat');
+                    setAssignModalSubTeam('Team A');
                     setAssignSearch('');
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-emerald-800 hover:bg-emerald-50 font-bold text-xs rounded-xl shadow transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs rounded-xl shadow transition cursor-pointer"
                 >
                   <Plus className="w-4 h-4 text-emerald-700" />
                   <span>+ सदस्य जोड़ें</span>
                 </button>
               </div>
-
-              {/* Members List */}
-              <div className="p-4 sm:p-5 space-y-3 flex-1 bg-slate-50/50">
-                {baghpatActiveMembers.length === 0 ? (
-                  <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-6">
-                    <UserX className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm font-semibold text-slate-700">बागपत टीम में वर्तमान में कोई सदस्य सक्रिय नहीं है।</p>
-                    <p className="text-xs text-slate-500 mt-1">ऊपर दिए गए "+ सदस्य जोड़ें" बटन से रिज़र्व पूल से सदस्यों को शामिल करें।</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    {baghpatActiveMembers.map((member, idx) => (
-                      <div
-                        key={member.id}
-                        className="bg-white rounded-xl border border-emerald-100 hover:border-emerald-300 p-3.5 shadow-sm transition-all hover:shadow-md flex flex-col justify-between group relative"
-                      >
-                        <div>
-                          {/* Card Top Row: S.No, Status, Actions */}
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-mono text-xs font-black flex items-center justify-center">
-                                {idx + 1}
-                              </span>
-                              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                                {member.empCode}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1">
-                              {member.aadharStatus === 'Verified' ? (
-                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                                  <Check className="w-3 h-3 text-emerald-600" />
-                                  <span>आधार</span>
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                                  लंबित
-                                </span>
-                              )}
-
-                              <button
-                                onClick={() => setEditingMember(member)}
-                                className="p-1 text-slate-400 hover:text-blue-600 rounded transition cursor-pointer"
-                                title="विवरण संशोधित करें"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  if (confirm(`क्या आप ${member.nameHindi || member.name} को बागपत सक्रिय टीम से हटाकर रिज़र्व पूल में वापस भेजना चाहते हैं?`)) {
-                                    unassignVRPMember(member.id);
-                                  }
-                                }}
-                                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
-                                title="टीम से हटाएं (रिज़र्व पूल में भेजें)"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Member Name */}
-                          <div className="mt-1">
-                            <h4 className="text-base font-black text-slate-900 leading-tight">
-                              {member.nameHindi || member.name}
-                            </h4>
-                            {member.nameHindi && member.name !== member.nameHindi && (
-                              <p className="text-xs text-slate-500 font-medium">{member.name}</p>
-                            )}
-                          </div>
-
-                          {/* Mobile Number - Prominently Displayed */}
-                          <div className="mt-2.5 p-2 bg-emerald-50/70 rounded-lg border border-emerald-100 flex items-center justify-between">
-                            <a
-                              href={`tel:${member.mobileNo}`}
-                              className="flex items-center gap-2 text-emerald-900 hover:text-emerald-700 font-mono font-black text-sm tracking-wide"
-                              title="सीधे कॉल करें"
-                            >
-                              <span className="p-1 bg-emerald-200/80 text-emerald-800 rounded">
-                                <PhoneCall className="w-3.5 h-3.5" />
-                              </span>
-                              <span>{member.mobileNo}</span>
-                            </a>
-
-                            <button
-                              onClick={(e) => handleCopyPhone(member.mobileNo, e)}
-                              className="p-1 text-emerald-700 hover:bg-emerald-200 rounded transition text-xs font-semibold cursor-pointer"
-                              title="नंबर कॉपी करें"
-                            >
-                              {copiedPhone === member.mobileNo ? (
-                                <span className="text-[10px] text-emerald-700 font-bold">कॉपी!</span>
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                          </div>
-
-                          {/* Details tags */}
-                          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
-                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                              {member.gender === 'Female' ? 'महिला' : 'पुरुष'}
-                            </span>
-                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 truncate max-w-[190px]" title={member.qualification}>
-                              {member.qualification}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Card Footer Action */}
-                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                          <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <span>बागपत टीम</span>
-                          </span>
-
-                          <button
-                            onClick={() => {
-                              if (confirm(`क्या आप ${member.nameHindi || member.name} को बागपत टीम से हटाना चाहते हैं?`)) {
-                                unassignVRPMember(member.id);
-                              }
-                            }}
-                            className="text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                          >
-                            <X className="w-3 h-3" />
-                            <span>टीम से हटाएं</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* 2. Baraut Block Active Team */}
-            <div className="bg-white rounded-2xl border-2 border-indigo-500/40 shadow-sm overflow-hidden flex flex-col">
-              {/* Block Header */}
-              <div className="bg-gradient-to-r from-indigo-800 to-blue-900 text-white p-4 sm:p-5 flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 bg-indigo-700/60 rounded-lg text-white">
-                      <Building2 className="w-5 h-5" />
-                    </span>
-                    <h3 className="text-lg font-black tracking-tight">विकास खण्ड: बड़ौत</h3>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 bg-white/20 rounded-full text-indigo-100">
-                      सक्रिय टीम: {barautActiveMembers.length} सदस्य
-                    </span>
-                  </div>
-                  <p className="text-xs text-indigo-100/90 mt-1">
-                    44 ग्राम पंचायतों के सोशल ऑडिट संचालन हेतु अधिकृत फील्ड कार्मिक
-                  </p>
-                </div>
+            {/* 3 Sub-Teams Grid for Baghpat */}
+            <div className="p-4 sm:p-5 bg-slate-50/60">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Team A */}
+                {renderSubTeamCard('Baghpat', 'Team A', 'टीम "ए"', baghpatTeamA, 3, 'emerald')}
 
+                {/* Team B */}
+                {renderSubTeamCard('Baghpat', 'Team B', 'टीम "बी"', baghpatTeamB, 3, 'emerald')}
+
+                {/* Team C */}
+                {renderSubTeamCard('Baghpat', 'Team C', 'टीम "सी"', baghpatTeamC, 3, 'emerald')}
+              </div>
+
+              {/* Extra unclassified members if any */}
+              {baghpatUnclassified.length > 0 && (
+                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <h4 className="text-xs font-bold text-amber-800 mb-2">अवर्गीकृत बागपत सदस्य (उप-टीम आवंटित करें):</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {baghpatUnclassified.map(m => (
+                      <span key={m.id} className="text-xs bg-white border border-amber-300 px-2 py-1 rounded-lg flex items-center gap-2">
+                        <span>{m.nameHindi || m.name}</span>
+                        <select
+                          value=""
+                          onChange={(e) => assignVRPMember(m.id, 'Baghpat', e.target.value as VRPTeamCode)}
+                          className="text-[10px] font-bold border rounded px-1"
+                        >
+                          <option value="">टीम चुनें...</option>
+                          <option value="Team A">टीम A</option>
+                          <option value="Team B">टीम B</option>
+                          <option value="Team C">टीम C</option>
+                        </select>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SECTION 2: BARAUT BLOCK (3 TEAMS x 4 MEMBERS = 12) */}
+          <div className="bg-white rounded-2xl border-2 border-indigo-500/40 shadow-sm overflow-hidden">
+            {/* Block Banner */}
+            <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-blue-900 text-white p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <span className="p-1.5 bg-white/20 rounded-lg text-white">
+                    <Building2 className="w-5 h-5" />
+                  </span>
+                  <h3 className="text-lg md:text-xl font-black tracking-tight">
+                    विकास खण्ड: बड़ौत
+                  </h3>
+                  <span className="text-xs font-bold px-2.5 py-0.5 bg-indigo-950/60 text-indigo-200 border border-indigo-400/30 rounded-full font-mono">
+                    कुल सक्रिय: {barautActiveMembers.length} सदस्य
+                  </span>
+                </div>
+                <p className="text-xs text-indigo-100/90 mt-1">
+                  सोशल ऑडिट कैलेंडर अनुसार 3 उप-टीमें (प्रत्येक टीम में 4-4 सदस्य) • 44 ग्राम पंचायतें
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
                     setAssignModalBlock('Baraut');
+                    setAssignModalSubTeam('Team A');
                     setAssignSearch('');
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs rounded-xl shadow transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-indigo-950 hover:bg-indigo-50 font-bold text-xs rounded-xl shadow transition cursor-pointer"
                 >
                   <Plus className="w-4 h-4 text-indigo-700" />
                   <span>+ सदस्य जोड़ें</span>
                 </button>
               </div>
-
-              {/* Members List */}
-              <div className="p-4 sm:p-5 space-y-3 flex-1 bg-slate-50/50">
-                {barautActiveMembers.length === 0 ? (
-                  <div className="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-6">
-                    <UserX className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm font-semibold text-slate-700">बड़ौत टीम में वर्तमान में कोई सदस्य सक्रिय नहीं है।</p>
-                    <p className="text-xs text-slate-500 mt-1">ऊपर दिए गए "+ सदस्य जोड़ें" बटन से रिज़र्व पूल से सदस्यों को शामिल करें।</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    {barautActiveMembers.map((member, idx) => (
-                      <div
-                        key={member.id}
-                        className="bg-white rounded-xl border border-indigo-100 hover:border-indigo-300 p-3.5 shadow-sm transition-all hover:shadow-md flex flex-col justify-between group relative"
-                      >
-                        <div>
-                          {/* Card Top Row: S.No, Status, Actions */}
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-800 font-mono text-xs font-black flex items-center justify-center">
-                                {idx + 1}
-                              </span>
-                              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                                {member.empCode}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1">
-                              {member.aadharStatus === 'Verified' ? (
-                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                                  <Check className="w-3 h-3 text-emerald-600" />
-                                  <span>आधार</span>
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                                  लंबित
-                                </span>
-                              )}
-
-                              <button
-                                onClick={() => setEditingMember(member)}
-                                className="p-1 text-slate-400 hover:text-blue-600 rounded transition cursor-pointer"
-                                title="विवरण संशोधित करें"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  if (confirm(`क्या आप ${member.nameHindi || member.name} को बड़ौत सक्रिय टीम से हटाकर रिज़र्व पूल में वापस भेजना चाहते हैं?`)) {
-                                    unassignVRPMember(member.id);
-                                  }
-                                }}
-                                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
-                                title="टीम से हटाएं (रिज़र्व पूल में भेजें)"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Member Name */}
-                          <div className="mt-1">
-                            <h4 className="text-base font-black text-slate-900 leading-tight">
-                              {member.nameHindi || member.name}
-                            </h4>
-                            {member.nameHindi && member.name !== member.nameHindi && (
-                              <p className="text-xs text-slate-500 font-medium">{member.name}</p>
-                            )}
-                          </div>
-
-                          {/* Mobile Number - Prominently Displayed */}
-                          <div className="mt-2.5 p-2 bg-indigo-50/70 rounded-lg border border-indigo-100 flex items-center justify-between">
-                            <a
-                              href={`tel:${member.mobileNo}`}
-                              className="flex items-center gap-2 text-indigo-950 hover:text-indigo-700 font-mono font-black text-sm tracking-wide"
-                              title="सीधे कॉल करें"
-                            >
-                              <span className="p-1 bg-indigo-200/80 text-indigo-900 rounded">
-                                <PhoneCall className="w-3.5 h-3.5" />
-                              </span>
-                              <span>{member.mobileNo}</span>
-                            </a>
-
-                            <button
-                              onClick={(e) => handleCopyPhone(member.mobileNo, e)}
-                              className="p-1 text-indigo-700 hover:bg-indigo-200 rounded transition text-xs font-semibold cursor-pointer"
-                              title="नंबर कॉपी करें"
-                            >
-                              {copiedPhone === member.mobileNo ? (
-                                <span className="text-[10px] text-indigo-700 font-bold">कॉपी!</span>
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                          </div>
-
-                          {/* Details tags */}
-                          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
-                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                              {member.gender === 'Female' ? 'महिला' : 'पुरुष'}
-                            </span>
-                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 truncate max-w-[190px]" title={member.qualification}>
-                              {member.qualification}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Card Footer Action */}
-                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                          <span className="text-[10px] text-indigo-700 font-semibold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                            <span>बड़ौत टीम</span>
-                          </span>
-
-                          <button
-                            onClick={() => {
-                              if (confirm(`क्या आप ${member.nameHindi || member.name} को बड़ौत टीम से हटाना चाहते हैं?`)) {
-                                unassignVRPMember(member.id);
-                              }
-                            }}
-                            className="text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                          >
-                            <X className="w-3 h-3" />
-                            <span>टीम से हटाएं</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
 
+            {/* 3 Sub-Teams Grid for Baraut */}
+            <div className="p-4 sm:p-5 bg-slate-50/60">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Team A */}
+                {renderSubTeamCard('Baraut', 'Team A', 'टीम "ए"', barautTeamA, 4, 'indigo')}
+
+                {/* Team B */}
+                {renderSubTeamCard('Baraut', 'Team B', 'टीम "बी"', barautTeamB, 4, 'indigo')}
+
+                {/* Team C */}
+                {renderSubTeamCard('Baraut', 'Team C', 'टीम "सी"', barautTeamC, 4, 'indigo')}
+              </div>
+
+              {/* Extra unclassified members if any */}
+              {barautUnclassified.length > 0 && (
+                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <h4 className="text-xs font-bold text-amber-800 mb-2">अवर्गीकृत बड़ौत सदस्य (उप-टीम आवंटित करें):</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {barautUnclassified.map(m => (
+                      <span key={m.id} className="text-xs bg-white border border-amber-300 px-2 py-1 rounded-lg flex items-center gap-2">
+                        <span>{m.nameHindi || m.name}</span>
+                        <select
+                          value=""
+                          onChange={(e) => assignVRPMember(m.id, 'Baraut', e.target.value as VRPTeamCode)}
+                          className="text-[10px] font-bold border rounded px-1"
+                        >
+                          <option value="">टीम चुनें...</option>
+                          <option value="Team A">टीम A</option>
+                          <option value="Team B">टीम B</option>
+                          <option value="Team C">टीम C</option>
+                        </select>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
+
         </div>
       )}
 
@@ -809,7 +803,7 @@ export default function TeamRosterTab() {
                 </span>
               </h3>
               <p className="text-xs text-slate-500">
-                सोशल ऑडिट यूनिट (SAU) पोर्टल से प्राप्त 135 कार्मिकों का संपूर्ण डाटा, योग्यता, संपर्क व टीम आवंटन स्थिति
+                सोशल ऑडिट यूनिट (SAU) पोर्टल से प्राप्त 135 कार्मिकों का संपूर्ण डाटा, योग्यता, संपर्क व उप-टीम (A, B, C) आवंटन स्थिति
               </p>
             </div>
 
@@ -840,48 +834,36 @@ export default function TeamRosterTab() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Block Filter Pills */}
+            {/* Block & Team Filter Select */}
             <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-300 text-xs">
-              <span className="text-[11px] text-slate-500 font-semibold px-2">आवंटन:</span>
-              <button
-                onClick={() => { setBlockFilter('all'); setCurrentPage(1); }}
-                className={`px-2.5 py-1 rounded font-medium transition cursor-pointer ${
-                  blockFilter === 'all' ? 'bg-slate-900 text-white font-bold' : 'text-slate-600 hover:bg-slate-100'
-                }`}
+              <span className="text-[11px] text-slate-500 font-semibold px-2">टीम फ़िल्टर:</span>
+              <select
+                value={blockFilter}
+                onChange={(e) => { setBlockFilter(e.target.value as any); setCurrentPage(1); }}
+                className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
               >
-                सभी ({totalVRPs})
-              </button>
-              <button
-                onClick={() => { setBlockFilter('Baghpat'); setCurrentPage(1); }}
-                className={`px-2.5 py-1 rounded font-medium transition cursor-pointer ${
-                  blockFilter === 'Baghpat' ? 'bg-emerald-700 text-white font-bold' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                बागपत ({baghpatActiveMembers.length})
-              </button>
-              <button
-                onClick={() => { setBlockFilter('Baraut'); setCurrentPage(1); }}
-                className={`px-2.5 py-1 rounded font-medium transition cursor-pointer ${
-                  blockFilter === 'Baraut' ? 'bg-indigo-700 text-white font-bold' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                बड़ौत ({barautActiveMembers.length})
-              </button>
-              <button
-                onClick={() => { setBlockFilter('unassigned'); setCurrentPage(1); }}
-                className={`px-2.5 py-1 rounded font-medium transition cursor-pointer ${
-                  blockFilter === 'unassigned' ? 'bg-amber-600 text-white font-bold' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                रिज़र्व पूल ({unassignedMembers.length})
-              </button>
+                <option value="all">सभी ({totalVRPs})</option>
+                <optgroup label="बागपत विकास खण्ड">
+                  <option value="Baghpat">बागपत - समस्त ({baghpatActiveMembers.length})</option>
+                  <option value="Baghpat_A">बागपत - टीम A ({baghpatTeamA.length})</option>
+                  <option value="Baghpat_B">बागपत - टीम B ({baghpatTeamB.length})</option>
+                  <option value="Baghpat_C">बागपत - टीम C ({baghpatTeamC.length})</option>
+                </optgroup>
+                <optgroup label="बड़ौत विकास खण्ड">
+                  <option value="Baraut">बड़ौत - समस्त ({barautActiveMembers.length})</option>
+                  <option value="Baraut_A">बड़ौत - टीम A ({barautTeamA.length})</option>
+                  <option value="Baraut_B">बड़ौत - टीम B ({barautTeamB.length})</option>
+                  <option value="Baraut_C">बड़ौत - टीम C ({barautTeamC.length})</option>
+                </optgroup>
+                <option value="unassigned">रिज़र्व पूल ({unassignedMembers.length})</option>
+              </select>
             </div>
 
             {/* Gender Filter */}
@@ -915,7 +897,7 @@ export default function TeamRosterTab() {
 
           {/* Master Table */}
           <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
-            <table className="w-full text-left border-collapse text-xs min-w-[750px]">
+            <table className="w-full text-left border-collapse text-xs min-w-[800px]">
               <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
                 <tr>
                   <th className="py-2.5 px-3 w-12 text-center">क्र०</th>
@@ -924,9 +906,9 @@ export default function TeamRosterTab() {
                   <th className="py-2.5 px-3 w-40">मोबाइल नंबर</th>
                   <th className="py-2.5 px-3 w-20 text-center">लिंग</th>
                   <th className="py-2.5 px-3">योग्यता</th>
-                  <th className="py-2.5 px-3 w-28 text-center">आधार स्थिति</th>
-                  <th className="py-2.5 px-3 w-36 text-center">सक्रिय टीम आवंटन</th>
-                  <th className="py-2.5 px-3 w-28 text-center">क्रिया</th>
+                  <th className="py-2.5 px-3 w-24 text-center">आधार स्थिति</th>
+                  <th className="py-2.5 px-3 w-44 text-center">सक्रिय टीम आवंटन</th>
+                  <th className="py-2.5 px-3 w-24 text-center">क्रिया</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -939,6 +921,10 @@ export default function TeamRosterTab() {
                 ) : (
                   paginatedMasterRoster.map((member, index) => {
                     const rowNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                    const currentValue = member.assignedBlock 
+                      ? `${member.assignedBlock}_${member.assignedSubTeam || 'Team A'}`
+                      : 'unassigned';
+
                     return (
                       <tr key={member.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-2.5 px-3 text-center text-slate-400 font-mono">{rowNumber}</td>
@@ -996,26 +982,35 @@ export default function TeamRosterTab() {
                         </td>
                         <td className="py-2.5 px-3 text-center">
                           <select
-                            value={member.assignedBlock || 'unassigned'}
+                            value={currentValue}
                             onChange={(e) => {
                               const val = e.target.value;
                               if (val === 'unassigned') {
                                 unassignVRPMember(member.id);
                               } else {
-                                assignVRPMember(member.id, val as AuditBlock);
+                                const [blk, sub] = val.split('_');
+                                assignVRPMember(member.id, blk as AuditBlock, sub as VRPTeamCode);
                               }
                             }}
                             className={`text-[11px] font-bold px-2 py-1 rounded-lg border focus:outline-none cursor-pointer ${
                               member.assignedBlock === 'Baghpat'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
                                 : member.assignedBlock === 'Baraut'
-                                ? 'bg-indigo-50 text-indigo-800 border-indigo-300'
+                                ? 'bg-indigo-50 text-indigo-900 border-indigo-300'
                                 : 'bg-slate-50 text-slate-600 border-slate-300'
                             }`}
                           >
                             <option value="unassigned">रिज़र्व पूल</option>
-                            <option value="Baghpat">बागपत सक्रिय</option>
-                            <option value="Baraut">बड़ौत सक्रिय</option>
+                            <optgroup label="बागपत (3 टीमें)">
+                              <option value="Baghpat_Team A">बागपत • टीम A</option>
+                              <option value="Baghpat_Team B">बागपत • टीम B</option>
+                              <option value="Baghpat_Team C">बागपत • टीम C</option>
+                            </optgroup>
+                            <optgroup label="बड़ौत (3 टीमें)">
+                              <option value="Baraut_Team A">बड़ौत • टीम A</option>
+                              <option value="Baraut_Team B">बड़ौत • टीम B</option>
+                              <option value="Baraut_Team C">बड़ौत • टीम C</option>
+                            </optgroup>
                           </select>
                         </td>
                         <td className="py-2.5 px-3 text-center">
@@ -1244,20 +1239,20 @@ export default function TeamRosterTab() {
       )}
 
       {/* ===================================================================== */}
-      {/* MODAL 1: Assign Member from Pool to Block Modal */}
+      {/* MODAL 1: Assign Member from Pool to Specific Sub-Team Modal */}
       {/* ===================================================================== */}
       {assignModalBlock && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
             {/* Header */}
             <div className={`p-5 text-white flex items-center justify-between ${
-              assignModalBlock === 'Baghpat' ? 'bg-gradient-to-r from-emerald-700 to-teal-800' : 'bg-gradient-to-r from-indigo-800 to-blue-900'
+              assignModalBlock === 'Baghpat' ? 'bg-gradient-to-r from-emerald-800 to-teal-800' : 'bg-gradient-to-r from-indigo-900 to-blue-900'
             }`}>
               <div>
                 <h3 className="text-lg font-black flex items-center gap-2">
                   <UserPlus className="w-5 h-5" />
                   <span>
-                    विकास खण्ड {assignModalBlock === 'Baghpat' ? 'बागपत' : 'बड़ौत'} की सक्रिय टीम में सदस्य जोड़ें
+                    विकास खण्ड {assignModalBlock === 'Baghpat' ? 'बागपत' : 'बड़ौत'} में सदस्य जोड़ें
                   </span>
                 </h3>
                 <p className="text-xs text-white/80 mt-1">
@@ -1273,8 +1268,33 @@ export default function TeamRosterTab() {
               </button>
             </div>
 
-            {/* Search Input */}
-            <div className="p-4 border-b border-slate-200 bg-slate-50">
+            {/* Target Sub-team Switcher & Search Bar */}
+            <div className="p-4 border-b border-slate-200 bg-slate-50 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-700">लक्ष्य उप-टीम:</span>
+                <div className="flex items-center gap-1.5">
+                  {(['Team A', 'Team B', 'Team C'] as VRPTeamCode[]).map((st) => {
+                    const hindiLabel = st === 'Team A' ? 'टीम "ए"' : st === 'Team B' ? 'टीम "बी"' : 'टीम "सी"';
+                    const isSelected = assignModalSubTeam === st;
+                    return (
+                      <button
+                        key={st}
+                        onClick={() => setAssignModalSubTeam(st)}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          isSelected
+                            ? assignModalBlock === 'Baghpat'
+                              ? 'bg-emerald-700 text-white shadow-xs'
+                              : 'bg-indigo-700 text-white shadow-xs'
+                            : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {hindiLabel} ({st})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -1322,7 +1342,7 @@ export default function TeamRosterTab() {
 
                     <button
                       onClick={() => {
-                        assignVRPMember(member.id, assignModalBlock);
+                        assignVRPMember(member.id, assignModalBlock, assignModalSubTeam);
                       }}
                       className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg text-white transition shadow-sm cursor-pointer whitespace-nowrap ${
                         assignModalBlock === 'Baghpat'
@@ -1331,7 +1351,7 @@ export default function TeamRosterTab() {
                       }`}
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>टीम में शामिल करें</span>
+                      <span>{assignModalSubTeam === 'Team A' ? 'टीम ए' : assignModalSubTeam === 'Team B' ? 'टीम बी' : 'टीम सी'} में जोड़ें</span>
                     </button>
                   </div>
                 ))
@@ -1426,6 +1446,39 @@ export default function TeamRosterTab() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <label className="block font-semibold text-slate-700 mb-1">आवंटित ब्लॉक:</label>
+                  <select
+                    value={newVrpData.assignedBlock || ''}
+                    onChange={(e) => setNewVrpData({ 
+                      ...newVrpData, 
+                      assignedBlock: e.target.value ? (e.target.value as AuditBlock) : null,
+                      assignedSubTeam: e.target.value ? (newVrpData.assignedSubTeam || 'Team A') : null
+                    })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium"
+                  >
+                    <option value="">रिज़र्व पूल (आवंटित नहीं)</option>
+                    <option value="Baghpat">बागपत सक्रिय टीम</option>
+                    <option value="Baraut">बड़ौत सक्रिय टीम</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">उप-टीम (Sub-team):</label>
+                  <select
+                    disabled={!newVrpData.assignedBlock}
+                    value={newVrpData.assignedSubTeam || 'Team A'}
+                    onChange={(e) => setNewVrpData({ ...newVrpData, assignedSubTeam: e.target.value as VRPTeamCode })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold disabled:opacity-40"
+                  >
+                    <option value="Team A">टीम 'ए' (Team A)</option>
+                    <option value="Team B">टीम 'बी' (Team B)</option>
+                    <option value="Team C">टीम 'सी' (Team C)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
                   <label className="block font-semibold text-slate-700 mb-1">लिंग:</label>
                   <select
                     value={newVrpData.gender}
@@ -1438,33 +1491,7 @@ export default function TeamRosterTab() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">योग्यता (Qualification):</label>
-                  <input
-                    type="text"
-                    value={newVrpData.qualification}
-                    onChange={(e) => setNewVrpData({ ...newVrpData, qualification: e.target.value })}
-                    placeholder="उदा. Graduate / Secondary"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">सक्रिय टीम आवंटन:</label>
-                  <select
-                    value={newVrpData.assignedBlock || ''}
-                    onChange={(e) => setNewVrpData({ ...newVrpData, assignedBlock: e.target.value ? (e.target.value as AuditBlock) : null })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium"
-                  >
-                    <option value="">रिज़र्व पूल (आवंटित नहीं)</option>
-                    <option value="Baghpat">बागपत सक्रिय टीम</option>
-                    <option value="Baraut">बड़ौत सक्रिय टीम</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">आधार सत्यापन स्थिति:</label>
+                  <label className="block font-semibold text-slate-700 mb-1">आधार स्थिति:</label>
                   <select
                     value={newVrpData.aadharStatus}
                     onChange={(e) => setNewVrpData({ ...newVrpData, aadharStatus: e.target.value as any })}
@@ -1474,6 +1501,17 @@ export default function TeamRosterTab() {
                     <option value="Not Verified">लंबित (Not Verified)</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">योग्यता (Qualification):</label>
+                <input
+                  type="text"
+                  value={newVrpData.qualification}
+                  onChange={(e) => setNewVrpData({ ...newVrpData, qualification: e.target.value })}
+                  placeholder="उदा. Graduate / Secondary"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                />
               </div>
 
               <div className="pt-4 border-t border-slate-200 flex justify-end gap-2">
@@ -1555,18 +1593,50 @@ export default function TeamRosterTab() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">सक्रिय टीम आवंटन:</label>
+                  <label className="block font-semibold text-slate-700 mb-1">आवंटित ब्लॉक:</label>
                   <select
                     value={editingMember.assignedBlock || ''}
                     onChange={(e) => setEditingMember({
                       ...editingMember,
-                      assignedBlock: e.target.value ? (e.target.value as AuditBlock) : null
+                      assignedBlock: e.target.value ? (e.target.value as AuditBlock) : null,
+                      assignedSubTeam: e.target.value ? (editingMember.assignedSubTeam || 'Team A') : null
                     })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold"
                   >
                     <option value="">रिज़र्व पूल (Unassigned)</option>
                     <option value="Baghpat">बागपत सक्रिय टीम</option>
                     <option value="Baraut">बड़ौत सक्रिय टीम</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">उप-टीम (Sub-team):</label>
+                  <select
+                    disabled={!editingMember.assignedBlock}
+                    value={editingMember.assignedSubTeam || 'Team A'}
+                    onChange={(e) => setEditingMember({
+                      ...editingMember,
+                      assignedSubTeam: e.target.value as VRPTeamCode
+                    })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold disabled:opacity-40"
+                  >
+                    <option value="Team A">टीम 'ए' (Team A)</option>
+                    <option value="Team B">टीम 'बी' (Team B)</option>
+                    <option value="Team C">टीम 'सी' (Team C)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">आधार स्थिति:</label>
+                  <select
+                    value={editingMember.aadharStatus}
+                    onChange={(e) => setEditingMember({ ...editingMember, aadharStatus: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                  >
+                    <option value="Verified">सत्यापित</option>
+                    <option value="Not Verified">लंबित</option>
                   </select>
                 </div>
               </div>
@@ -1585,14 +1655,14 @@ export default function TeamRosterTab() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">आधार स्थिति:</label>
+                  <label className="block font-semibold text-slate-700 mb-1">कार्य स्थिति:</label>
                   <select
-                    value={editingMember.aadharStatus}
-                    onChange={(e) => setEditingMember({ ...editingMember, aadharStatus: e.target.value as any })}
+                    value={editingMember.employeeStatus}
+                    onChange={(e) => setEditingMember({ ...editingMember, employeeStatus: e.target.value as any })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
                   >
-                    <option value="Verified">सत्यापित</option>
-                    <option value="Not Verified">लंबित</option>
+                    <option value="Working">कार्यरत (Working)</option>
+                    <option value="Discontinued">कार्यमुक्त (Discontinued)</option>
                   </select>
                 </div>
               </div>

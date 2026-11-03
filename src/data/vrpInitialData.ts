@@ -18,7 +18,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9719391531",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26703",
@@ -32,7 +33,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7533932488",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26721",
@@ -46,7 +48,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7983174889",
     "employeeStatus": "Discontinued",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-21266",
@@ -60,7 +63,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9536344417",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37019",
@@ -75,7 +79,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Annu1982@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-45063",
@@ -89,7 +94,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8178603321",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-32017",
@@ -104,7 +110,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "anurag@123gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team A"
   },
   {
     "id": "vrp-UP-VRP-26706",
@@ -118,7 +125,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7055028645",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26862",
@@ -132,7 +140,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9627629543",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-45075",
@@ -146,7 +155,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7409250104",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44600",
@@ -160,7 +170,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8979262126",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26716",
@@ -174,7 +185,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9997624355",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baghpat"
+    "assignedBlock": "Baghpat",
+    "assignedSubTeam": "Team C"
   },
   {
     "id": "vrp-UP-VRP-21264",
@@ -188,7 +200,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8755061146",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-46188",
@@ -202,7 +215,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8126773155",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26628",
@@ -216,7 +230,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8171922421",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-21260",
@@ -230,7 +245,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9758469429",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-28235",
@@ -244,7 +260,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8534826015",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-45084",
@@ -258,7 +275,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9997388970",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37015",
@@ -273,7 +291,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Dariyav@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-31856",
@@ -288,7 +307,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Davender123@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-33028",
@@ -303,7 +323,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "sumitkumar98182@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26717",
@@ -317,7 +338,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8222050939",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-45021",
@@ -331,7 +353,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9368690235",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26690",
@@ -345,7 +368,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9760790022",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26719",
@@ -359,7 +383,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8979816474",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baghpat"
+    "assignedBlock": "Baghpat",
+    "assignedSubTeam": "Team C"
   },
   {
     "id": "vrp-UP-VRP-21122",
@@ -373,7 +398,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7906779126",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37859",
@@ -388,7 +414,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Harendra1976@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-33026",
@@ -403,7 +430,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "aksaytyagi703@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-46183",
@@ -417,7 +445,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8077520008",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26712",
@@ -431,7 +460,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9411980119",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26711",
@@ -445,7 +475,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9068932119",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-28238",
@@ -460,7 +491,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "sahanirajk@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baghpat"
+    "assignedBlock": "Baghpat",
+    "assignedSubTeam": "Team B"
   },
   {
     "id": "vrp-UP-VRP-21121",
@@ -474,7 +506,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9389208377",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37961",
@@ -489,7 +522,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "kapilbhardwaj@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-45046",
@@ -503,7 +537,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9627254000",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44499",
@@ -517,7 +552,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9012551575",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26377",
@@ -531,7 +567,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9719678990",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37866",
@@ -546,7 +583,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Karuna1970@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-21053",
@@ -560,7 +598,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9639757127",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-45032",
@@ -574,7 +613,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8923046436",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baghpat"
+    "assignedBlock": "Baghpat",
+    "assignedSubTeam": "Team A"
   },
   {
     "id": "vrp-UP-VRP-26718",
@@ -588,7 +628,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8630272323",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26385",
@@ -602,7 +643,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8445628524",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-35640",
@@ -617,7 +659,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "pkarya@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37958",
@@ -632,7 +675,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "kirendrasingh@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26627",
@@ -646,7 +690,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9759341611",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-38155",
@@ -661,7 +706,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "kuldeep@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44518",
@@ -675,7 +721,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7599474795",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26683",
@@ -689,7 +736,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8006657377",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37020",
@@ -704,7 +752,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Madanpal1968@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37023",
@@ -719,7 +768,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Maganvir1973@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-38930",
@@ -734,7 +784,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "manju444@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-21265",
@@ -748,7 +799,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9761487334",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44576",
@@ -762,7 +814,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9012543988",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26692",
@@ -776,7 +829,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7409815717",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26609",
@@ -790,7 +844,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "6398100803",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-45038",
@@ -804,7 +859,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9634281426",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26686",
@@ -818,7 +874,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8077553432",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team C"
   },
   {
     "id": "vrp-UP-VRP-28222",
@@ -832,7 +889,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9536344418",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-35641",
@@ -847,7 +905,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Naresh@gamil.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-38140",
@@ -862,7 +921,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "nilamdevi@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37022",
@@ -877,7 +937,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Neeraj1980@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44510",
@@ -891,7 +952,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9548918248",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team C"
   },
   {
     "id": "vrp-UP-VRP-44514",
@@ -905,7 +967,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9720719843",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team B"
   },
   {
     "id": "vrp-UP-VRP-37854",
@@ -920,7 +983,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "nirmala1981@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44567",
@@ -934,7 +998,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8826279698",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-28237",
@@ -949,7 +1014,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "writepriyanka@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26710",
@@ -963,7 +1029,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9897985142",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baghpat"
+    "assignedBlock": "Baghpat",
+    "assignedSubTeam": "Team A"
   },
   {
     "id": "vrp-UP-VRP-45058",
@@ -977,7 +1044,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9760741693",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-28227",
@@ -991,7 +1059,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9368415540",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44552",
@@ -1005,7 +1074,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9897691664",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team B"
   },
   {
     "id": "vrp-UP-VRP-26630",
@@ -1019,7 +1089,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8868872568",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-38925",
@@ -1034,7 +1105,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "praveenkumar222@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44506",
@@ -1048,7 +1120,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8923797266",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-21259",
@@ -1063,7 +1136,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Punambag@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-38430",
@@ -1078,7 +1152,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "puspendra111@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26685",
@@ -1092,7 +1167,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7906448077",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-28492",
@@ -1107,7 +1183,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "gejasingh0691@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-21049",
@@ -1121,7 +1198,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9760732189",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26723",
@@ -1135,7 +1213,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9761466719",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baghpat"
+    "assignedBlock": "Baghpat",
+    "assignedSubTeam": "Team B"
   },
   {
     "id": "vrp-UP-VRP-41823",
@@ -1149,7 +1228,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9760033136",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26595",
@@ -1163,7 +1243,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9675636161",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26705",
@@ -1177,7 +1258,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9358624246",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-41830",
@@ -1191,7 +1273,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9520294933",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team A"
   },
   {
     "id": "vrp-UP-VRP-26384",
@@ -1205,7 +1288,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9897960841",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-21123",
@@ -1219,7 +1303,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7060673225",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26626",
@@ -1233,7 +1318,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9675454329",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44556",
@@ -1247,7 +1333,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9548988505",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37014",
@@ -1262,7 +1349,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Rohotash@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-32018",
@@ -1277,7 +1365,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "rokikashyap@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-41825",
@@ -1291,7 +1380,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "6396478454",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26720",
@@ -1305,7 +1395,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9756303244",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-21233",
@@ -1319,7 +1410,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8393066572",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37024",
@@ -1334,7 +1426,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Sanjeva1972@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26707",
@@ -1348,7 +1441,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8869092982",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26704",
@@ -1362,7 +1456,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9837277517",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26708",
@@ -1376,7 +1471,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8445047834",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baghpat"
+    "assignedBlock": "Baghpat",
+    "assignedSubTeam": "Team B"
   },
   {
     "id": "vrp-UP-VRP-44525",
@@ -1390,7 +1486,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7895960603",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team C"
   },
   {
     "id": "vrp-UP-VRP-31863",
@@ -1405,7 +1502,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "satish@123gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-33006",
@@ -1420,7 +1518,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "manojsharma020171@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-5649",
@@ -1435,7 +1534,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "dateOfBirth": "1974-07-12",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-31884",
@@ -1450,7 +1550,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "satyadev@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-38932",
@@ -1465,7 +1566,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "savita4444@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37017",
@@ -1480,7 +1582,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Shalu1989@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37016",
@@ -1495,7 +1598,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Shiv1968@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-31959",
@@ -1510,7 +1614,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Shripal@123gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team A"
   },
   {
     "id": "vrp-UP-VRP-32997",
@@ -1525,7 +1630,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "akhilesharma.c402@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-38931",
@@ -1540,7 +1646,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "sompalsingh222@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37021",
@@ -1555,7 +1662,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Sonika1982@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-45014",
@@ -1569,7 +1677,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7683026224",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26684",
@@ -1583,7 +1692,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9410814975",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team C"
   },
   {
     "id": "vrp-UP-VRP-43845",
@@ -1597,7 +1707,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8057991090",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baghpat"
+    "assignedBlock": "Baghpat",
+    "assignedSubTeam": "Team A"
   },
   {
     "id": "vrp-UP-VRP-26715",
@@ -1611,7 +1722,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9897006306",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baghpat"
+    "assignedBlock": "Baghpat",
+    "assignedSubTeam": "Team C"
   },
   {
     "id": "vrp-UP-VRP-26376",
@@ -1625,7 +1737,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8273378396",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44520",
@@ -1639,7 +1752,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8923804622",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team B"
   },
   {
     "id": "vrp-UP-VRP-37018",
@@ -1654,7 +1768,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Suman1978@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44522",
@@ -1668,7 +1783,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8194081937",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-45091",
@@ -1682,7 +1798,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7060811600",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26378",
@@ -1696,7 +1813,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7956911245",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team A"
   },
   {
     "id": "vrp-UP-VRP-21230",
@@ -1710,7 +1828,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9837610619",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-28223",
@@ -1724,7 +1843,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9528597349",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-28220",
@@ -1739,7 +1859,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "pkarya76@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Not Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26375",
@@ -1753,7 +1874,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8791695868",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44550",
@@ -1767,7 +1889,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9058632439",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-37010",
@@ -1782,7 +1905,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "Tarun@1975gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26722",
@@ -1796,7 +1920,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9997202522",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-32996",
@@ -1811,7 +1936,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "kapilshrma2676@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44548",
@@ -1825,7 +1951,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9720228203",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-21124",
@@ -1839,7 +1966,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "7310770172",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-38908",
@@ -1854,7 +1982,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "emailAddress": "vinod111kumar@gmail.com",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-45111",
@@ -1868,7 +1997,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8445391988",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44538",
@@ -1882,7 +2012,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8630144104",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-26629",
@@ -1896,7 +2027,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9368320223",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44531",
@@ -1910,7 +2042,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "8445830830",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-28236",
@@ -1924,7 +2057,8 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "9634686390",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": null
+    "assignedBlock": null,
+    "assignedSubTeam": null
   },
   {
     "id": "vrp-UP-VRP-44493",
@@ -1938,6 +2072,7 @@ export const INITIAL_VRP_RECORDS: VRPMember[] = [
     "mobileNo": "6397137576",
     "employeeStatus": "Working",
     "aadharStatus": "Verified",
-    "assignedBlock": "Baraut"
+    "assignedBlock": "Baraut",
+    "assignedSubTeam": "Team B"
   }
 ];
