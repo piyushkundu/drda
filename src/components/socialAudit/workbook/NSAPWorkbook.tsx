@@ -7,7 +7,7 @@ import {
   FileSpreadsheet, Download, Upload, Printer, Save, 
   Search, ChevronLeft, ChevronRight, Filter, Lock, Unlock,
   RefreshCw, CheckCircle2, AlertCircle, Sparkles, Eye, 
-  Type, Check, ArrowRight, X, Building2
+  Type, Check, ArrowRight, X, Building2, Maximize2, Minimize2, ArrowUp
 } from 'lucide-react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { AuditBlock, NSAPGramPanchayatData } from '@/types/socialAudit';
@@ -33,11 +33,15 @@ export default function NSAPWorkbook() {
   } = useSocialAuditStore();
 
   const sheetRef = useRef<WorkbookInstance>(null);
+  const workbookContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Mounted guard for client-side rendering
   const [mounted, setMounted] = useState(false);
+
+  // Fullscreen mode state
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Font mode: 'krutidev' | 'unicode'
   const [fontMode, setFontMode] = useState<'krutidev' | 'unicode'>('krutidev');
@@ -109,6 +113,121 @@ export default function NSAPWorkbook() {
     }, 60);
     return () => clearTimeout(timer);
   }, [fontMode]);
+
+  // Fullscreen toggle handler
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => {
+      const next = !prev;
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 60);
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 250);
+      return next;
+    });
+  };
+
+  // Listen for Escape key to exit fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFullscreen(false);
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 60);
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 250);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
+  // Jump smoothly to Row 1 (Top)
+  const handleScrollToTop = () => {
+    const container = workbookContainerRef.current;
+    const scrollbarY = container?.querySelector<HTMLElement>('.luckysheet-scrollbar-y');
+    if (scrollbarY) {
+      scrollbarY.scrollTop = 0;
+      scrollbarY.dispatchEvent(new Event('scroll'));
+    }
+    if (sheetRef.current?.scroll) {
+      try {
+        sheetRef.current.scroll({ scrollTop: 0, targetRow: 0 });
+      } catch (_) {}
+    }
+    showToast('शीर्ष पंक्ति (Row 1) पर पहुंचे', 'success');
+  };
+
+  // Mouse wheel bidirectional smooth scrolling handler (fixes FortuneSheet scroll-up bug)
+  useEffect(() => {
+    const container = workbookContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Don't intercept if wheeling over inputs, selects, or context menus
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'SELECT' ||
+          target.tagName === 'INPUT' ||
+          target.closest('.luckysheet-cols-menu') ||
+          target.closest('.fortune-context-menu'))
+      ) {
+        return;
+      }
+
+      const scrollbarY = container.querySelector<HTMLElement>('.luckysheet-scrollbar-y');
+      const scrollbarX = container.querySelector<HTMLElement>('.luckysheet-scrollbar-x');
+
+      // Vertical wheel scrolling (supports smooth scrolling both UP and DOWN)
+      if (Math.abs(e.deltaY) >= Math.abs(e.deltaX) && scrollbarY) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        let delta = e.deltaY;
+        if (e.deltaMode === 1) delta *= 32;
+        else if (e.deltaMode === 2) delta *= 300;
+        else {
+          delta = Math.sign(delta) * Math.max(Math.abs(delta), 45);
+        }
+
+        const newTop = Math.max(0, scrollbarY.scrollTop + delta);
+        scrollbarY.scrollTop = newTop;
+        scrollbarY.dispatchEvent(new Event('scroll'));
+
+        if (sheetRef.current?.scroll) {
+          try {
+            sheetRef.current.scroll({ scrollTop: newTop });
+          } catch (_) {}
+        }
+      } else if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && scrollbarX) {
+        // Horizontal wheel scrolling
+        e.preventDefault();
+        e.stopPropagation();
+
+        let deltaX = e.deltaX;
+        if (e.deltaMode === 1) deltaX *= 32;
+        else if (e.deltaMode === 2) deltaX *= 300;
+        else {
+          deltaX = Math.sign(deltaX) * Math.max(Math.abs(deltaX), 45);
+        }
+
+        scrollbarX.scrollLeft = Math.max(0, scrollbarX.scrollLeft + deltaX);
+        scrollbarX.dispatchEvent(new Event('scroll'));
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { capture: true, passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel, { capture: true });
+    };
+  }, [mounted]);
 
   // Filtered GP list for quick dropdown navigation (filtered from the 47 NSAP GPs)
   const filteredGps = useMemo(() => {
@@ -361,7 +480,13 @@ export default function NSAPWorkbook() {
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-white overflow-hidden min-h-0">
+    <div 
+      className={`w-full flex flex-col bg-white overflow-hidden ${
+        isFullscreen 
+          ? 'fixed inset-0 z-[1000] w-screen h-screen' 
+          : 'h-full min-h-0'
+      }`}
+    >
       {/* ── Top Header Bar ── */}
       <header className="border-b border-gray-200 bg-white px-4 py-2.5 shrink-0 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
@@ -381,6 +506,11 @@ export default function NSAPWorkbook() {
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                   47 GP + 1 सारांश
                 </span>
+                {isFullscreen && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-200 animate-pulse">
+                    ⛶ पूर्ण स्क्रीन सक्रिय
+                  </span>
+                )}
               </div>
               <p className="text-xs text-gray-500 mt-0.5">
                 जनपद बागपत (2026-27) • 47 NSAP ग्राम पंचायतें • फॉर्च्यून शीट व एक्सेल जेएस इंजन • कृतिदेव 010 / मंगल यूनिकोड
@@ -431,6 +561,39 @@ export default function NSAPWorkbook() {
                 <span>सुरक्षित करें</span>
               </button>
             )}
+
+            {/* Scroll to Top (Row 1) Button */}
+            <button
+              onClick={handleScrollToTop}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium transition-colors shadow-xs"
+              title="शीर्ष पंक्ति (Row 1) पर तुरंत जाएं"
+            >
+              <ArrowUp className="w-3.5 h-3.5 text-emerald-600" />
+              <span>शीर्ष पर जाएं</span>
+            </button>
+
+            {/* Fullscreen Toggle Button */}
+            <button
+              onClick={toggleFullscreen}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-colors border ${
+                isFullscreen
+                  ? 'bg-purple-700 hover:bg-purple-800 text-white border-purple-800 shadow-sm'
+                  : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200'
+              }`}
+              title={isFullscreen ? 'सामान्य दृश्य पर लौटें (Esc)' : 'पूर्ण स्क्रीन में खोलें (Full Screen)'}
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  <span>सामान्य दृश्य (Esc)</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>फुल स्क्रीन</span>
+                </>
+              )}
+            </button>
 
             {/* Print Active Sheet */}
             <button
@@ -606,7 +769,7 @@ export default function NSAPWorkbook() {
 
       {/* ── Toast Notification Layer ── */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-[250] flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-lg border text-sm font-medium animate-in fade-in slide-in-from-bottom-2 duration-200 bg-gray-900 text-white border-gray-800">
+        <div className="fixed bottom-6 right-6 z-[2500] flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-lg border text-sm font-medium animate-in fade-in slide-in-from-bottom-2 duration-200 bg-gray-900 text-white border-gray-800">
           {toastMessage.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
           {toastMessage.type === 'warning' && <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />}
           {toastMessage.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />}
@@ -616,10 +779,11 @@ export default function NSAPWorkbook() {
 
       {/* ── FortuneSheet Main Spreadsheet Container ── */}
       <div 
+        ref={workbookContainerRef}
         className="flex-1 w-full relative overflow-hidden min-h-0 bg-white"
         style={{ 
-          height: 'calc(100vh - 165px)', 
-          minHeight: '520px', 
+          height: isFullscreen ? 'calc(100vh - 105px)' : 'calc(100vh - 165px)', 
+          minHeight: isFullscreen ? 'calc(100vh - 105px)' : '520px', 
           width: '100%' 
         }}
       >
@@ -646,7 +810,7 @@ export default function NSAPWorkbook() {
       {/* ── Import Preview & Confirmation Dialog (SocialAuditPortal) ── */}
       {importPreview.isOpen && (
         <SocialAuditPortal>
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full border border-gray-200 overflow-hidden">
               <div className="p-4 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
