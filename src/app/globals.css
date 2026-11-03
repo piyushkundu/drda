@@ -2,21 +2,8 @@
 @import "./krutidev-font.css";
 @import "tailwindcss";
 
-/* Local KrutiDev font as reliable fallback */
-@font-face {
-  font-family: 'Kruti Dev 010';
-  src: url('/fonts/KrutiDev010.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'KrutiDev010';
-  src: url('/fonts/KrutiDev010.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+.font-kruti {
+  font-family: 'Kruti Dev 010', 'KrutiDev010', 'Kruti Dev', sans-serif !important;
 }
 
 /* NSAP FortuneSheet Cell Editor & Formula Bar Font Overrides */

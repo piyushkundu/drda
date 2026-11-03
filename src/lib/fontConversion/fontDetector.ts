@@ -31,3 +31,4 @@ export function isLikelyKrutiDev(text: string): boolean {
   // 'Z' (reph), 'a' (anuswar), 'u' (na), 'r' (ta), 'd' (ka), 'x' (ga), 'j' (ra), etc.
   return /[a-zA-Z~@#$%^&*_+<>?/;'{}[\]]/.test(trimmed);
 }
+

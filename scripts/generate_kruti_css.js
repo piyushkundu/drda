@@ -40,3 +40,4 @@ const css = `/* Embedded Kruti Dev 010 Font - Zero Latency, 100% Offline & Netwo
 
 fs.writeFileSync('src/app/krutidev-font.css', css, 'utf8');
 console.log('Successfully generated src/app/krutidev-font.css, size:', css.length);
+

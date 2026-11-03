@@ -56,3 +56,4 @@ export function renderAuditText(
   // Unicode default
   return <span className={options?.unicodeClass}>{effectiveUnicode}</span>;
 }
+
