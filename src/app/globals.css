@@ -11,6 +11,53 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'KrutiDev010';
+  src: url('/fonts/KrutiDev010.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* NSAP FortuneSheet Cell Editor & Formula Bar Font Overrides */
+.workbook-krutidev #luckysheet-rich-text-editor,
+.workbook-krutidev #luckysheet-rich-text-editor *,
+.workbook-krutidev .luckysheet-cell-input,
+.workbook-krutidev .luckysheet-cell-input *,
+.workbook-krutidev #luckysheet-functionbox-cell,
+.workbook-krutidev #luckysheet-functionbox-cell *,
+.workbook-krutidev .fortune-fx-input,
+.workbook-krutidev .fortune-fx-input * {
+  font-family: 'Kruti Dev 010', 'KrutiDev010', 'Kruti Dev', sans-serif !important;
+  font-size: 13.5px !important;
+  line-height: 1.3 !important;
+}
+
+.workbook-unicode #luckysheet-rich-text-editor,
+.workbook-unicode #luckysheet-rich-text-editor *,
+.workbook-unicode .luckysheet-cell-input,
+.workbook-unicode .luckysheet-cell-input *,
+.workbook-unicode #luckysheet-functionbox-cell,
+.workbook-unicode #luckysheet-functionbox-cell *,
+.workbook-unicode .fortune-fx-input,
+.workbook-unicode .fortune-fx-input * {
+  font-family: 'Mangal', 'Noto Sans Devanagari', sans-serif !important;
+  font-size: 12.5px !important;
+  line-height: 1.3 !important;
+}
+
+/* When editing a Numeric / Registration ID / Date cell in the workbook */
+.workbook-cell-numeric #luckysheet-rich-text-editor,
+.workbook-cell-numeric #luckysheet-rich-text-editor *,
+.workbook-cell-numeric .luckysheet-cell-input,
+.workbook-cell-numeric .luckysheet-cell-input *,
+.workbook-cell-numeric #luckysheet-functionbox-cell,
+.workbook-cell-numeric #luckysheet-functionbox-cell * {
+  font-family: Arial, sans-serif !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+}
+
 :root {
   --bg-primary: #0f0f23;
   --bg-secondary: #1a1a3e;

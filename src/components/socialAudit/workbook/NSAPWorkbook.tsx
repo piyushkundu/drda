@@ -229,6 +229,123 @@ export default function NSAPWorkbook() {
     };
   }, [mounted]);
 
+  // Synchronizes cell editor font and formula bar font with the active cell
+  const syncEditorFont = useCallback(() => {
+    const container = workbookContainerRef.current;
+    if (!container) return;
+
+    const cellInput = container.querySelector('#luckysheet-rich-text-editor') as HTMLElement | null;
+    const fxInput = container.querySelector('#luckysheet-functionbox-cell') as HTMLElement | null;
+
+    if (!cellInput && !fxInput) return;
+
+    // Check currently focused column and row from selection
+    let isHindiColumn = true;
+    if (sheetRef.current) {
+      try {
+        const selection = sheetRef.current.getSelection();
+        if (selection && selection.length > 0) {
+          const col = selection[0].column?.[0];
+          // Columns that should stay in English/Numeric font:
+          // 0 (S.No), 2..5 (Counts), 7, 9, 10, 12, 13, 15, 17, 19 (Reg IDs), 20 (Date)
+          const numericCols = [0, 2, 3, 4, 5, 7, 9, 10, 12, 13, 15, 17, 19, 20];
+          if (col !== undefined && numericCols.includes(col)) {
+            isHindiColumn = false;
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (isHindiColumn) {
+      container.classList.remove('workbook-cell-numeric');
+    } else {
+      container.classList.add('workbook-cell-numeric');
+    }
+
+    const targetFont = fontMode === 'krutidev'
+      ? (isHindiColumn ? "'Kruti Dev 010', 'KrutiDev010', 'Kruti Dev', sans-serif" : "Arial, sans-serif")
+      : (isHindiColumn ? "'Mangal', 'Noto Sans Devanagari', sans-serif" : "Arial, sans-serif");
+
+    const targetFontSize = fontMode === 'krutidev' && isHindiColumn ? "13.5px" : "12px";
+
+    if (cellInput) {
+      cellInput.style.setProperty('font-family', targetFont, 'important');
+      cellInput.style.setProperty('font-size', targetFontSize, 'important');
+      const spans = cellInput.querySelectorAll<HTMLElement>('span');
+      spans.forEach(s => {
+        s.style.setProperty('font-family', targetFont, 'important');
+        s.style.setProperty('font-size', targetFontSize, 'important');
+      });
+    }
+
+    if (fxInput) {
+      fxInput.style.setProperty('font-family', targetFont, 'important');
+      fxInput.style.setProperty('font-size', targetFontSize, 'important');
+      const fxSpans = fxInput.querySelectorAll<HTMLElement>('span');
+      fxSpans.forEach(s => {
+        s.style.setProperty('font-family', targetFont, 'important');
+        s.style.setProperty('font-size', targetFontSize, 'important');
+      });
+    }
+  }, [fontMode]);
+
+  // Attach event listeners and MutationObserver to apply Kruti Dev font during editing
+  useEffect(() => {
+    const container = workbookContainerRef.current;
+    if (!container) return;
+
+    const handleDblClick = () => {
+      syncEditorFont();
+      setTimeout(syncEditorFont, 10);
+      setTimeout(syncEditorFont, 50);
+      setTimeout(syncEditorFont, 150);
+    };
+
+    const handleKeyDown = () => {
+      setTimeout(syncEditorFont, 0);
+      setTimeout(syncEditorFont, 40);
+    };
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.id === 'luckysheet-rich-text-editor' ||
+          target.id === 'luckysheet-functionbox-cell' ||
+          target.classList.contains('fortune-fx-input'))
+      ) {
+        syncEditorFont();
+        setTimeout(syncEditorFont, 20);
+      }
+    };
+
+    // Watch for DOM changes when FortuneSheet mounts or modifies #luckysheet-rich-text-editor
+    const observer = new MutationObserver(() => {
+      const cellInput = container.querySelector('#luckysheet-rich-text-editor');
+      if (cellInput) {
+        syncEditorFont();
+      }
+    });
+
+    observer.observe(container, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'class']
+    });
+
+    container.addEventListener('dblclick', handleDblClick, true);
+    container.addEventListener('keydown', handleKeyDown, true);
+    container.addEventListener('focusin', handleFocusIn, true);
+
+    return () => {
+      observer.disconnect();
+      container.removeEventListener('dblclick', handleDblClick, true);
+      container.removeEventListener('keydown', handleKeyDown, true);
+      container.removeEventListener('focusin', handleFocusIn, true);
+    };
+  }, [syncEditorFont]);
+
   // Filtered GP list for quick dropdown navigation (filtered from the 47 NSAP GPs)
   const filteredGps = useMemo(() => {
     return nsapGps.filter((r) => {
@@ -487,74 +604,74 @@ export default function NSAPWorkbook() {
           : 'h-full min-h-0'
       }`}
     >
-      {/* ── Top Header Bar ── */}
-      <header className="border-b border-gray-200 bg-white px-4 py-2.5 shrink-0 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          {/* Title and Badge */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0 shadow-xs">
-              <FileSpreadsheet className="w-5 h-5" />
+      {/* ── Top Header Bar (Spacious & Premium Enterprise Design) ── */}
+      <header className="border-b border-slate-200/90 bg-white px-4 md:px-5 py-2.5 shrink-0 shadow-2xs">
+        {/* Row 1: Title, Background Sync Indicator & Primary Action Tools */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          {/* Left: Branding, Title, Badges & Background Sync */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-100/70 border border-emerald-200/80 flex items-center justify-center text-emerald-700 shrink-0 shadow-2xs">
+              <FileSpreadsheet className="w-4.5 h-4.5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-gray-900 leading-tight">
-                  राष्ट्रीय वृद्धावस्था पेंशन (NSAP) आधिकारिक एक्सेल वर्कबुक
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight tracking-tight">
+                  राष्ट्रीय वृद्धावस्था पेंशन (NSAP) आधिकारिक वर्कबुक
                 </h1>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  24 स्तम्भ प्रारूप
-                </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                  47 GP + 1 सारांश
-                </span>
-                {isFullscreen && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-200 animate-pulse">
-                    ⛶ पूर्ण स्क्रीन सक्रिय
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                    24 स्तम्भ प्रारूप
                   </span>
-                )}
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/80">
+                    47 GP + 1 सारांश
+                  </span>
+                  {isFullscreen && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-800 border border-purple-200 animate-pulse">
+                      ⛶ पूर्ण स्क्रीन
+                    </span>
+                  )}
+                </div>
+
+                {/* Background Cloud Sync Status (Quiet & subtle in background) */}
+                <div className="hidden md:inline-flex items-center gap-1.5 text-[11px] text-slate-400 pl-1">
+                  {saveStatus === 'saving' ? (
+                    <span className="inline-flex items-center gap-1 text-amber-600 font-medium animate-pulse" title="क्लाउड डेटाबेस से सिंक हो रहा है">
+                      <RefreshCw className="w-3 h-3 animate-spin text-amber-600" />
+                      <span>सिंक हो रहा है...</span>
+                    </span>
+                  ) : saveStatus === 'unsaved' ? (
+                    <span className="inline-flex items-center gap-1 text-amber-600 font-medium" title="असुरक्षित परिवर्तन मौजूद हैं">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      <span>असुरक्षित परिवर्तन</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-slate-400 hover:text-slate-600 transition-colors" title="सभी परिवर्तन क्लाउड पर सुरक्षित हैं">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span>क्लाउड सिंक</span>
+                    </span>
+                  )}
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">
-                जनपद बागपत (2026-27) • 47 NSAP ग्राम पंचायतें • फॉर्च्यून शीट व एक्सेल जेएस इंजन • कृतिदेव 010 / मंगल यूनिकोड
-              </p>
             </div>
           </div>
 
-          {/* Action Tools & Save Status */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Cloud Status */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border bg-gray-50 text-gray-600 border-gray-200">
-              {saveStatus === 'saving' ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
-                  <span>सिंक हो रहा है...</span>
-                </>
-              ) : saveStatus === 'unsaved' ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-amber-800">असुरक्षित परिवर्तन</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-700">क्लाउड सिंक सक्रिय</span>
-                </>
-              )}
-            </div>
-
-            {/* Central Edit Mode Indicator */}
-            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border ${
+          {/* Right: Action Buttons Group (Clean, Compact, Spacious) */}
+          <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+            {/* Edit / Read-Only Mode Badge */}
+            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
               isEditMode 
-                ? 'bg-amber-50 text-amber-800 border-amber-300' 
-                : 'bg-gray-100 text-gray-600 border-gray-200'
+                ? 'bg-amber-50 text-amber-800 border-amber-300/80' 
+                : 'bg-slate-100/80 text-slate-600 border-slate-200/80'
             }`}>
-              {isEditMode ? <Unlock className="w-3.5 h-3.5 text-amber-600" /> : <Lock className="w-3.5 h-3.5 text-gray-400" />}
-              <span>{isEditMode ? 'Edit Mode ON' : 'Read Only'}</span>
+              {isEditMode ? <Unlock className="w-3.5 h-3.5 text-amber-600" /> : <Lock className="w-3.5 h-3.5 text-slate-400" />}
+              <span>{isEditMode ? 'Edit Mode' : 'Read Only'}</span>
             </div>
 
-            {/* Save to Cloud Button */}
+            {/* Save to Cloud Button (Visible only in Edit Mode) */}
             {isEditMode && (
               <button
                 onClick={handleSaveToCloud}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-colors"
                 title="क्लाउड पर तुरंत सुरक्षित करें"
               >
                 <Save className="w-3.5 h-3.5" />
@@ -562,54 +679,11 @@ export default function NSAPWorkbook() {
               </button>
             )}
 
-            {/* Scroll to Top (Row 1) Button */}
-            <button
-              onClick={handleScrollToTop}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium transition-colors shadow-xs"
-              title="शीर्ष पंक्ति (Row 1) पर तुरंत जाएं"
-            >
-              <ArrowUp className="w-3.5 h-3.5 text-emerald-600" />
-              <span>शीर्ष पर जाएं</span>
-            </button>
-
-            {/* Fullscreen Toggle Button */}
-            <button
-              onClick={toggleFullscreen}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-colors border ${
-                isFullscreen
-                  ? 'bg-purple-700 hover:bg-purple-800 text-white border-purple-800 shadow-sm'
-                  : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200'
-              }`}
-              title={isFullscreen ? 'सामान्य दृश्य पर लौटें (Esc)' : 'पूर्ण स्क्रीन में खोलें (Full Screen)'}
-            >
-              {isFullscreen ? (
-                <>
-                  <Minimize2 className="w-3.5 h-3.5" />
-                  <span>सामान्य दृश्य (Esc)</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span>फुल स्क्रीन</span>
-                </>
-              )}
-            </button>
-
-            {/* Print Active Sheet */}
-            <button
-              onClick={handlePrintActive}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium transition-colors shadow-xs"
-              title="सक्रिय शीट प्रिंट / PDF"
-            >
-              <Printer className="w-3.5 h-3.5 text-gray-500" />
-              <span>प्रिंट / PDF</span>
-            </button>
-
-            {/* Import Excel */}
+            {/* Import Excel (Visible only in Edit Mode) */}
             {isEditMode && (
-              <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium cursor-pointer transition-colors shadow-xs">
+              <label className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium cursor-pointer transition-colors shadow-2xs" title="Excel (.xlsx) फ़ाइल आयात करें">
                 <Upload className="w-3.5 h-3.5 text-blue-600" />
-                <span>Excel आयात</span>
+                <span>आयात</span>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -620,7 +694,43 @@ export default function NSAPWorkbook() {
               </label>
             )}
 
-            {/* Export Excel */}
+            <div className="h-5 w-px bg-slate-200 mx-1" />
+
+            {/* Scroll to Top (Row 1) - Compact Icon Button with Tooltip */}
+            <button
+              onClick={handleScrollToTop}
+              className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors shadow-2xs"
+              title="शीर्ष पंक्ति (Row 1) पर जाएं"
+              aria-label="शीर्ष पंक्ति पर जाएं"
+            >
+              <ArrowUp className="w-4 h-4" />
+            </button>
+
+            {/* Fullscreen Toggle - ONLY ICON with Tooltip (As requested by user) */}
+            <button
+              onClick={toggleFullscreen}
+              className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors shadow-2xs ${
+                isFullscreen
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-700 shadow-xs'
+                  : 'border-slate-200 hover:bg-purple-50 text-purple-700 hover:border-purple-200'
+              }`}
+              title={isFullscreen ? 'सामान्य दृश्य पर लौटें (Esc)' : 'पूर्ण स्क्रीन में खोलें (Full Screen)'}
+              aria-label="फुल स्क्रीन टॉगल"
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+
+            {/* Print Active Sheet - Compact Icon Button with Tooltip */}
+            <button
+              onClick={handlePrintActive}
+              className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors shadow-2xs"
+              title="सक्रिय शीट प्रिंट / PDF"
+              aria-label="प्रिंट / PDF"
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+
+            {/* Export Excel (.xlsx) - Primary CTA */}
             <button
               onClick={handleExportExcel}
               disabled={isExporting}
@@ -628,63 +738,63 @@ export default function NSAPWorkbook() {
               title="सम्पूर्ण 48-शीट NSAP एक्सेल वर्कबुक डाउनलोड करें"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>{isExporting ? 'डाउनलोड हो रहा...' : 'Excel डाउनलोड (.xlsx)'}</span>
+              <span>{isExporting ? 'डाउनलोड...' : 'Excel (.xlsx)'}</span>
             </button>
           </div>
         </div>
 
         {/* ── Secondary Navigation Toolbar: Block, Search, Jump, Font ── */}
-        <div className="mt-2.5 pt-2.5 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
-          {/* Left: Block Filter Tabs & Search */}
+        <div className="mt-2 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
+          {/* Left: Block Filter Tabs, Search & GP Select */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Block Tabs */}
-            <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50 text-xs font-medium">
+            <div className="inline-flex rounded-lg border border-slate-200/90 p-0.5 bg-slate-100/80 text-xs font-medium">
               <button
                 onClick={() => setSelectedBlock('all')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
                   selectedBlock === 'all'
-                    ? 'bg-white text-emerald-800 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-emerald-800 font-bold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                सभी NSAP (47 GP)
+                सभी (47)
               </button>
               <button
                 onClick={() => setSelectedBlock('Baghpat')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
                   selectedBlock === 'Baghpat'
-                    ? 'bg-white text-emerald-800 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-emerald-800 font-bold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                बागपत ({baghpatCount} GP)
+                बागपत ({baghpatCount})
               </button>
               <button
                 onClick={() => setSelectedBlock('Baraut')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
                   selectedBlock === 'Baraut'
-                    ? 'bg-white text-emerald-800 font-bold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-emerald-800 font-bold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                बड़ौत ({barautCount} GP)
+                बड़ौत ({barautCount})
               </button>
             </div>
 
             {/* Search GP Input */}
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="NSAP ग्राम पंचायत खोजें..."
+                placeholder="NSAP GP खोजें..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1 bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 rounded-lg text-xs w-48 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
+                className="pl-8 pr-3 py-1 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg text-xs w-40 md:w-44 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -695,7 +805,7 @@ export default function NSAPWorkbook() {
             <select
               value={activeSheetIndex}
               onChange={(e) => handleJumpToSheet(parseInt(e.target.value, 10))}
-              className="py-1 px-2.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-xs"
+              className="py-1 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-2xs max-w-[240px]"
             >
               <option value={0}>0. सारांश (समस्त 47 NSAP ग्राम पंचायत)</option>
               <optgroup label="47 NSAP ग्राम पंचायतें (Worksheets)">
@@ -712,22 +822,22 @@ export default function NSAPWorkbook() {
           </div>
 
           {/* Right: Sheet Indicator, Prev/Next buttons & Font Switcher */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* Sheet Switcher Controls */}
-            <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg p-0.5">
+            <div className="flex items-center gap-1 bg-slate-100/80 border border-slate-200/90 rounded-lg p-0.5">
               <button
                 onClick={handlePrevSheet}
-                className="p-1 hover:bg-white rounded text-gray-600 hover:text-gray-900 transition-colors"
+                className="p-1 hover:bg-white rounded text-slate-600 hover:text-slate-900 transition-colors"
                 title="पिछली शीट (Previous Sheet)"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
-              <span className="text-xs font-semibold text-gray-800 px-2 max-w-[220px] truncate" title={activeSheetName}>
+              <span className="text-xs font-semibold text-slate-800 px-2 max-w-[200px] truncate" title={activeSheetName}>
                 {activeSheetName}
               </span>
               <button
                 onClick={handleNextSheet}
-                className="p-1 hover:bg-white rounded text-gray-600 hover:text-gray-900 transition-colors"
+                className="p-1 hover:bg-white rounded text-slate-600 hover:text-slate-900 transition-colors"
                 title="अगली शीट (Next Sheet)"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -735,17 +845,17 @@ export default function NSAPWorkbook() {
             </div>
 
             {/* Font Mode Switcher */}
-            <div className="flex items-center gap-1.5 border border-gray-200 rounded-lg p-0.5 bg-gray-50 text-xs font-medium">
-              <span className="text-[11px] text-gray-500 px-1 font-normal flex items-center gap-1">
-                <Type className="w-3 h-3 text-gray-400" />
+            <div className="flex items-center gap-1 border border-slate-200/90 rounded-lg p-0.5 bg-slate-100/80 text-xs font-medium">
+              <span className="text-[11px] text-slate-500 px-1 font-normal flex items-center gap-1">
+                <Type className="w-3 h-3 text-slate-400" />
                 फॉन्ट:
               </span>
               <button
                 onClick={() => setFontMode('krutidev')}
-                className={`px-2 py-0.5 rounded transition-colors ${
+                className={`px-2.5 py-0.5 rounded-md transition-colors ${
                   fontMode === 'krutidev'
-                    ? 'bg-emerald-600 text-white font-semibold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title="कृतिदेव 010 (शासकीय मानक)"
               >
@@ -753,10 +863,10 @@ export default function NSAPWorkbook() {
               </button>
               <button
                 onClick={() => setFontMode('unicode')}
-                className={`px-2 py-0.5 rounded transition-colors ${
+                className={`px-2.5 py-0.5 rounded-md transition-colors ${
                   fontMode === 'unicode'
-                    ? 'bg-emerald-600 text-white font-semibold shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title="मंगल / यूनिकोड (देवनागरी)"
               >
@@ -780,10 +890,12 @@ export default function NSAPWorkbook() {
       {/* ── FortuneSheet Main Spreadsheet Container ── */}
       <div 
         ref={workbookContainerRef}
-        className="flex-1 w-full relative overflow-hidden min-h-0 bg-white"
+        className={`flex-1 w-full relative overflow-hidden min-h-0 bg-white ${
+          fontMode === 'krutidev' ? 'workbook-krutidev' : 'workbook-unicode'
+        }`}
         style={{ 
-          height: isFullscreen ? 'calc(100vh - 105px)' : 'calc(100vh - 165px)', 
-          minHeight: isFullscreen ? 'calc(100vh - 105px)' : '520px', 
+          height: isFullscreen ? 'calc(100vh - 95px)' : 'calc(100vh - 150px)', 
+          minHeight: isFullscreen ? 'calc(100vh - 95px)' : '520px', 
           width: '100%' 
         }}
       >
