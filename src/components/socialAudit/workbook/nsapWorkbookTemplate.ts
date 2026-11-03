@@ -327,3 +327,4 @@ export const STANDARD_ROW_HEIGHTS: Record<string, number> = {
 
 export const DEFAULT_FONT_NAME = 'Kruti Dev 010';
 export const DEFAULT_FONT_SIZE = 10;
+

@@ -731,7 +731,7 @@ export default function NSAPDataTab() {
               title="24-स्तम्भ आधिकारिक NSAP एक्सेल वर्कबुक खोलें"
             >
               <FileSpreadsheet className="w-4 h-4 stroke-[2.5]" />
-              <span>NSAP एक्सेल वर्कबुक (88 GP)</span>
+              <span>NSAP एक्सेल वर्कबुक (47 GP)</span>
             </button>
 
             {/* Direct Excel Paste Button (Visible only in Edit Mode) */}

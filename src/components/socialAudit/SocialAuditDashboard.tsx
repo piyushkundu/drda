@@ -61,65 +61,66 @@ export default function SocialAuditDashboard() {
           setIsOpenMobile={setIsMobileSidebarOpen}
         />
 
-        {/* Main Content Area - Uses 100% full screen width on mobile */}
-        <main className="flex-1 w-full min-w-0 h-full overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 bg-slate-100/60 scrollbar-thin">
-          <div className="w-full max-w-[1920px] mx-auto space-y-4 sm:space-y-5 min-w-0">
-            {/* 1. डैशबोर्ड (PRIMARY MONITORING CENTER) */}
-            {(activeTab === 'dashboard' || activeTab === 'overview') && (
-              <ExecutiveDashboardTab />
-            )}
+        {/* Main Content Area - When in NSAP Workbook, use 100% full viewport height without padding */}
+        {activeTab === 'nsap-workbook' ? (
+          <main className="flex-1 w-full min-w-0 h-full overflow-hidden bg-white flex flex-col">
+            <NSAPWorkbook />
+          </main>
+        ) : (
+          <main className="flex-1 w-full min-w-0 h-full overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 bg-slate-100/60 scrollbar-thin">
+            <div className="w-full max-w-[1920px] mx-auto space-y-4 sm:space-y-5 min-w-0">
+              {/* 1. डैशबोर्ड (PRIMARY MONITORING CENTER) */}
+              {(activeTab === 'dashboard' || activeTab === 'overview') && (
+                <ExecutiveDashboardTab />
+              )}
 
-            {/* 2. आगामी सभाएं */}
-            {activeTab === 'upcoming' && (
-              <UpcomingSabhasTab />
-            )}
+              {/* 2. आगामी सभाएं */}
+              {activeTab === 'upcoming' && (
+                <UpcomingSabhasTab />
+              )}
 
-            {/* 3. सोशल ऑडिट कैलेंडर (रोस्टर) */}
-            {activeTab === 'calendar' && (
-              <CalendarTableTab />
-            )}
+              {/* 3. सोशल ऑडिट कैलेंडर (रोस्टर) */}
+              {activeTab === 'calendar' && (
+                <CalendarTableTab />
+              )}
 
-            {/* 4. पंचायत निर्णय ऐप (R 9.6.2) */}
-            {activeTab === 'nirnay' && (
-              <PanchayatNirnayTab />
-            )}
+              {/* 4. पंचायत निर्णय ऐप (R 9.6.2) */}
+              {activeTab === 'nirnay' && (
+                <PanchayatNirnayTab />
+              )}
 
-            {/* 5. MIS ऑडिट फीडिंग (R 9.1.3) */}
-            {activeTab === 'mis-feeding' && (
-              <MisFeedingTab />
-            )}
+              {/* 5. MIS ऑडिट फीडिंग (R 9.1.3) */}
+              {activeTab === 'mis-feeding' && (
+                <MisFeedingTab />
+              )}
 
-            {/* 6. NSAP डेटा (लाभार्थी विवरण व प्रविष्टि) */}
-            {activeTab === 'nsap-data' && (
-              <NSAPDataTab />
-            )}
+              {/* 6. NSAP डेटा (लाभार्थी विवरण व प्रविष्टि) */}
+              {activeTab === 'nsap-data' && (
+                <NSAPDataTab />
+              )}
 
-            {/* 7. NSAP पेंशन रिपोर्ट (मासिक प्रारूप) */}
-            {activeTab === 'nsap-report' && (
-              <NSAPReportTab />
-            )}
+              {/* 7. NSAP पेंशन रिपोर्ट (मासिक प्रारूप) */}
+              {activeTab === 'nsap-report' && (
+                <NSAPReportTab />
+              )}
 
-            {/* 7.5. NSAP आधिकारिक एक्सेल वर्कबुक (24 स्तम्भ FortuneSheet) */}
-            {activeTab === 'nsap-workbook' && (
-              <NSAPWorkbook />
-            )}
+              {/* 8. टीम एवं बी०आर०पी० रोस्टर */}
+              {activeTab === 'roster' && (
+                <TeamRosterTab />
+              )}
 
-            {/* 8. टीम एवं बी०आर०पी० रोस्टर */}
-            {activeTab === 'roster' && (
-              <TeamRosterTab />
-            )}
+              {/* 9. केन्द्रीय रिपोर्ट सेंटर (Report Center - 9 Reports) */}
+              {activeTab === 'reports' && (
+                <ReportCenterTab />
+              )}
 
-            {/* 9. केन्द्रीय रिपोर्ट सेंटर (Report Center - 9 Reports) */}
-            {activeTab === 'reports' && (
-              <ReportCenterTab />
-            )}
-
-            {/* 10. गतिविधि लॉग एवं ऑडिट ट्रेल (Activity Log) */}
-            {activeTab === 'activity-log' && (
-              <ActivityLogTab />
-            )}
-          </div>
-        </main>
+              {/* 10. गतिविधि लॉग एवं ऑडिट ट्रेल (Activity Log) */}
+              {activeTab === 'activity-log' && (
+                <ActivityLogTab />
+              )}
+            </div>
+          </main>
+        )}
       </div>
 
       {/* Shared Modals & Slide-over Panels */}

@@ -142,7 +142,7 @@ export default function NSAPReportTab() {
               title="24-स्तम्भ आधिकारिक NSAP एक्सेल वर्कबुक खोलें"
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>NSAP एक्सेल वर्कबुक (88 GP)</span>
+              <span>NSAP एक्सेल वर्कबुक (47 GP)</span>
             </button>
 
             <button

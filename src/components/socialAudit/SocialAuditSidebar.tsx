@@ -143,7 +143,7 @@ export default function SocialAuditSidebar({
       label: 'NSAP एक्सेल वर्कबुक',
       sublabel: 'Official 24-Column FortuneSheet',
       icon: FileSpreadsheet,
-      badge: '88 GP',
+      badge: `${nsapRosterCount} GP`,
       badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-300',
       iconColor: 'text-emerald-700 bg-emerald-50 border-emerald-200',
     },

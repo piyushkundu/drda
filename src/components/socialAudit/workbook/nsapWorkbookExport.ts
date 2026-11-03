@@ -446,3 +446,4 @@ export function printNSAPActiveSheet(
   `);
   printWindow.document.close();
 }
+

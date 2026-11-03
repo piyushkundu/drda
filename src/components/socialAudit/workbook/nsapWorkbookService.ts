@@ -158,7 +158,7 @@ function buildColumnLen() {
 }
 
 /**
- * Builds the Summary Sheet (सभी ग्राम पंचायत / सारांश) containing all 88 GPs
+ * Builds the Summary Sheet (सभी ग्राम पंचायत / सारांश) containing the 47 NSAP GPs
  */
 export function buildSummarySheet(
   records: SocialAuditRecord[],
@@ -167,8 +167,8 @@ export function buildSummarySheet(
 ) {
   const fontName = fontMode === 'krutidev' ? 'Kruti Dev 010' : 'Mangal';
   const titleText = fontMode === 'krutidev'
-    ? 'jk"Vªh; lkekftd lgk;d dk;ZØe (NSAP) }kjk lapkfyr ;kstuk dk uke& o`}koLFkk isa\'ku ;kstuk\ntuin&ckxir  ds leLr fodkl [k.Mksa esa ykHkkfFkZ;ksa ds lks\'ky vkfMV dk leLr xzke iapk;r lkjka\'k'
-    : 'राष्ट्रीय सामाजिक सहायता कार्यक्रम (NSAP) द्वारा संचालित योजना का नाम - वृद्धावस्था पेंशन योजना\nजनपद-बागपत के समस्त विकास खण्डों में लाभार्थियों के सोशल ऑडिट का समस्त ग्राम पंचायत सारांश';
+    ? 'jk"Vªh; lkekftd lgk;d dk;ZØe (NSAP) }kjk lapkfyr ;kstuk dk uke& o`' + '}koLFkk isa\'ku ;kstuk\ntuin&ckxir  ds 47 xzke iapk;rksa esa ykHkkfFkZ;ksa ds lks\'ky vkfMV dk leLr lkjka\'k'
+    : 'राष्ट्रीय सामाजिक सहायता कार्यक्रम (NSAP) द्वारा संचालित योजना का नाम - वृद्धावस्था पेंशन योजना\nजनपद-बागपत के 47 ग्राम पंचायतों में लाभार्थियों के सोशल ऑडिट का समस्त सारांश';
 
   const celldata = buildHeaderCells(titleText, fontMode, fontName);
   const merges: Record<string, any> = { ...STANDARD_HEADER_MERGES };
@@ -192,7 +192,7 @@ export function buildSummarySheet(
   let grandDeceased = 0;
   let grandIrregularity = 0;
 
-  // Row 5.. (5 + 88 - 1 = 92)
+  // Row 5.. (5 + records.length - 1)
   records.forEach((record, idx) => {
     const r = 5 + idx;
     const nsapData = nsapMap.get(record.id) || 
@@ -222,8 +222,8 @@ export function buildSummarySheet(
 
     const gpName = fontMode === 'krutidev' ? record.gpNameKrutiDev : record.gpNameUnicode;
 
-    // Col 0: S.No
-    celldata.push({ r, c: 0, v: createCell(record.sno, { fontName: 'Arial', ht: 0 }) });
+    // Col 0: S.No (1 to 47)
+    celldata.push({ r, c: 0, v: createCell(idx + 1, { fontName: 'Arial', ht: 0 }) });
     // Col 1: GP Name
     celldata.push({ r, c: 1, v: createCell(gpName, { fontName, ht: 1 }) });
     // Col 2: Total Beneficiaries
@@ -256,7 +256,7 @@ export function buildSummarySheet(
   const totalRowIndex = 5 + records.length;
   merges[`${totalRowIndex}_0`] = { r: totalRowIndex, c: 0, rs: 1, cs: 2 };
 
-  const totalLabel = fontMode === 'krutidev' ? 'dqy ;ksx ¼tuin ckxir½' : 'कुल योग (जनपद बागपत)';
+  const totalLabel = fontMode === 'krutidev' ? 'dqy ;ksx ¼47 xzke iapk;r½' : 'कुल योग (47 ग्राम पंचायत)';
   celldata.push({
     r: totalRowIndex,
     c: 0,
@@ -454,18 +454,20 @@ export function buildGPSheet(
 
 /**
  * Builds the Complete NSAP District Workbook:
- * - Sheet 0: Summary Sheet (सभी ग्राम पंचायत)
- * - Sheets 1..88: One sheet per Gram Panchayat
+ * - Sheet 0: Summary Sheet (सभी 47 NSAP ग्राम पंचायत)
+ * - Sheets 1..47: One sheet per NSAP Gram Panchayat
  */
 export function buildNSAPWorkbookData({
   records,
   nsapRecords,
   fontMode
 }: BuildWorkbookParams) {
+  // Only include Gram Panchayats where NSAP is held (hasNSAP === true)
+  const nsapGps = records.filter(r => r.hasNSAP);
   const allSheets: any[] = [];
 
-  // Sheet 0: Summary Sheet
-  allSheets.push(buildSummarySheet(records, nsapRecords, fontMode));
+  // Sheet 0: Summary Sheet (47 NSAP Gram Panchayats)
+  allSheets.push(buildSummarySheet(nsapGps, nsapRecords, fontMode));
 
   // Build map of existing NSAP data
   const nsapMap = new Map<string, NSAPGramPanchayatData>();
@@ -475,8 +477,8 @@ export function buildNSAPWorkbookData({
     if (item.gpNameKrutiDev) nsapMap.set(item.gpNameKrutiDev.trim(), item);
   });
 
-  // Sheets 1..88: One for every Gram Panchayat
-  records.forEach((record, idx) => {
+  // Sheets 1..47: One for every NSAP Gram Panchayat
+  nsapGps.forEach((record, idx) => {
     const nsapData = nsapMap.get(record.id) || 
                      nsapMap.get(record.gpNameUnicode.trim()) || 
                      nsapMap.get(record.gpNameKrutiDev.trim());
@@ -516,6 +518,7 @@ export function extractNSAPDataFromWorkbook(
 ): NSAPGramPanchayatData[] {
   if (!allSheets || allSheets.length < 2) return existingNsapRecords;
 
+  const nsapGps = records.filter(r => r.hasNSAP);
   const resultMap = new Map<string, NSAPGramPanchayatData>();
 
   // Initialize with existing data as fallback
@@ -528,8 +531,8 @@ export function extractNSAPDataFromWorkbook(
     const sheet = allSheets[sIdx];
     if (!sheet) continue;
 
-    // Identify corresponding SocialAuditRecord (either matching index-1 or sheet name)
-    const record = records[sIdx - 1];
+    // Identify corresponding SocialAuditRecord from the 47 NSAP GPs
+    const record = nsapGps[sIdx - 1];
     if (!record) continue;
 
     const totalBeneficiaries = parseInt(getCellValue(sheet, 5, 2), 10) || 0;

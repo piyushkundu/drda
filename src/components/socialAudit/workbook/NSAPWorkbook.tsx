@@ -77,6 +77,14 @@ export default function NSAPWorkbook() {
   // Export loading state
   const [isExporting, setIsExporting] = useState(false);
 
+  // Exact 47 Gram Panchayats where NSAP is held
+  const nsapGps = useMemo(() => {
+    return records.filter((r) => r.hasNSAP);
+  }, [records]);
+
+  const baghpatCount = useMemo(() => nsapGps.filter((r) => r.block === 'Baghpat').length, [nsapGps]);
+  const barautCount = useMemo(() => nsapGps.filter((r) => r.block === 'Baraut').length, [nsapGps]);
+
   // Initialize initial workbook data
   const initialData = useMemo(() => {
     return buildNSAPWorkbookData({
@@ -88,11 +96,23 @@ export default function NSAPWorkbook() {
 
   useEffect(() => {
     setMounted(true);
+    // Force canvas resize to ensure grid displays immediately with full height
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 120);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Filtered GP list for quick dropdown navigation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [fontMode]);
+
+  // Filtered GP list for quick dropdown navigation (filtered from the 47 NSAP GPs)
   const filteredGps = useMemo(() => {
-    return records.filter((r) => {
+    return nsapGps.filter((r) => {
       const blockMatches = selectedBlock === 'all' || r.block === selectedBlock;
       const queryMatches = !searchQuery.trim() || 
         r.gpNameUnicode.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -100,7 +120,7 @@ export default function NSAPWorkbook() {
         r.sno.toString() === searchQuery.trim();
       return blockMatches && queryMatches;
     });
-  }, [records, selectedBlock, searchQuery]);
+  }, [nsapGps, selectedBlock, searchQuery]);
 
   // Jump to specific sheet
   const handleJumpToSheet = (sheetIndex: number) => {
@@ -115,13 +135,13 @@ export default function NSAPWorkbook() {
 
   // Jump to next / previous sheet
   const handleNextSheet = () => {
-    const totalSheets = records.length + 1;
+    const totalSheets = nsapGps.length + 1;
     const nextIndex = (activeSheetIndex + 1) % totalSheets;
     handleJumpToSheet(nextIndex);
   };
 
   const handlePrevSheet = () => {
-    const totalSheets = records.length + 1;
+    const totalSheets = nsapGps.length + 1;
     const prevIndex = (activeSheetIndex - 1 + totalSheets) % totalSheets;
     handleJumpToSheet(prevIndex);
   };
@@ -190,7 +210,7 @@ export default function NSAPWorkbook() {
       }
 
       // Update grand total row in summary sheet
-      const totalRow = 5 + records.length;
+      const totalRow = 5 + nsapGps.length;
       sheetRef.current.setCellValue(totalRow, 2, grandTotalBeneficiaries, { id: 'sheet-summary' });
       sheetRef.current.setCellValue(totalRow, 3, grandVerifiedDirect, { id: 'sheet-summary' });
       sheetRef.current.setCellValue(totalRow, 4, grandVerifiedFamily, { id: 'sheet-summary' });
@@ -202,7 +222,7 @@ export default function NSAPWorkbook() {
     } catch (e) {
       console.error('Error recalculating summary sheet:', e);
     }
-  }, [records.length]);
+  }, [nsapGps.length]);
 
   // Hook triggered when a cell is edited
   const afterUpdateCell = useCallback((row: number, column: number, oldValue: any, newValue: any) => {
@@ -324,10 +344,10 @@ export default function NSAPWorkbook() {
 
   // Active sheet title
   const activeSheetName = useMemo(() => {
-    if (activeSheetIndex === 0) return '0. सारांश (सभी ग्राम पंचायत)';
-    const rec = records[activeSheetIndex - 1];
-    return rec ? `${rec.sno}. ${rec.gpNameUnicode} (${rec.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'})` : `Sheet ${activeSheetIndex}`;
-  }, [activeSheetIndex, records]);
+    if (activeSheetIndex === 0) return '0. सारांश (समस्त 47 NSAP ग्राम पंचायत)';
+    const rec = nsapGps[activeSheetIndex - 1];
+    return rec ? `${activeSheetIndex}. ${rec.gpNameUnicode} (${rec.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'})` : `Sheet ${activeSheetIndex}`;
+  }, [activeSheetIndex, nsapGps]);
 
   if (!mounted) {
     return (
@@ -341,9 +361,9 @@ export default function NSAPWorkbook() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full w-full flex flex-col bg-white overflow-hidden min-h-0">
       {/* ── Top Header Bar ── */}
-      <header className="border-b border-gray-200 bg-white px-4 py-3 shrink-0 shadow-xs">
+      <header className="border-b border-gray-200 bg-white px-4 py-2.5 shrink-0 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           {/* Title and Badge */}
           <div className="flex items-center gap-3">
@@ -359,11 +379,11 @@ export default function NSAPWorkbook() {
                   24 स्तम्भ प्रारूप
                 </span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                  88 GP + 1 सारांश
+                  47 GP + 1 सारांश
                 </span>
               </div>
               <p className="text-xs text-gray-500 mt-0.5">
-                जनपद बागपत (2026-27) • फॉर्च्यून शीट व एक्सेल जेएस इंजन • कृतिदेव 010 / मंगल यूनिकोड
+                जनपद बागपत (2026-27) • 47 NSAP ग्राम पंचायतें • फॉर्च्यून शीट व एक्सेल जेएस इंजन • कृतिदेव 010 / मंगल यूनिकोड
               </p>
             </div>
           </div>
@@ -442,7 +462,7 @@ export default function NSAPWorkbook() {
               onClick={handleExportExcel}
               disabled={isExporting}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50"
-              title="सम्पूर्ण 89-शीट NSAP एक्सेल वर्कबुक डाउनलोड करें"
+              title="सम्पूर्ण 48-शीट NSAP एक्सेल वर्कबुक डाउनलोड करें"
             >
               <Download className="w-3.5 h-3.5" />
               <span>{isExporting ? 'डाउनलोड हो रहा...' : 'Excel डाउनलोड (.xlsx)'}</span>
@@ -451,7 +471,7 @@ export default function NSAPWorkbook() {
         </div>
 
         {/* ── Secondary Navigation Toolbar: Block, Search, Jump, Font ── */}
-        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-2.5 pt-2.5 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
           {/* Left: Block Filter Tabs & Search */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Block Tabs */}
@@ -464,7 +484,7 @@ export default function NSAPWorkbook() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                सभी (88 GP)
+                सभी NSAP (47 GP)
               </button>
               <button
                 onClick={() => setSelectedBlock('Baghpat')}
@@ -474,7 +494,7 @@ export default function NSAPWorkbook() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                बागपत (44 GP)
+                बागपत ({baghpatCount} GP)
               </button>
               <button
                 onClick={() => setSelectedBlock('Baraut')}
@@ -484,7 +504,7 @@ export default function NSAPWorkbook() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                बड़ौत (44 GP)
+                बड़ौत ({barautCount} GP)
               </button>
             </div>
 
@@ -493,10 +513,10 @@ export default function NSAPWorkbook() {
               <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="ग्राम पंचायत खोजें..."
+                placeholder="NSAP ग्राम पंचायत खोजें..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-3 py-1 bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 rounded-lg text-xs w-44 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
+                className="pl-8 pr-3 py-1 bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 rounded-lg text-xs w-48 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
               />
               {searchQuery && (
                 <button
@@ -514,13 +534,16 @@ export default function NSAPWorkbook() {
               onChange={(e) => handleJumpToSheet(parseInt(e.target.value, 10))}
               className="py-1 px-2.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-xs"
             >
-              <option value={0}>0. सारांश (सभी 88 ग्राम पंचायत)</option>
-              <optgroup label="ग्राम पंचायतें (Worksheets)">
-                {filteredGps.map((gp) => (
-                  <option key={gp.id} value={gp.sno}>
-                    {gp.sno}. {gp.gpNameUnicode} ({gp.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'})
-                  </option>
-                ))}
+              <option value={0}>0. सारांश (समस्त 47 NSAP ग्राम पंचायत)</option>
+              <optgroup label="47 NSAP ग्राम पंचायतें (Worksheets)">
+                {filteredGps.map((gp) => {
+                  const sheetIndex = nsapGps.findIndex((n) => n.id === gp.id) + 1;
+                  return (
+                    <option key={gp.id} value={sheetIndex}>
+                      {sheetIndex}. {gp.gpNameUnicode} ({gp.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'})
+                    </option>
+                  );
+                })}
               </optgroup>
             </select>
           </div>
@@ -536,7 +559,7 @@ export default function NSAPWorkbook() {
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
-              <span className="text-xs font-semibold text-gray-800 px-2 max-w-[200px] truncate" title={activeSheetName}>
+              <span className="text-xs font-semibold text-gray-800 px-2 max-w-[220px] truncate" title={activeSheetName}>
                 {activeSheetName}
               </span>
               <button
@@ -592,7 +615,14 @@ export default function NSAPWorkbook() {
       )}
 
       {/* ── FortuneSheet Main Spreadsheet Container ── */}
-      <main className="flex-1 w-full relative overflow-hidden bg-white">
+      <div 
+        className="flex-1 w-full relative overflow-hidden min-h-0 bg-white"
+        style={{ 
+          height: 'calc(100vh - 165px)', 
+          minHeight: '520px', 
+          width: '100%' 
+        }}
+      >
         <Workbook
           ref={sheetRef}
           data={initialData}
@@ -611,7 +641,7 @@ export default function NSAPWorkbook() {
             afterUpdateCell
           }}
         />
-      </main>
+      </div>
 
       {/* ── Import Preview & Confirmation Dialog (SocialAuditPortal) ── */}
       {importPreview.isOpen && (
