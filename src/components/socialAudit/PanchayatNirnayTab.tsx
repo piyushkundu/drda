@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { renderAuditText } from '@/lib/renderAuditText';
 import { PanchayatNirnayStatus, SocialAuditRecord } from '@/types/socialAudit';
 import { matchesBRP } from '@/lib/brpHelper';
 import { filterRecordsByGlobalFilters } from '@/lib/globalFilterHelper';
@@ -46,22 +47,9 @@ export default function PanchayatNirnayTab() {
     }
   };
 
-  // Render font text helper
-  const renderText = (unicodeText: string, krutiText: string) => {
-    if (fontViewMode === 'krutidev') {
-      return <span style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>{krutiText}</span>;
-    }
-    if (fontViewMode === 'dual') {
-      return (
-        <span className="flex flex-col">
-          <span>{unicodeText}</span>
-          <span className="text-[11px] text-amber-300 font-mono" style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>
-            {krutiText}
-          </span>
-        </span>
-      );
-    }
-    return <span>{unicodeText}</span>;
+  // Universal font renderer respecting fontViewMode with bidirectional fallback
+  const renderText = (unicodeText?: string, krutiText?: string) => {
+    return renderAuditText(fontViewMode, unicodeText, krutiText);
   };
 
   // Filter records by global filters (BRP + Block + Date Range)

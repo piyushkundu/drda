@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { renderAuditText } from '@/lib/renderAuditText';
 import { NSAPReportSummary, NSAPReportRow, SocialAuditRecord } from '@/types/socialAudit';
 import { exportNSAPReportExcel } from '@/lib/exportSocialAuditExcel';
 import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
@@ -45,22 +46,9 @@ export default function NSAPReportTab() {
     }
   };
 
-  // Render text helper based on fontViewMode
-  const renderText = (unicodeText: string, krutiText: string) => {
-    if (fontViewMode === 'krutidev') {
-      return <span style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>{krutiText}</span>;
-    }
-    if (fontViewMode === 'dual') {
-      return (
-        <span className="flex flex-col">
-          <span className="text-slate-900 font-semibold">{unicodeText}</span>
-          <span className="text-[11px] text-amber-800 font-mono" style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>
-            {krutiText}
-          </span>
-        </span>
-      );
-    }
-    return <span>{unicodeText}</span>;
+  // Universal font renderer respecting fontViewMode with bidirectional fallback
+  const renderText = (unicodeText?: string, krutiText?: string) => {
+    return renderAuditText(fontViewMode, unicodeText, krutiText);
   };
 
   // Filter records by global selectedBRP

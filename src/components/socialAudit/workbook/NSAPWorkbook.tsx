@@ -7,8 +7,10 @@ import {
   FileSpreadsheet, Download, Upload, Printer, Save, 
   Search, ChevronLeft, ChevronRight, Filter, Lock, Unlock,
   RefreshCw, CheckCircle2, AlertCircle, Sparkles, Eye, 
-  Type, Check, ArrowRight, X, Building2, Maximize2, Minimize2, ArrowUp
+  Type, Check, ArrowRight, X, Building2, Maximize2, Minimize2, ArrowUp,
+  Paintbrush
 } from 'lucide-react';
+import { isLikelyKrutiDev } from '@/lib/fontConversion/fontDetector';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { AuditBlock, NSAPGramPanchayatData } from '@/types/socialAudit';
 import { 
@@ -81,6 +83,103 @@ export default function NSAPWorkbook() {
   // Export loading state
   const [isExporting, setIsExporting] = useState(false);
 
+  // Format Painter state
+  const [formatPainter, setFormatPainter] = useState<{
+    active: boolean;
+    format: {
+      ff?: any;
+      fs?: any;
+      bl?: any;
+      it?: any;
+      bg?: any;
+      fc?: any;
+      ht?: any;
+      vt?: any;
+      tb?: any;
+      ct?: any;
+    } | null;
+    sourceCoord: string;
+  }>({
+    active: false,
+    format: null,
+    sourceCoord: ''
+  });
+  const formatPainterRef = useRef(formatPainter);
+  formatPainterRef.current = formatPainter;
+
+  // Toggle / activate format painter from currently selected cell
+  const handleToggleFormatPainter = useCallback(() => {
+    if (formatPainter.active) {
+      setFormatPainter({ active: false, format: null, sourceCoord: '' });
+      showToast('फॉर्मेट पेंटर बंद किया गया', 'warning');
+      return;
+    }
+
+    const selection = sheetRef.current?.getSelection();
+    if (!selection || selection.length === 0) {
+      showToast('कृपया पहले वह सेल चुनें जिसका फॉर्मेट कॉपी करना है', 'warning');
+      return;
+    }
+
+    const sel = selection[0];
+    const r = sel.row[0];
+    const c = sel.column[0];
+
+    let cellObj: any = null;
+    try {
+      const cells = sheetRef.current?.getCellsByRange(sel);
+      cellObj = cells?.[0]?.[0];
+    } catch (_) {}
+
+    const extractedFormat = {
+      ff: cellObj?.ff || (fontMode === 'krutidev' ? 'Kruti Dev 010' : 'Arial'),
+      fs: cellObj?.fs || (fontMode === 'krutidev' ? 11 : 10),
+      bl: cellObj?.bl ?? 0,
+      it: cellObj?.it ?? 0,
+      bg: cellObj?.bg,
+      fc: cellObj?.fc,
+      ht: cellObj?.ht ?? 1,
+      vt: cellObj?.vt ?? 0,
+      tb: cellObj?.tb ?? 2,
+      ct: cellObj?.ct
+    };
+
+    const colLetter = String.fromCharCode(65 + (c % 26));
+    const coord = `${colLetter}${r + 1}`;
+
+    setFormatPainter({
+      active: true,
+      format: extractedFormat,
+      sourceCoord: coord
+    });
+
+    showToast(`सेल ${coord} का फॉर्मेट कॉपी हुआ! अब लक्ष्य सेल/रेंज पर क्लिक करें`, 'success');
+  }, [formatPainter.active, fontMode]);
+
+  const handleCancelFormatPainter = useCallback(() => {
+    setFormatPainter({ active: false, format: null, sourceCoord: '' });
+    showToast('फॉर्मेट पेंटर रद्द किया गया', 'warning');
+  }, []);
+
+  // 1-Click apply Kruti Dev 010 to current selection
+  const handleApplyKrutiDevToSelection = useCallback(() => {
+    const selection = sheetRef.current?.getSelection();
+    if (!selection || selection.length === 0) {
+      showToast('कृपया पहले वे सेल चुनें जिन पर कृतिदेव फॉन्ट लगाना है', 'warning');
+      return;
+    }
+
+    selection.forEach((sel) => {
+      try {
+        sheetRef.current?.setCellFormatByRange('ff', 'Kruti Dev 010', sel);
+        sheetRef.current?.setCellFormatByRange('fs', 11, sel);
+      } catch (_) {}
+    });
+
+    window.dispatchEvent(new Event('resize'));
+    showToast('चयनित सेल पर कृतिदेव 010 फॉन्ट सफलतापूर्वक लागू हुआ!', 'success');
+  }, []);
+
   // Exact 47 Gram Panchayats where NSAP is held
   const nsapGps = useMemo(() => {
     return records.filter((r) => r.hasNSAP);
@@ -100,12 +199,30 @@ export default function NSAPWorkbook() {
 
   useEffect(() => {
     setMounted(true);
+    // Preload Kruti Dev 010 and trigger canvas redraw once ready
+    if (typeof document !== 'undefined' && document.fonts) {
+      document.fonts.load('12px "Kruti Dev 010"').then(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+      document.fonts.load('12px "KrutiDev010"');
+    }
     // Force canvas resize to ensure grid displays immediately with full height
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
     }, 120);
     return () => clearTimeout(timer);
   }, []);
+
+  // Escape key cancels active Format Painter
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && formatPainter.active) {
+        handleCancelFormatPainter();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [formatPainter.active, handleCancelFormatPainter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -338,13 +455,55 @@ export default function NSAPWorkbook() {
     container.addEventListener('keydown', handleKeyDown, true);
     container.addEventListener('focusin', handleFocusIn, true);
 
+    // Auto-detect and fix Kruti Dev encoding when pasting from external Excel
+    const handlePaste = (e: ClipboardEvent) => {
+      const clipboardHtml = e.clipboardData?.getData('text/html') || '';
+      const isKrutiInHtml = clipboardHtml.toLowerCase().includes('kruti');
+
+      setTimeout(() => {
+        const selection = sheetRef.current?.getSelection();
+        if (!selection || selection.length === 0) return;
+
+        let fixedCount = 0;
+        selection.forEach((sel) => {
+          const [startR, endR] = sel.row;
+          const [startC, endC] = sel.column;
+          const numericCols = [0, 2, 3, 4, 5, 7, 9, 10, 12, 13, 15, 17, 19, 20];
+
+          for (let r = startR; r <= endR; r++) {
+            for (let c = startC; c <= endC; c++) {
+              const val = sheetRef.current?.getCellValue(r, c);
+              if (val !== undefined && val !== null && val !== '') {
+                const isTextCol = !numericCols.includes(c);
+                if (fontMode === 'krutidev' || isKrutiInHtml || (isTextCol && isLikelyKrutiDev(String(val)))) {
+                  try {
+                    sheetRef.current?.setCellFormat(r, c, 'ff', 'Kruti Dev 010');
+                    sheetRef.current?.setCellFormat(r, c, 'fs', 11);
+                    fixedCount++;
+                  } catch (_) {}
+                }
+              }
+            }
+          }
+        });
+
+        if (fixedCount > 0) {
+          window.dispatchEvent(new Event('resize'));
+          showToast(`पेस्ट किए गए ${fixedCount} सेल पर कृतिदेव 010 फॉन्ट स्वतः लागू किया गया`, 'success');
+        }
+      }, 120);
+    };
+
+    container.addEventListener('paste', handlePaste, true);
+
     return () => {
       observer.disconnect();
       container.removeEventListener('dblclick', handleDblClick, true);
       container.removeEventListener('keydown', handleKeyDown, true);
       container.removeEventListener('focusin', handleFocusIn, true);
+      container.removeEventListener('paste', handlePaste, true);
     };
-  }, [syncEditorFont]);
+  }, [syncEditorFont, fontMode]);
 
   // Filtered GP list for quick dropdown navigation (filtered from the 47 NSAP GPs)
   const filteredGps = useMemo(() => {
@@ -476,6 +635,19 @@ export default function NSAPWorkbook() {
       handleRecalculateSummary();
     }
 
+    // If edit occurred and fontMode is krutidev, ensure text font stays Kruti Dev 010
+    if (fontMode === 'krutidev' && typeof newValue === 'string' && newValue.trim() !== '') {
+      const numericCols = [0, 2, 3, 4, 5, 7, 9, 10, 12, 13, 15, 17, 19, 20];
+      if (!numericCols.includes(column) || isLikelyKrutiDev(newValue)) {
+        setTimeout(() => {
+          try {
+            sheetRef.current?.setCellFormat(row, column, 'ff', 'Kruti Dev 010');
+            sheetRef.current?.setCellFormat(row, column, 'fs', 11);
+          } catch (_) {}
+        }, 30);
+      }
+    }
+
     // Debounced sync with Zustand store
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
@@ -488,7 +660,35 @@ export default function NSAPWorkbook() {
         showToast('परिवर्तन क्लाउड पर सुरक्षित किए गए', 'success');
       }
     }, 2500);
-  }, [isEditMode, activeSheetIndex, handleRecalculateSummary, nsapRecords, records, setNsapRecords]);
+  }, [isEditMode, activeSheetIndex, handleRecalculateSummary, nsapRecords, records, setNsapRecords, fontMode]);
+
+  // Hook triggered when a cell/range selection changes (handles Format Painter apply)
+  const afterSelectionChange = useCallback((sheetId: string, selection: any) => {
+    if (formatPainterRef.current.active && formatPainterRef.current.format && selection) {
+      const fmt = formatPainterRef.current.format;
+
+      const attrs: Array<'ff' | 'fs' | 'bl' | 'it' | 'bg' | 'fc' | 'ht' | 'vt' | 'tb'> = [
+        'ff', 'fs', 'bl', 'it', 'bg', 'fc', 'ht', 'vt', 'tb'
+      ];
+
+      attrs.forEach((attr) => {
+        const val = fmt[attr];
+        if (val !== undefined) {
+          try {
+            sheetRef.current?.setCellFormatByRange(attr, val, selection);
+          } catch (_) {}
+        }
+      });
+
+      showToast('फॉर्मेट सफलतापूर्वक लागू किया गया!', 'success');
+      setFormatPainter({ active: false, format: null, sourceCoord: '' });
+      formatPainterRef.current = { active: false, format: null, sourceCoord: '' };
+
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 50);
+    }
+  }, []);
 
   // Manual Save to Cloud
   const handleSaveToCloud = () => {
@@ -844,6 +1044,30 @@ export default function NSAPWorkbook() {
               </button>
             </div>
 
+            {/* Format Painter Tool */}
+            <button
+              onClick={handleToggleFormatPainter}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                formatPainter.active
+                  ? 'bg-amber-500 text-white shadow-xs ring-2 ring-amber-300 animate-pulse'
+                  : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs'
+              }`}
+              title="फॉर्मेट कॉपी (Format Painter) - किसी सेल का फॉन्ट व फॉर्मेट कॉपी कर लक्ष्य सेल पर लगाएं"
+            >
+              <Paintbrush className={`w-3.5 h-3.5 ${formatPainter.active ? 'text-white' : 'text-amber-600'}`} />
+              <span>{formatPainter.active ? 'पेंटर सक्रिय...' : 'फॉर्मेट कॉपी'}</span>
+            </button>
+
+            {/* 1-Click Apply Kruti Dev 010 Font to selection */}
+            <button
+              onClick={handleApplyKrutiDevToSelection}
+              className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300/80 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+              title="चयनित सभी सेलों पर 1-क्लिक में कृतिदेव 010 फॉन्ट लगाएं"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <span>कृतिदेव फॉन्ट लगाएं</span>
+            </button>
+
             {/* Font Mode Switcher */}
             <div className="flex items-center gap-1 border border-slate-200/90 rounded-lg p-0.5 bg-slate-100/80 text-xs font-medium">
               <span className="text-[11px] text-slate-500 px-1 font-normal flex items-center gap-1">
@@ -852,7 +1076,7 @@ export default function NSAPWorkbook() {
               </span>
               <button
                 onClick={() => setFontMode('krutidev')}
-                className={`px-2.5 py-0.5 rounded-md transition-colors ${
+                className={`px-2.5 py-0.5 rounded-md transition-colors cursor-pointer ${
                   fontMode === 'krutidev'
                     ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -863,7 +1087,7 @@ export default function NSAPWorkbook() {
               </button>
               <button
                 onClick={() => setFontMode('unicode')}
-                className={`px-2.5 py-0.5 rounded-md transition-colors ${
+                className={`px-2.5 py-0.5 rounded-md transition-colors cursor-pointer ${
                   fontMode === 'unicode'
                     ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -876,6 +1100,26 @@ export default function NSAPWorkbook() {
           </div>
         </div>
       </header>
+
+      {/* ── Format Painter Active Banner ── */}
+      {formatPainter.active && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between text-xs text-amber-900 font-medium animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-2">
+            <Paintbrush className="w-4 h-4 text-amber-600 shrink-0 animate-bounce" />
+            <span>
+              <strong>फॉर्मेट पेंटर सक्रिय है:</strong> सेल (
+              <span className="font-bold underline text-amber-950">{formatPainter.sourceCoord || 'स्रोत'}</span>
+              ) का फॉन्ट व स्टाइल कॉपी हो चुका है। अब जिस सेल या रेंज पर यह फॉर्मेट लगाना चाहते हैं, उस पर क्लिक या सेलेक्ट करें।
+            </span>
+          </div>
+          <button
+            onClick={handleCancelFormatPainter}
+            className="px-2.5 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded-md font-semibold text-xs transition-colors cursor-pointer"
+          >
+            रद्द करें (Esc)
+          </button>
+        </div>
+      )}
 
       {/* ── Toast Notification Layer ── */}
       {toastMessage && (
@@ -914,7 +1158,8 @@ export default function NSAPWorkbook() {
             "screenshot", "search"
           ]}
           hooks={{
-            afterUpdateCell
+            afterUpdateCell,
+            afterSelectionChange
           }}
         />
       </div>

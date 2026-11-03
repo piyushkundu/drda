@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { renderAuditText } from '@/lib/renderAuditText';
 import { 
   FileText, Download, Printer, Filter, Building2, Calendar, 
   Users, CheckCircle2, Clock, AlertTriangle, FileSpreadsheet,
@@ -79,9 +80,8 @@ export default function ReportCenterTab() {
     }
   };
 
-  const renderText = (unicode: string, kruti: string) => {
-    if (fontViewMode === 'krutidev') return <span className="font-kruti">{kruti || unicode}</span>;
-    return <span>{unicode}</span>;
+  const renderText = (unicode?: string, kruti?: string) => {
+    return renderAuditText(fontViewMode, unicode, kruti);
   };
 
   // Report Definitions

@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { renderAuditText } from '@/lib/renderAuditText';
 import { SocialAuditRecord } from '@/types/socialAudit';
 import { 
   Calendar, Clock, MapPin, Phone, Users, Shield, 
@@ -120,22 +121,9 @@ export default function UpcomingSabhaHero() {
   const nextSabha = upcomingMeetings[0] as SocialAuditRecord | undefined;
   const nextFewSabhas = upcomingMeetings.slice(1, 7);
 
-  // Render text helper respecting fontViewMode
-  const renderText = (unicodeText: string, krutiText: string) => {
-    if (fontViewMode === 'krutidev') {
-      return <span style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>{krutiText}</span>;
-    }
-    if (fontViewMode === 'dual') {
-      return (
-        <span className="flex flex-col">
-          <span>{unicodeText}</span>
-          <span className="text-[11px] text-amber-300 font-mono" style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>
-            {krutiText}
-          </span>
-        </span>
-      );
-    }
-    return <span>{unicodeText}</span>;
+  // Universal font renderer respecting fontViewMode with bidirectional fallback
+  const renderText = (unicodeText?: string, krutiText?: string) => {
+    return renderAuditText(fontViewMode, unicodeText, krutiText);
   };
 
   // Jump to calendar with block filter

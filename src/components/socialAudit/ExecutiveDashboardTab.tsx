@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore, SocialAuditTab } from '@/stores/socialAuditStore';
+import { renderAuditText } from '@/lib/renderAuditText';
 import { SocialAuditRecord, AuditBlock } from '@/types/socialAudit';
 import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
 import { matchesBRP, getBRPDisplayName } from '@/lib/brpHelper';
@@ -106,22 +107,9 @@ export default function ExecutiveDashboardTab() {
     }
   };
 
-  // Render text helper respecting fontViewMode
-  const renderText = (unicodeText: string, krutiText: string) => {
-    if (fontViewMode === 'krutidev') {
-      return <span style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>{krutiText}</span>;
-    }
-    if (fontViewMode === 'dual') {
-      return (
-        <span className="flex flex-col">
-          <span>{unicodeText}</span>
-          <span className="text-[11px] text-amber-700 font-mono" style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>
-            {krutiText}
-          </span>
-        </span>
-      );
-    }
-    return <span>{unicodeText}</span>;
+  // Universal font renderer respecting fontViewMode with bidirectional fallback
+  const renderText = (unicodeText?: string, krutiText?: string) => {
+    return renderAuditText(fontViewMode, unicodeText, krutiText);
   };
 
   // Filter records by centralized global filters (BRP + Block + Date Range)

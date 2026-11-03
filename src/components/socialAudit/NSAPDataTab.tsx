@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { renderAuditText } from '@/lib/renderAuditText';
 import { 
   NSAPGramPanchayatData, 
   NSAPBeneficiaryRecord, 
@@ -137,22 +138,9 @@ export default function NSAPDataTab() {
     }
   };
 
-  // Helper font renderer
-  const renderText = (unicodeText: string, krutiText?: string) => {
-    if (fontViewMode === 'krutidev' && krutiText) {
-      return <span style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>{krutiText}</span>;
-    }
-    if (fontViewMode === 'dual' && krutiText) {
-      return (
-        <span className="flex flex-col">
-          <span className="text-slate-900 font-semibold">{unicodeText}</span>
-          <span className="text-[11px] text-emerald-700 font-mono" style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>
-            {krutiText}
-          </span>
-        </span>
-      );
-    }
-    return <span>{unicodeText}</span>;
+  // Universal font renderer respecting fontViewMode with bidirectional fallback
+  const renderText = (unicodeText?: string, krutiText?: string, options?: any) => {
+    return renderAuditText(fontViewMode, unicodeText, krutiText, options);
   };
 
   // Baseline recorded Roster IDs (19 Gram Panchayats from Excel data)
@@ -320,13 +308,14 @@ export default function NSAPDataTab() {
 
   // All individual beneficiaries flat list (filtered by selected BRP's assigned GPs)
   const allBeneficiaries = useMemo(() => {
-    const list: (NSAPBeneficiaryRecord & { gpNameUnicode: string; block: AuditBlock; gpId: string })[] = [];
+    const list: (NSAPBeneficiaryRecord & { gpNameUnicode: string; gpNameKrutiDev?: string; block: AuditBlock; gpId: string })[] = [];
     effectiveNsapRecords.forEach(gp => {
       if (gp.beneficiaries && Array.isArray(gp.beneficiaries)) {
         gp.beneficiaries.forEach(b => {
           list.push({
             ...b,
             gpNameUnicode: gp.gpNameUnicode,
+            gpNameKrutiDev: gp.gpNameKrutiDev,
             block: gp.block,
             gpId: gp.id
           });
@@ -1836,7 +1825,9 @@ export default function NSAPDataTab() {
                         {b.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
                       </span>
                     </td>
-                    <td className="py-2.5 px-4 font-bold text-slate-900">{b.gpNameUnicode}</td>
+                    <td className="py-2.5 px-4 font-bold text-slate-900">
+                      {renderText(b.gpNameUnicode, b.gpNameKrutiDev)}
+                    </td>
                     <td className="py-2.5 px-4 font-bold text-slate-900 text-sm">
                       {renderText(b.nameUnicode, b.nameKrutiDev)}
                     </td>

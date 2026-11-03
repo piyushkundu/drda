@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { renderAuditText } from '@/lib/renderAuditText';
 import { SocialAuditRecord, AuditBlock, AuditStatus } from '@/types/socialAudit';
 import { exportCalendarExcel } from '@/lib/exportSocialAuditExcel';
 import { matchesBRP } from '@/lib/brpHelper';
@@ -54,22 +55,9 @@ export default function CalendarTableTab() {
     }
   };
 
-  // Render text helper based on fontViewMode
-  const renderText = (unicodeText: string, krutiText: string) => {
-    if (fontViewMode === 'krutidev') {
-      return <span style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>{krutiText}</span>;
-    }
-    if (fontViewMode === 'dual') {
-      return (
-        <div className="flex flex-col">
-          <span className="text-slate-900 font-semibold">{unicodeText}</span>
-          <span className="text-[11px] text-amber-800 font-mono tracking-wide" style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}>
-            {krutiText}
-          </span>
-        </div>
-      );
-    }
-    return <span>{unicodeText}</span>;
+  // Universal font renderer respecting fontViewMode with bidirectional fallback
+  const renderText = (unicodeText?: string, krutiText?: string) => {
+    return renderAuditText(fontViewMode, unicodeText, krutiText);
   };
 
   // Effective records filtered by global BRP and Date Range

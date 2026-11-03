@@ -14,6 +14,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="hi" className="h-full" suppressHydrationWarning>
+      <head>
+        <link 
+          rel="preload" 
+          href="/fonts/KrutiDev010.ttf" 
+          as="font" 
+          type="font/ttf" 
+          crossOrigin="anonymous" 
+        />
+      </head>
       <body className="h-full overflow-hidden">{children}</body>
     </html>
   );

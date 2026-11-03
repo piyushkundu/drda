@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@300;400;500;600;700;800&display=swap');
-@import url('https://db.onlinewebfonts.com/c/a69b5b3fc8384265aa52523629365ffb?family=Kruti+Dev+010');
+@import "./krutidev-font.css";
 @import "tailwindcss";
 
 /* Local KrutiDev font as reliable fallback */

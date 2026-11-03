@@ -10,6 +10,8 @@ import {
   NSAPBeneficiaryRecord,
   NSAPBeneficiaryCategory
 } from '@/types/socialAudit';
+import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
+import { krutiDevToUnicode } from '@/lib/fontConversion/krutiDevToUnicode';
 import { 
   NSAP_COLUMN_DEFS, 
   STANDARD_HEADER_MERGES, 
@@ -60,6 +62,30 @@ function createCell(
     vt: options.vt !== undefined ? options.vt : 0,
     tb: options.tb !== undefined ? options.tb : 2
   };
+}
+
+/**
+ * Universal text formatter for FortuneSheet cells:
+ * Ensures Kruti Dev ASCII text is always used when fontMode === 'krutidev',
+ * and Devanagari Unicode is always used when fontMode === 'unicode'.
+ */
+export function formatHindiCellText(
+  fontMode: 'krutidev' | 'unicode',
+  unicodeText?: string,
+  krutiText?: string
+): string {
+  const u = unicodeText?.trim() || '';
+  const k = krutiText?.trim() || '';
+
+  if (fontMode === 'krutidev') {
+    if (k) return k;
+    if (u) return unicodeToKrutiDev(u);
+    return '';
+  } else {
+    if (u) return u;
+    if (k) return krutiDevToUnicode(k);
+    return '';
+  }
 }
 
 /**
@@ -220,7 +246,11 @@ export function buildSummarySheet(
     grandDeceased += decCount;
     grandIrregularity += irregAmount;
 
-    const gpName = fontMode === 'krutidev' ? record.gpNameKrutiDev : record.gpNameUnicode;
+    const gpName = formatHindiCellText(fontMode, record.gpNameUnicode, record.gpNameKrutiDev);
+    const unverReason = formatHindiCellText(fontMode, nsapData?.unverifiedReason);
+    const irregNotes = nsapData?.financialIrregularityAmount || formatHindiCellText(fontMode, nsapData?.irregularityNotes);
+    const respPersons = formatHindiCellText(fontMode, nsapData?.responsiblePersons);
+    const otherNotes = formatHindiCellText(fontMode, nsapData?.otherNotes);
 
     // Col 0: S.No (1 to 47)
     celldata.push({ r, c: 0, v: createCell(idx + 1, { fontName: 'Arial', ht: 0 }) });
@@ -235,7 +265,7 @@ export function buildSummarySheet(
     // Col 5: Total verified
     celldata.push({ r, c: 5, v: createCell(verTotal || '', { fontName: 'Arial', ht: 0, isText: false }) });
     // Col 6: Reason for non-contact
-    celldata.push({ r, c: 6, v: createCell(nsapData?.unverifiedReason || '', { fontName, ht: 1 }) });
+    celldata.push({ r, c: 6, v: createCell(unverReason, { fontName, ht: 1 }) });
     // Col 7: Unverified count
     celldata.push({ r, c: 7, v: createCell(unverCount || '', { fontName: 'Arial', ht: 0, isText: false }) });
     // Col 10: Not received count
@@ -245,11 +275,11 @@ export function buildSummarySheet(
     // Col 17: Deceased count
     celldata.push({ r, c: 17, v: createCell(decCount || '', { fontName: 'Arial', ht: 0, isText: false }) });
     // Col 21: Financial irregularity
-    celldata.push({ r, c: 21, v: createCell(irregAmount || nsapData?.irregularityNotes || '', { fontName, ht: 1 }) });
+    celldata.push({ r, c: 21, v: createCell(irregNotes || '', { fontName: typeof irregNotes === 'number' ? 'Arial' : fontName, ht: typeof irregNotes === 'number' ? 0 : 1 }) });
     // Col 22: Responsible Person
-    celldata.push({ r, c: 22, v: createCell(nsapData?.responsiblePersons || '', { fontName, ht: 1 }) });
+    celldata.push({ r, c: 22, v: createCell(respPersons, { fontName, ht: 1 }) });
     // Col 23: Other remarks
-    celldata.push({ r, c: 23, v: createCell(nsapData?.otherNotes || '', { fontName, ht: 1 }) });
+    celldata.push({ r, c: 23, v: createCell(otherNotes, { fontName, ht: 1 }) });
   });
 
   // Grand Total Row (Row 5 + records.length)
@@ -347,7 +377,11 @@ export function buildGPSheet(
   const celldata = buildHeaderCells(titleText, fontMode, fontName);
   const merges: Record<string, any> = { ...STANDARD_HEADER_MERGES };
 
-  const gpName = fontMode === 'krutidev' ? record.gpNameKrutiDev : record.gpNameUnicode;
+  const gpName = formatHindiCellText(fontMode, record.gpNameUnicode, record.gpNameKrutiDev);
+  const unverReason = formatHindiCellText(fontMode, nsapData?.unverifiedReason);
+  const irregNotes = nsapData?.financialIrregularityAmount || formatHindiCellText(fontMode, nsapData?.irregularityNotes);
+  const respPersons = formatHindiCellText(fontMode, nsapData?.responsiblePersons);
+  const otherNotes = formatHindiCellText(fontMode, nsapData?.otherNotes);
 
   // Segregate beneficiaries
   const beneficiaries = nsapData?.beneficiaries || [];
@@ -380,12 +414,12 @@ export function buildGPSheet(
   celldata.push({ r: 5, c: 3, v: createCell(nsapData?.verifiedDirect ?? '', { fontName: 'Arial', ht: 0, vt: 0, isText: false }) });
   celldata.push({ r: 5, c: 4, v: createCell(nsapData?.verifiedFamily ?? '', { fontName: 'Arial', ht: 0, vt: 0, isText: false }) });
   celldata.push({ r: 5, c: 5, v: createCell(nsapData?.verifiedTotal ?? '', { fontName: 'Arial', ht: 0, vt: 0, isText: false }) });
-  celldata.push({ r: 5, c: 6, v: createCell(nsapData?.unverifiedReason || '', { fontName, ht: 1, vt: 0 }) });
+  celldata.push({ r: 5, c: 6, v: createCell(unverReason, { fontName, ht: 1, vt: 0 }) });
 
   // Irregularities & Remarks (Row 5)
-  celldata.push({ r: 5, c: 21, v: createCell(nsapData?.financialIrregularityAmount || nsapData?.irregularityNotes || '', { fontName, ht: 1, vt: 0 }) });
-  celldata.push({ r: 5, c: 22, v: createCell(nsapData?.responsiblePersons || '', { fontName, ht: 1, vt: 0 }) });
-  celldata.push({ r: 5, c: 23, v: createCell(nsapData?.otherNotes || '', { fontName, ht: 1, vt: 0 }) });
+  celldata.push({ r: 5, c: 21, v: createCell(irregNotes || '', { fontName: typeof irregNotes === 'number' ? 'Arial' : fontName, ht: typeof irregNotes === 'number' ? 0 : 1, vt: 0 }) });
+  celldata.push({ r: 5, c: 22, v: createCell(respPersons, { fontName, ht: 1, vt: 0 }) });
+  celldata.push({ r: 5, c: 23, v: createCell(otherNotes, { fontName, ht: 1, vt: 0 }) });
 
   // Render individual beneficiary rows (Row 5 to 5 + rowCountToRender - 1)
   for (let i = 0; i < rowCountToRender; i++) {
@@ -394,7 +428,7 @@ export function buildGPSheet(
     // 1. Unverified (Cols 7, 8, 9)
     if (unver[i]) {
       const b = unver[i];
-      const bName = fontMode === 'krutidev' && b.nameKrutiDev ? b.nameKrutiDev : b.nameUnicode;
+      const bName = formatHindiCellText(fontMode, b.nameUnicode, b.nameKrutiDev);
       celldata.push({ r, c: 7, v: createCell(i + 1, { fontName: 'Arial', ht: 0 }) });
       celldata.push({ r, c: 8, v: createCell(bName, { fontName, ht: 1 }) });
       celldata.push({ r, c: 9, v: createCell(b.registrationId, { fontName: 'Arial', ht: 0, isText: true }) });
@@ -403,7 +437,7 @@ export function buildGPSheet(
     // 2. Benefit not received (Cols 10, 11, 12)
     if (notRecv[i]) {
       const b = notRecv[i];
-      const bName = fontMode === 'krutidev' && b.nameKrutiDev ? b.nameKrutiDev : b.nameUnicode;
+      const bName = formatHindiCellText(fontMode, b.nameUnicode, b.nameKrutiDev);
       celldata.push({ r, c: 10, v: createCell(i + 1, { fontName: 'Arial', ht: 0 }) });
       celldata.push({ r, c: 11, v: createCell(bName, { fontName, ht: 1 }) });
       celldata.push({ r, c: 12, v: createCell(b.registrationId, { fontName: 'Arial', ht: 0, isText: true }) });
@@ -412,8 +446,8 @@ export function buildGPSheet(
     // 3. Ineligible (Cols 13, 14, 15, 16)
     if (inel[i]) {
       const b = inel[i];
-      const bName = fontMode === 'krutidev' && b.nameKrutiDev ? b.nameKrutiDev : b.nameUnicode;
-      const bReason = b.reason || (fontMode === 'krutidev' ? "ykHkkFkhZ ,d ls vf/kd isa'ku izkIr dj jgs gSa" : 'लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं');
+      const bName = formatHindiCellText(fontMode, b.nameUnicode, b.nameKrutiDev);
+      const bReason = formatHindiCellText(fontMode, b.reason || 'लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं');
       celldata.push({ r, c: 13, v: createCell(i + 1, { fontName: 'Arial', ht: 0 }) });
       celldata.push({ r, c: 14, v: createCell(bName, { fontName, ht: 1 }) });
       celldata.push({ r, c: 15, v: createCell(b.registrationId, { fontName: 'Arial', ht: 0, isText: true }) });
@@ -423,8 +457,8 @@ export function buildGPSheet(
     // 4. Deceased (Cols 17, 18, 19, 20)
     if (dec[i]) {
       const b = dec[i];
-      const bName = fontMode === 'krutidev' && b.nameKrutiDev ? b.nameKrutiDev : b.nameUnicode;
-      const dDate = b.deathDate || b.reason || '';
+      const bName = formatHindiCellText(fontMode, b.nameUnicode, b.nameKrutiDev);
+      const dDate = formatHindiCellText(fontMode, b.deathDate || b.reason || 'मृत्यु');
       celldata.push({ r, c: 17, v: createCell(i + 1, { fontName: 'Arial', ht: 0 }) });
       celldata.push({ r, c: 18, v: createCell(bName, { fontName, ht: 1 }) });
       celldata.push({ r, c: 19, v: createCell(b.registrationId, { fontName: 'Arial', ht: 0, isText: true }) });

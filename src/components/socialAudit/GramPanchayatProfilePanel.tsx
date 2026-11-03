@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { renderAuditText } from '@/lib/renderAuditText';
 import { 
   X, Building2, Calendar, User, Phone, ShieldCheck, CheckCircle2, 
   AlertTriangle, Clock, Edit3, Check, FileSpreadsheet, Smartphone, 
@@ -93,19 +94,8 @@ export default function GramPanchayatProfilePanel() {
     setTimeout(() => setCopiedPhone(false), 2000);
   };
 
-  const renderText = (unicode: string, kruti: string) => {
-    if (fontViewMode === 'krutidev') {
-      return <span className="font-kruti">{kruti || unicode}</span>;
-    }
-    if (fontViewMode === 'dual' && kruti && kruti !== unicode) {
-      return (
-        <span className="flex flex-col">
-          <span>{unicode}</span>
-          <span className="text-[10px] text-slate-400 font-kruti font-normal">{kruti}</span>
-        </span>
-      );
-    }
-    return <span>{unicode}</span>;
+  const renderText = (unicode?: string, kruti?: string) => {
+    return renderAuditText(fontViewMode, unicode, kruti);
   };
 
   return (
