@@ -209,3 +209,26 @@ export interface ReportFilterState {
   searchQuery?: string;
 }
 
+// ============================================================================
+// Village Resource Persons (VRP) & Team Members Definitions
+// ============================================================================
+
+export interface VRPMember {
+  id: string;
+  srNo: number;
+  empCode: string;
+  name: string;
+  nameHindi?: string;
+  gender: 'Male' | 'Female';
+  qualification: string;
+  districtName: string;
+  mobileNo: string;
+  emailAddress?: string;
+  dateOfBirth?: string;
+  employeeStatus: 'Working' | 'Discontinued';
+  aadharStatus: 'Verified' | 'Not Verified';
+  assignedBlock?: 'Baghpat' | 'Baraut' | null;
+  assignedRole?: string;
+  assignedDate?: string;
+}
+

@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { 
   SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, 
   PanchayatNirnayStatus, MisAuditStatus, NSAPGramPanchayatData, NSAPBeneficiaryRecord,
-  SocialAuditActivityLog
+  SocialAuditActivityLog, VRPMember
 } from '@/types/socialAudit';
 import { 
   SocialAuditUser, DEFAULT_DDO_USER, canUserEnableEditMode, 
@@ -12,6 +12,7 @@ import {
 import { INITIAL_SOCIAL_AUDIT_RECORDS, BLOCK_SABHA_RECORDS, DISTRICT_META } from '@/data/socialAuditInitialData';
 import { INITIAL_NSAP_DATA_RECORDS } from '@/data/nsapDataInitial';
 import { INITIAL_ACTIVITY_LOGS } from '@/data/initialActivityLogs';
+import { INITIAL_VRP_RECORDS } from '@/data/vrpInitialData';
 import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/lib/delhiTime';
 import { NirnaySyncPayload } from '@/lib/nirnaySyncBookmarklet';
 import { MisSyncPayload } from '@/lib/misSyncBookmarklet';
@@ -125,6 +126,15 @@ interface SocialAuditState {
   addNsapBeneficiary: (gpId: string, beneficiary: Omit<NSAPBeneficiaryRecord, 'id'>) => void;
   addNsapBeneficiariesBatch: (gpId: string, beneficiaries: Omit<NSAPBeneficiaryRecord, 'id'>[]) => void;
   deleteNsapBeneficiary: (gpId: string, beneficiaryId: string) => void;
+
+  // VRP (Village Resource Person) / Team Management Actions
+  vrpMembers: VRPMember[];
+  assignVRPMember: (vrpId: string, block: AuditBlock, role?: string) => void;
+  unassignVRPMember: (vrpId: string) => void;
+  addVRPMember: (member: Omit<VRPMember, 'id' | 'srNo'>) => void;
+  updateVRPMember: (vrpId: string, updates: Partial<VRPMember>) => void;
+  deleteVRPMember: (vrpId: string) => void;
+  resetVRPMembersToBaseline: () => void;
 }
 
 let _localChangeTimestamp = 0;
@@ -150,7 +160,8 @@ function notifyStoreChange(state: SocialAuditState, immediate = false) {
     state.asOfDate,
     state.isLiveSync,
     immediate,
-    state.activityLogs
+    state.activityLogs,
+    state.vrpMembers
   ).then((success) => {
     useSocialAuditStore.setState({
       firebaseSyncStatus: success ? 'synced' : 'error',
@@ -168,6 +179,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       records: INITIAL_SOCIAL_AUDIT_RECORDS,
       nsapRecords: INITIAL_NSAP_DATA_RECORDS,
       activityLogs: INITIAL_ACTIVITY_LOGS,
+      vrpMembers: INITIAL_VRP_RECORDS,
       fontViewMode: 'unicode',
       selectedBlock: 'all',
       selectedBRP: 'all',
@@ -224,6 +236,9 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               activityLogs: (remoteDoc.activityLogs && remoteDoc.activityLogs.length > 0)
                 ? remoteDoc.activityLogs
                 : get().activityLogs,
+              vrpMembers: (remoteDoc.vrpMembers && remoteDoc.vrpMembers.length > 0)
+                ? remoteDoc.vrpMembers
+                : get().vrpMembers,
               firebaseSyncStatus: 'synced',
               firebaseLastSyncedAt: remoteDoc.updatedAt 
                 ? new Date(remoteDoc.updatedAt).toLocaleTimeString('hi-IN') 
@@ -280,6 +295,9 @@ export const useSocialAuditStore = create<SocialAuditState>()(
                 activityLogs: (remoteData.activityLogs && remoteData.activityLogs.length > 0)
                   ? remoteData.activityLogs
                   : get().activityLogs,
+                vrpMembers: (remoteData.vrpMembers && remoteData.vrpMembers.length > 0)
+                  ? remoteData.vrpMembers
+                  : get().vrpMembers,
                 firebaseSyncStatus: 'synced',
                 firebaseLastSyncedAt: remoteData.updatedAt 
                   ? new Date(remoteData.updatedAt).toLocaleTimeString('hi-IN') 
@@ -305,7 +323,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           state.asOfDate,
           state.isLiveSync,
           true,
-          state.activityLogs
+          state.activityLogs,
+          state.vrpMembers
         );
         set({
           firebaseSyncStatus: success ? 'synced' : 'error',
@@ -1018,6 +1037,191 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           };
         });
         notifyStoreChange(get());
+      },
+
+      assignVRPMember: (vrpId: string, block: AuditBlock, role?: string) => {
+        set((state) => {
+          const target = state.vrpMembers.find((m) => m.id === vrpId);
+          const blockHindi = block === 'Baghpat' ? 'बागपत' : 'बड़ौत';
+          const updated = state.vrpMembers.map((m) =>
+            m.id === vrpId
+              ? {
+                  ...m,
+                  assignedBlock: block,
+                  assignedRole: role || m.assignedRole || 'सक्रिय VRP सदस्य',
+                  assignedDate: getDelhiDateString(),
+                }
+              : m
+          );
+
+          const newLogs: SocialAuditActivityLog[] = target
+            ? [
+                {
+                  id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  module: 'brp',
+                  recordId: vrpId,
+                  gpName: target.nameHindi || target.name,
+                  block: block,
+                  actionType: 'update',
+                  actionLabel: 'VRP टीम आवंटन',
+                  userName: state.currentUser.name,
+                  userId: state.currentUser.id,
+                  timestamp: new Date().toISOString(),
+                  details: `VRP सदस्य को ${blockHindi} विकास खंड की सक्रिय टीम में शामिल किया गया।`,
+                  previousValue: target.assignedBlock ? (target.assignedBlock === 'Baghpat' ? 'बागपत' : 'बड़ौत') : 'रिज़र्व पूल',
+                  newValue: blockHindi,
+                },
+                ...state.activityLogs,
+              ]
+            : state.activityLogs;
+
+          const newState = { ...state, vrpMembers: updated, activityLogs: newLogs, hasUnsavedChanges: true };
+          notifyStoreChange(newState);
+          return newState;
+        });
+      },
+
+      unassignVRPMember: (vrpId: string) => {
+        set((state) => {
+          const target = state.vrpMembers.find((m) => m.id === vrpId);
+          const prevBlockHindi = target?.assignedBlock === 'Baghpat' ? 'बागपत' : target?.assignedBlock === 'Baraut' ? 'बड़ौत' : 'सक्रिय टीम';
+          const updated = state.vrpMembers.map((m) =>
+            m.id === vrpId
+              ? {
+                  ...m,
+                  assignedBlock: null,
+                  assignedRole: undefined,
+                  assignedDate: undefined,
+                }
+              : m
+          );
+
+          const newLogs: SocialAuditActivityLog[] = target
+            ? [
+                {
+                  id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  module: 'brp',
+                  recordId: vrpId,
+                  gpName: target.nameHindi || target.name,
+                  actionType: 'update',
+                  actionLabel: 'VRP टीम से विमुक्ति',
+                  userName: state.currentUser.name,
+                  userId: state.currentUser.id,
+                  timestamp: new Date().toISOString(),
+                  details: `VRP सदस्य को ${prevBlockHindi} की सक्रिय टीम से हटाकर रिज़र्व पूल में वापस भेजा गया।`,
+                  previousValue: prevBlockHindi,
+                  newValue: 'रिज़र्व पूल',
+                },
+                ...state.activityLogs,
+              ]
+            : state.activityLogs;
+
+          const newState = { ...state, vrpMembers: updated, activityLogs: newLogs, hasUnsavedChanges: true };
+          notifyStoreChange(newState);
+          return newState;
+        });
+      },
+
+      addVRPMember: (memberData) => {
+        set((state) => {
+          const maxSrNo = state.vrpMembers.reduce((max, m) => Math.max(max, m.srNo || 0), 0);
+          const newId = `vrp-${memberData.empCode || Date.now()}`;
+          const newMember: VRPMember = {
+            ...memberData,
+            id: newId,
+            srNo: maxSrNo + 1,
+          };
+          const updated = [newMember, ...state.vrpMembers];
+
+          const newLogs: SocialAuditActivityLog[] = [
+            {
+              id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              module: 'brp',
+              recordId: newId,
+              gpName: newMember.nameHindi || newMember.name,
+              block: (newMember.assignedBlock === 'Baghpat' || newMember.assignedBlock === 'Baraut') ? newMember.assignedBlock : undefined,
+              actionType: 'create',
+              actionLabel: 'नया VRP पंजीकरण',
+              userName: state.currentUser.name,
+              userId: state.currentUser.id,
+              timestamp: new Date().toISOString(),
+              details: `नया VRP सदस्य रोस्टर में पंजीकृत किया गया: ${newMember.empCode} - ${newMember.name} (${newMember.mobileNo})`,
+            },
+            ...state.activityLogs,
+          ];
+
+          const newState = { ...state, vrpMembers: updated, activityLogs: newLogs, hasUnsavedChanges: true };
+          notifyStoreChange(newState, true);
+          return newState;
+        });
+      },
+
+      updateVRPMember: (vrpId, updates) => {
+        set((state) => {
+          const target = state.vrpMembers.find((m) => m.id === vrpId);
+          const updated = state.vrpMembers.map((m) =>
+            m.id === vrpId ? { ...m, ...updates } : m
+          );
+
+          const newLogs: SocialAuditActivityLog[] = target
+            ? [
+                {
+                  id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  module: 'brp',
+                  recordId: vrpId,
+                  gpName: target.nameHindi || target.name,
+                  actionType: 'update',
+                  actionLabel: 'VRP विवरण संशोधन',
+                  userName: state.currentUser.name,
+                  userId: state.currentUser.id,
+                  timestamp: new Date().toISOString(),
+                  details: `VRP सदस्य विवरण संशोधित किया गया (${target.empCode})`,
+                },
+                ...state.activityLogs,
+              ]
+            : state.activityLogs;
+
+          const newState = { ...state, vrpMembers: updated, activityLogs: newLogs, hasUnsavedChanges: true };
+          notifyStoreChange(newState);
+          return newState;
+        });
+      },
+
+      deleteVRPMember: (vrpId) => {
+        set((state) => {
+          const target = state.vrpMembers.find((m) => m.id === vrpId);
+          const updated = state.vrpMembers.filter((m) => m.id !== vrpId);
+
+          const newLogs: SocialAuditActivityLog[] = target
+            ? [
+                {
+                  id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  module: 'brp',
+                  recordId: vrpId,
+                  gpName: target.nameHindi || target.name,
+                  actionType: 'delete',
+                  actionLabel: 'VRP विलोपन',
+                  userName: state.currentUser.name,
+                  userId: state.currentUser.id,
+                  timestamp: new Date().toISOString(),
+                  details: `VRP सदस्य को रोस्टर से हटाया गया: ${target.empCode} (${target.name})`,
+                },
+                ...state.activityLogs,
+              ]
+            : state.activityLogs;
+
+          const newState = { ...state, vrpMembers: updated, activityLogs: newLogs, hasUnsavedChanges: true };
+          notifyStoreChange(newState, true);
+          return newState;
+        });
+      },
+
+      resetVRPMembersToBaseline: () => {
+        set((state) => {
+          const newState = { ...state, vrpMembers: INITIAL_VRP_RECORDS, hasUnsavedChanges: true };
+          notifyStoreChange(newState, true);
+          return newState;
+        });
       }
     }),
     {
@@ -1027,6 +1231,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
         records: state.records,
         nsapRecords: state.nsapRecords,
         activityLogs: state.activityLogs,
+        vrpMembers: state.vrpMembers,
         fontViewMode: state.fontViewMode,
         isLiveSync: state.isLiveSync,
         asOfDate: state.asOfDate,
@@ -1069,6 +1274,15 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               return r;
             });
             state.nsapRecords = [...updatedExisting, ...missingBaseline];
+          }
+
+          // Rehydrate VRP members if missing in local storage or merge baseline
+          if (!state.vrpMembers || !Array.isArray(state.vrpMembers) || state.vrpMembers.length === 0) {
+            state.vrpMembers = INITIAL_VRP_RECORDS;
+          } else if (state.vrpMembers.length < INITIAL_VRP_RECORDS.length) {
+            const existingVrpIds = new Set(state.vrpMembers.map(m => m.id));
+            const missingVrps = INITIAL_VRP_RECORDS.filter(m => !existingVrpIds.has(m.id));
+            state.vrpMembers = [...state.vrpMembers, ...missingVrps];
           }
 
           // If live sync is true (default) or undefined, ensure asOfDate is synced to today's Delhi date

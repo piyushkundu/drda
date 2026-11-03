@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { doc, getDoc, setDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import { SocialAuditRecord, NSAPGramPanchayatData, SocialAuditActivityLog } from '@/types/socialAudit';
+import { SocialAuditRecord, NSAPGramPanchayatData, SocialAuditActivityLog, VRPMember } from '@/types/socialAudit';
 
 export const SOCIAL_AUDIT_DOC_ID = 'baghpat-2026-27';
 
@@ -8,6 +8,7 @@ export interface SocialAuditFirestoreDoc {
   records: SocialAuditRecord[];
   nsapRecords: NSAPGramPanchayatData[];
   activityLogs?: SocialAuditActivityLog[];
+  vrpMembers?: VRPMember[];
   asOfDate: string;
   isLiveSync?: boolean;
   updatedAt: string;
@@ -50,6 +51,7 @@ let pendingData: {
   records: SocialAuditRecord[];
   nsapRecords: NSAPGramPanchayatData[];
   activityLogs?: SocialAuditActivityLog[];
+  vrpMembers?: VRPMember[];
   asOfDate: string;
   isLiveSync?: boolean;
 } | null = null;
@@ -64,11 +66,12 @@ export async function saveSocialAuditToFirestore(
   asOfDate: string,
   isLiveSync: boolean = true,
   immediate: boolean = false,
-  activityLogs?: SocialAuditActivityLog[]
+  activityLogs?: SocialAuditActivityLog[],
+  vrpMembers?: VRPMember[]
 ): Promise<boolean> {
   if (typeof window === 'undefined') return false;
 
-  pendingData = { records, nsapRecords, activityLogs, asOfDate, isLiveSync };
+  pendingData = { records, nsapRecords, activityLogs, vrpMembers, asOfDate, isLiveSync };
 
   if (saveTimeout) {
     clearTimeout(saveTimeout);
@@ -86,6 +89,7 @@ export async function saveSocialAuditToFirestore(
         records: toSave.records,
         nsapRecords: toSave.nsapRecords,
         activityLogs: toSave.activityLogs ? toSave.activityLogs.slice(-200) : [],
+        vrpMembers: toSave.vrpMembers,
         asOfDate: toSave.asOfDate,
         isLiveSync: toSave.isLiveSync,
         updatedAt: new Date().toISOString(),
