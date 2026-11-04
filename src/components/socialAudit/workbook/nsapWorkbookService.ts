@@ -13,6 +13,7 @@ import {
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
 import { krutiDevToUnicode } from '@/lib/fontConversion/krutiDevToUnicode';
 import { normalizeKrutiDevText } from '@/lib/fontConversion/normalizeKrutiDev';
+import { processSmartCellText, classifyText } from '@/lib/fontConversion/smartTextPipeline';
 import { 
   NSAP_COLUMN_DEFS, 
   STANDARD_HEADER_MERGES, 
@@ -80,11 +81,17 @@ export function formatHindiCellText(
 
   if (fontMode === 'krutidev') {
     if (k) return k;
-    if (u) return unicodeToKrutiDev(u);
+    if (u) {
+      return processSmartCellText({ text: u, targetFontMode: 'krutidev' }).value;
+    }
     return '';
   } else {
-    if (u) return u;
-    if (k) return krutiDevToUnicode(k);
+    if (u) {
+      return processSmartCellText({ text: u, targetFontMode: 'unicode' }).value;
+    }
+    if (k) {
+      return processSmartCellText({ text: k, targetFontMode: 'unicode' }).value;
+    }
     return '';
   }
 }
@@ -459,11 +466,24 @@ export function buildGPSheet(
     if (dec[i]) {
       const b = dec[i];
       const bName = formatHindiCellText(fontMode, b.nameUnicode, b.nameKrutiDev);
-      const dDate = formatHindiCellText(fontMode, b.deathDate || b.reason || 'मृत्यु');
+      const rawDateOrReason = b.deathDate || b.reason || 'मृत्यु';
+      const processedCol20 = processSmartCellText({
+        text: rawDateOrReason,
+        targetFontMode: fontMode,
+        colIndex: 20
+      });
       celldata.push({ r, c: 17, v: createCell(i + 1, { fontName: 'Arial', ht: 0 }) });
       celldata.push({ r, c: 18, v: createCell(bName, { fontName, ht: 1 }) });
       celldata.push({ r, c: 19, v: createCell(b.registrationId, { fontName: 'Arial', ht: 0, isText: true }) });
-      celldata.push({ r, c: 20, v: createCell(dDate, { fontName: 'Arial', ht: 0 }) });
+      celldata.push({
+        r,
+        c: 20,
+        v: createCell(processedCol20.value, {
+          fontName: processedCol20.fontName,
+          fontSize: processedCol20.fontSize,
+          ht: processedCol20.classification === 'numeric-or-id' ? 0 : 1
+        })
+      });
     }
   }
 
@@ -580,6 +600,25 @@ export function extractNSAPDataFromWorkbook(
     const responsiblePersons = getCellValue(sheet, 5, 22);
     const otherNotes = getCellValue(sheet, 5, 23);
 
+    // Helper to extract both Unicode and Kruti Dev representations safely
+    const parseBenName = (rawName: string): { nameUnicode: string; nameKrutiDev: string } => {
+      if (!rawName || typeof rawName !== 'string') return { nameUnicode: '', nameKrutiDev: '' };
+      const trimmed = rawName.trim();
+      const cls = classifyText(trimmed);
+      if (cls === 'krutidev-encoded') {
+        return {
+          nameKrutiDev: trimmed,
+          nameUnicode: krutiDevToUnicode(trimmed)
+        };
+      } else if (cls === 'unicode-hindi') {
+        return {
+          nameUnicode: trimmed,
+          nameKrutiDev: unicodeToKrutiDev(trimmed)
+        };
+      }
+      return { nameUnicode: trimmed, nameKrutiDev: trimmed };
+    };
+
     const beneficiaries: NSAPBeneficiaryRecord[] = [];
     const maxRowScan = Math.min(sheet.row || 80, 100);
 
@@ -588,11 +627,13 @@ export function extractNSAPDataFromWorkbook(
       const unverName = getCellValue(sheet, r, 8);
       const unverRegId = getCellValue(sheet, r, 9);
       if (unverName || unverRegId) {
+        const parsed = parseBenName(unverName);
         beneficiaries.push({
           id: `ben-${record.id}-unver-${r}`,
           category: 'unverified',
           categoryHindi: 'सत्यापन नहीं किया जा सका',
-          nameUnicode: unverName,
+          nameUnicode: parsed.nameUnicode,
+          nameKrutiDev: parsed.nameKrutiDev,
           registrationId: unverRegId.replace(/[^0-9A-Za-z]/g, '')
         });
       }
@@ -601,11 +642,13 @@ export function extractNSAPDataFromWorkbook(
       const notRecvName = getCellValue(sheet, r, 11);
       const notRecvRegId = getCellValue(sheet, r, 12);
       if (notRecvName || notRecvRegId) {
+        const parsed = parseBenName(notRecvName);
         beneficiaries.push({
           id: `ben-${record.id}-notrecv-${r}`,
           category: 'other',
           categoryHindi: 'लाभ प्राप्त नहीं हुआ',
-          nameUnicode: notRecvName,
+          nameUnicode: parsed.nameUnicode,
+          nameKrutiDev: parsed.nameKrutiDev,
           registrationId: notRecvRegId.replace(/[^0-9A-Za-z]/g, '')
         });
       }
@@ -615,11 +658,13 @@ export function extractNSAPDataFromWorkbook(
       const inelRegId = getCellValue(sheet, r, 15);
       const inelReason = getCellValue(sheet, r, 16);
       if (inelName || inelRegId) {
+        const parsed = parseBenName(inelName);
         beneficiaries.push({
           id: `ben-${record.id}-inel-${r}`,
           category: 'ineligible',
           categoryHindi: 'अपात्र लाभार्थी',
-          nameUnicode: inelName,
+          nameUnicode: parsed.nameUnicode,
+          nameKrutiDev: parsed.nameKrutiDev,
           registrationId: inelRegId.replace(/[^0-9A-Za-z]/g, ''),
           reason: inelReason || 'लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं'
         });
@@ -630,11 +675,13 @@ export function extractNSAPDataFromWorkbook(
       const decRegId = getCellValue(sheet, r, 19);
       const decDate = getCellValue(sheet, r, 20);
       if (decName || decRegId) {
+        const parsed = parseBenName(decName);
         beneficiaries.push({
           id: `ben-${record.id}-dec-${r}`,
           category: 'deceased',
           categoryHindi: 'सत्यापित में मृतक',
-          nameUnicode: decName,
+          nameUnicode: parsed.nameUnicode,
+          nameKrutiDev: parsed.nameKrutiDev,
           registrationId: decRegId.replace(/[^0-9A-Za-z]/g, ''),
           deathDate: decDate,
           reason: 'मृत्यु'

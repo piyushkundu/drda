@@ -2,6 +2,7 @@ import React from 'react';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
 import { krutiDevToUnicode } from '@/lib/fontConversion/krutiDevToUnicode';
 import { normalizeKrutiDevText } from '@/lib/fontConversion/normalizeKrutiDev';
+import { classifyText } from '@/lib/fontConversion/smartTextPipeline';
 
 export interface RenderAuditTextOptions {
   krutiSizeClass?: string;
@@ -23,9 +24,37 @@ export function renderAuditText(
   const uText = unicodeText?.trim() || '';
   const kText = krutiText ? normalizeKrutiDevText(krutiText.trim()) : '';
 
-  // Bidirectional fallback resolution
-  const effectiveUnicode = uText || (kText ? krutiDevToUnicode(kText) : '');
-  const effectiveKruti = kText || (uText ? unicodeToKrutiDev(uText) : '');
+  // Smart bidirectional fallback resolution
+  let effectiveUnicode = '';
+  let effectiveKruti = '';
+
+  if (uText) {
+    const classU = classifyText(uText);
+    if (classU === 'krutidev-encoded') {
+      effectiveKruti = uText;
+      effectiveUnicode = krutiDevToUnicode(uText);
+    } else {
+      effectiveUnicode = uText;
+    }
+  }
+
+  if (kText) {
+    const classK = classifyText(kText);
+    if (classK === 'unicode-hindi') {
+      if (!effectiveUnicode) effectiveUnicode = kText;
+      effectiveKruti = unicodeToKrutiDev(kText);
+    } else {
+      effectiveKruti = kText;
+      if (!effectiveUnicode) effectiveUnicode = krutiDevToUnicode(kText);
+    }
+  }
+
+  if (!effectiveKruti && effectiveUnicode) {
+    effectiveKruti = unicodeToKrutiDev(effectiveUnicode);
+  }
+  if (!effectiveUnicode && effectiveKruti) {
+    effectiveUnicode = krutiDevToUnicode(effectiveKruti);
+  }
 
   if (fontViewMode === 'krutidev') {
     return (

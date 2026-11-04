@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { isLikelyKrutiDev } from '@/lib/fontConversion/fontDetector';
 import { normalizeKrutiDevText } from '@/lib/fontConversion/normalizeKrutiDev';
+import { processSmartCellText } from '@/lib/fontConversion/smartTextPipeline';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { AuditBlock, NSAPGramPanchayatData } from '@/types/socialAudit';
 import { 
@@ -459,36 +460,45 @@ export default function NSAPWorkbook() {
     // Auto-detect and fix Kruti Dev encoding when pasting from external Excel
     const handlePaste = (e: ClipboardEvent) => {
       const clipboardHtml = e.clipboardData?.getData('text/html') || '';
+      const clipboardText = e.clipboardData?.getData('text/plain') || '';
       const isKrutiInHtml = clipboardHtml.toLowerCase().includes('kruti');
 
       setTimeout(() => {
         const selection = sheetRef.current?.getSelection();
         if (!selection || selection.length === 0) return;
 
+        // Calculate paste area from clipboard text dimensions if multi-line/tab
+        const lines = clipboardText.replace(/\r\n/g, '\n').split('\n').filter(l => l.length > 0);
+        const numRows = lines.length;
+        const numCols = lines.reduce((max, line) => Math.max(max, line.split('\t').length), 1);
+
         let fixedCount = 0;
         selection.forEach((sel) => {
-          const [startR, endR] = sel.row;
-          const [startC, endC] = sel.column;
-          const numericCols = [0, 2, 3, 4, 5, 7, 9, 10, 12, 13, 15, 17, 19, 20];
+          const startR = sel.row[0];
+          const endR = Math.max(sel.row[1], startR + (numRows > 1 ? numRows - 1 : 0));
+          const startC = sel.column[0];
+          const endC = Math.max(sel.column[1], startC + (numCols > 1 ? numCols - 1 : 0));
 
           for (let r = startR; r <= endR; r++) {
             for (let c = startC; c <= endC; c++) {
               const val = sheetRef.current?.getCellValue(r, c);
               if (val !== undefined && val !== null && val !== '') {
-                const isTextCol = !numericCols.includes(c);
                 const strVal = String(val);
-                if (fontMode === 'krutidev' || isKrutiInHtml || (isTextCol && isLikelyKrutiDev(strVal))) {
-                  try {
-                    // Sanitize forward slash typing glitch for Kruti Dev
-                    const normalized = normalizeKrutiDevText(strVal);
-                    if (normalized !== strVal) {
-                      sheetRef.current?.setCellValue(r, c, normalized);
-                    }
-                    sheetRef.current?.setCellFormat(r, c, 'ff', 'Kruti Dev 010');
-                    sheetRef.current?.setCellFormat(r, c, 'fs', 11);
-                    fixedCount++;
-                  } catch (_) {}
-                }
+                const processed = processSmartCellText({
+                  text: strVal,
+                  targetFontMode: fontMode,
+                  colIndex: c,
+                  clipboardFont: isKrutiInHtml ? 'Kruti Dev 010' : undefined
+                });
+
+                try {
+                  if (processed.value !== strVal) {
+                    sheetRef.current?.setCellValue(r, c, processed.value);
+                  }
+                  sheetRef.current?.setCellFormat(r, c, 'ff', processed.fontName);
+                  sheetRef.current?.setCellFormat(r, c, 'fs', processed.fontSize);
+                  fixedCount++;
+                } catch (_) {}
               }
             }
           }
@@ -496,7 +506,7 @@ export default function NSAPWorkbook() {
 
         if (fixedCount > 0) {
           window.dispatchEvent(new Event('resize'));
-          showToast(`पेस्ट किए गए ${fixedCount} सेल पर कृतिदेव 010 फॉन्ट स्वतः लागू किया गया`, 'success');
+          showToast(`पेस्ट किए गए ${fixedCount} सेल पर स्मार्ट फॉन्ट व डेटा प्रारूप लागू किया गया`, 'success');
         }
       }, 120);
     };
@@ -642,17 +652,23 @@ export default function NSAPWorkbook() {
       handleRecalculateSummary();
     }
 
-    // If edit occurred and fontMode is krutidev, ensure text font stays Kruti Dev 010
-    if (fontMode === 'krutidev' && typeof newValue === 'string' && newValue.trim() !== '') {
-      const numericCols = [0, 2, 3, 4, 5, 7, 9, 10, 12, 13, 15, 17, 19, 20];
-      if (!numericCols.includes(column) || isLikelyKrutiDev(newValue)) {
-        setTimeout(() => {
-          try {
-            sheetRef.current?.setCellFormat(row, column, 'ff', 'Kruti Dev 010');
-            sheetRef.current?.setCellFormat(row, column, 'fs', 11);
-          } catch (_) {}
-        }, 30);
-      }
+    // Smart classification and font formatting for newly edited cell
+    if (typeof newValue === 'string' && newValue.trim() !== '') {
+      const processed = processSmartCellText({
+        text: newValue,
+        targetFontMode: fontMode,
+        colIndex: column
+      });
+
+      setTimeout(() => {
+        try {
+          if (processed.value !== newValue) {
+            sheetRef.current?.setCellValue(row, column, processed.value);
+          }
+          sheetRef.current?.setCellFormat(row, column, 'ff', processed.fontName);
+          sheetRef.current?.setCellFormat(row, column, 'fs', processed.fontSize);
+        } catch (_) {}
+      }, 30);
     }
 
     // Debounced sync with Zustand store
