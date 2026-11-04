@@ -45,7 +45,9 @@ const COMMON_ENGLISH_WORDS = new Set([
   'new', 'roman', 'hindi', 'english', 'state', 'india', 'portal', 'official', 'findings', 'detail',
   'details', 'category', 'other', 'financial', 'count', 'grand', 'page', 'first', 'last', 'next',
   'prev', 'previous', 'search', 'filter', 'clear', 'select', 'selected', 'close', 'open', 'back',
-  'of', 'in', 'and', 'the', 'for', 'to', 'from', 'by', 'with', 'at', 'on', 'is', 'as', 'are'
+  'of', 'in', 'and', 'the', 'for', 'to', 'from', 'by', 'with', 'at', 'on', 'is', 'as', 'are', 'was', 'were',
+  'self', 'govt', 'officer', 'officers', 'survey', 'inspection', 'check', 'checked', 'ok', 'pass', 'fail',
+  'approved', 'rejected', 'done', 'submitted', 'review'
 ]);
 
 /**
@@ -122,7 +124,7 @@ export function isEnglishText(text: string): boolean {
   // If it has strong Kruti Dev signatures, it is definitely not English!
   if (hasStrongKrutiDevSignature(trimmed)) return false;
 
-  // Check against common English words directly
+  // Direct dictionary check
   const lower = trimmed.toLowerCase();
   if (COMMON_ENGLISH_WORDS.has(lower)) return true;
 
@@ -142,12 +144,15 @@ export function isEnglishText(text: string): boolean {
       englishScore++;
       continue;
     }
-
-    // Normal English word shape: starts with uppercase or all lowercase, contains vowels, length >= 2
-    if (/^[A-Za-z]+$/.test(w) && /[aeiouy]/i.test(w)) {
-      if (!/(iky|flag|flga|nsoh|dqekj|jke|ckcw|vlxj|jkt|èk|ç)/.test(w)) {
-        englishScore++;
-      }
+    // Single letter identifiers (e.g. Team A, Team B)
+    if (/^[A-Za-z]$/.test(w)) {
+      englishScore++;
+      continue;
+    }
+    // Numbers inside English sentences
+    if (/^\d+$/.test(w)) {
+      englishScore++;
+      continue;
     }
   }
 
