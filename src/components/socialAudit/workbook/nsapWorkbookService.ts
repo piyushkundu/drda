@@ -26,6 +26,7 @@ export interface BuildWorkbookParams {
   records: SocialAuditRecord[];
   nsapRecords: NSAPGramPanchayatData[];
   fontMode: 'krutidev' | 'unicode';
+  activeSheetIndex?: number;
 }
 
 /**
@@ -515,7 +516,8 @@ export function buildGPSheet(
 export function buildNSAPWorkbookData({
   records,
   nsapRecords,
-  fontMode
+  fontMode,
+  activeSheetIndex = 0
 }: BuildWorkbookParams) {
   // Only include Gram Panchayats where NSAP is held (hasNSAP === true)
   const nsapGps = records.filter(r => r.hasNSAP);
@@ -539,6 +541,11 @@ export function buildNSAPWorkbookData({
                      nsapMap.get(record.gpNameKrutiDev.trim());
 
     allSheets.push(buildGPSheet(record, nsapData, fontMode, idx + 1));
+  });
+
+  // Ensure active sheet status is preserved
+  allSheets.forEach((s, idx) => {
+    s.status = idx === activeSheetIndex ? 1 : 0;
   });
 
   return allSheets;

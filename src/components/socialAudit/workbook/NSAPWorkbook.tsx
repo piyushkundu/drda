@@ -33,7 +33,9 @@ export default function NSAPWorkbook() {
     nsapRecords, 
     isEditMode, 
     setNsapRecords,
-    currentUser 
+    currentUser,
+    fontViewMode,
+    setFontViewMode
   } = useSocialAuditStore();
 
   const sheetRef = useRef<WorkbookInstance>(null);
@@ -47,8 +49,20 @@ export default function NSAPWorkbook() {
   // Fullscreen mode state
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Font mode: 'krutidev' | 'unicode'
-  const [fontMode, setFontMode] = useState<'krutidev' | 'unicode'>('krutidev');
+  // Synchronized Font mode: derives directly from global header store ('krutidev' | 'unicode')
+  const fontMode: 'krutidev' | 'unicode' = fontViewMode === 'krutidev' ? 'krutidev' : 'unicode';
+
+  const handleSetFontMode = useCallback((mode: 'krutidev' | 'unicode') => {
+    // Before switching font mode, if user edited any cells, sync them to Zustand store
+    if (sheetRef.current && isEditMode) {
+      try {
+        const allSheets = sheetRef.current.getAllSheets();
+        const updated = extractNSAPDataFromWorkbook(allSheets, nsapRecords, records);
+        setNsapRecords(updated);
+      } catch (_) {}
+    }
+    setFontViewMode(mode);
+  }, [isEditMode, nsapRecords, records, setNsapRecords, setFontViewMode]);
 
   // Block filter: 'all' | 'Baghpat' | 'Baraut'
   const [selectedBlock, setSelectedBlock] = useState<'all' | AuditBlock>('all');
@@ -195,9 +209,10 @@ export default function NSAPWorkbook() {
     return buildNSAPWorkbookData({
       records,
       nsapRecords,
-      fontMode
+      fontMode,
+      activeSheetIndex
     });
-  }, [records, nsapRecords, fontMode]);
+  }, [records, nsapRecords, fontMode, activeSheetIndex]);
 
   useEffect(() => {
     setMounted(true);
@@ -1098,7 +1113,7 @@ export default function NSAPWorkbook() {
                 फॉन्ट:
               </span>
               <button
-                onClick={() => setFontMode('krutidev')}
+                onClick={() => handleSetFontMode('krutidev')}
                 className={`px-2.5 py-0.5 rounded-md transition-colors cursor-pointer ${
                   fontMode === 'krutidev'
                     ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
@@ -1109,7 +1124,7 @@ export default function NSAPWorkbook() {
                 कृतिदेव 010
               </button>
               <button
-                onClick={() => setFontMode('unicode')}
+                onClick={() => handleSetFontMode('unicode')}
                 className={`px-2.5 py-0.5 rounded-md transition-colors cursor-pointer ${
                   fontMode === 'unicode'
                     ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
@@ -1167,6 +1182,7 @@ export default function NSAPWorkbook() {
         }}
       >
         <Workbook
+          key={`nsap-workbook-${fontMode}`}
           ref={sheetRef}
           data={initialData}
           lang="en"
