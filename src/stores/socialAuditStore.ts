@@ -13,6 +13,7 @@ import { INITIAL_SOCIAL_AUDIT_RECORDS, BLOCK_SABHA_RECORDS, DISTRICT_META } from
 import { INITIAL_NSAP_DATA_RECORDS } from '@/data/nsapDataInitial';
 import { INITIAL_ACTIVITY_LOGS } from '@/data/initialActivityLogs';
 import { INITIAL_VRP_RECORDS } from '@/data/vrpInitialData';
+import { normalizeKrutiDevText } from '@/lib/fontConversion/normalizeKrutiDev';
 import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/lib/delhiTime';
 import { NirnaySyncPayload } from '@/lib/nirnaySyncBookmarklet';
 import { MisSyncPayload } from '@/lib/misSyncBookmarklet';
@@ -1264,15 +1265,33 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               !existingIds.has(init.id) && !existingRosterIds.has(init.rosterRecordId)
             );
 
-            // Attach rosterRecordId and ensure correct block for baseline records
+            // Attach rosterRecordId, correct block, and sanitize beneficiary names against typing glitches
             const updatedExisting = state.nsapRecords.map(r => {
               const baseMatch = INITIAL_NSAP_DATA_RECORDS.find(init => init.id === r.id || (r.rosterRecordId && init.rosterRecordId === r.rosterRecordId));
               if (baseMatch) {
+                const sanitizedBens = (r.beneficiaries && r.beneficiaries.length > 0)
+                  ? r.beneficiaries.map(b => {
+                      const baseBen = baseMatch.beneficiaries?.find(bb => bb.id === b.id);
+                      if (baseBen) {
+                        return {
+                          ...b,
+                          nameUnicode: baseBen.nameUnicode,
+                          nameKrutiDev: baseBen.nameKrutiDev
+                        };
+                      }
+                      return {
+                        ...b,
+                        nameKrutiDev: normalizeKrutiDevText(b.nameKrutiDev || '')
+                      };
+                    })
+                  : baseMatch.beneficiaries;
+
                 return {
                   ...r,
                   rosterRecordId: r.rosterRecordId || baseMatch.rosterRecordId,
                   block: baseMatch.block,
-                  meetingDate: baseMatch.meetingDate
+                  meetingDate: baseMatch.meetingDate,
+                  beneficiaries: sanitizedBens
                 };
               }
               return r;

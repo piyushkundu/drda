@@ -12,6 +12,7 @@ import {
 } from '@/types/socialAudit';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
 import { krutiDevToUnicode } from '@/lib/fontConversion/krutiDevToUnicode';
+import { normalizeKrutiDevText } from '@/lib/fontConversion/normalizeKrutiDev';
 import { 
   NSAP_COLUMN_DEFS, 
   STANDARD_HEADER_MERGES, 
@@ -75,7 +76,7 @@ export function formatHindiCellText(
   krutiText?: string
 ): string {
   const u = unicodeText?.trim() || '';
-  const k = krutiText?.trim() || '';
+  const k = krutiText ? normalizeKrutiDevText(krutiText.trim()) : '';
 
   if (fontMode === 'krutidev') {
     if (k) return k;

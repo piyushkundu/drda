@@ -11,6 +11,7 @@ import {
   Paintbrush
 } from 'lucide-react';
 import { isLikelyKrutiDev } from '@/lib/fontConversion/fontDetector';
+import { normalizeKrutiDevText } from '@/lib/fontConversion/normalizeKrutiDev';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { AuditBlock, NSAPGramPanchayatData } from '@/types/socialAudit';
 import { 
@@ -475,8 +476,14 @@ export default function NSAPWorkbook() {
               const val = sheetRef.current?.getCellValue(r, c);
               if (val !== undefined && val !== null && val !== '') {
                 const isTextCol = !numericCols.includes(c);
-                if (fontMode === 'krutidev' || isKrutiInHtml || (isTextCol && isLikelyKrutiDev(String(val)))) {
+                const strVal = String(val);
+                if (fontMode === 'krutidev' || isKrutiInHtml || (isTextCol && isLikelyKrutiDev(strVal))) {
                   try {
+                    // Sanitize forward slash typing glitch for Kruti Dev
+                    const normalized = normalizeKrutiDevText(strVal);
+                    if (normalized !== strVal) {
+                      sheetRef.current?.setCellValue(r, c, normalized);
+                    }
                     sheetRef.current?.setCellFormat(r, c, 'ff', 'Kruti Dev 010');
                     sheetRef.current?.setCellFormat(r, c, 'fs', 11);
                     fixedCount++;

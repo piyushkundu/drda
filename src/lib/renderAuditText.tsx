@@ -1,6 +1,7 @@
 import React from 'react';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
 import { krutiDevToUnicode } from '@/lib/fontConversion/krutiDevToUnicode';
+import { normalizeKrutiDevText } from '@/lib/fontConversion/normalizeKrutiDev';
 
 export interface RenderAuditTextOptions {
   krutiSizeClass?: string;
@@ -20,7 +21,7 @@ export function renderAuditText(
   options?: RenderAuditTextOptions
 ): React.ReactNode {
   const uText = unicodeText?.trim() || '';
-  const kText = krutiText?.trim() || '';
+  const kText = krutiText ? normalizeKrutiDevText(krutiText.trim()) : '';
 
   // Bidirectional fallback resolution
   const effectiveUnicode = uText || (kText ? krutiDevToUnicode(kText) : '');
