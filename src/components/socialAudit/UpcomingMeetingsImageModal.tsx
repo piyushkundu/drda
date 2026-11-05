@@ -101,7 +101,7 @@ export default function UpcomingMeetingsImageModal({
       // Small pause to allow offscreen DOM layout & CSS to settle
       await new Promise(resolve => setTimeout(resolve, 150));
 
-      const { default: html2canvas } = await import('html2canvas');
+      const { default: html2canvas } = await import('html2canvas-pro');
 
       const canvas = await html2canvas(posterRef.current, {
         scale: 2, // High resolution (e.g. 2400px wide for crystal clarity)
@@ -373,11 +373,13 @@ export default function UpcomingMeetingsImageModal({
         className="p-10 bg-white text-slate-900"
       >
         {/* POSTER HEADER */}
-        <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white p-8 mb-8 shadow-md border-4 border-blue-900/60 relative overflow-hidden">
-          {/* Subtle decorative glow */}
-          <div className="absolute -right-16 -top-16 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
-
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #0f172a 0%, #0c2340 50%, #1e1b4b 100%)',
+            borderColor: 'rgba(30, 58, 138, 0.6)'
+          }}
+          className="rounded-3xl text-white p-8 mb-8 shadow-md border-4 relative overflow-hidden"
+        >
           <div className="relative z-10 flex items-start justify-between gap-6">
             <div className="flex-1">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/30 text-xs font-bold uppercase tracking-wider mb-2.5">

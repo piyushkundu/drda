@@ -518,7 +518,7 @@ export default function RibbonToolbar() {
       `;
       printDiv.innerHTML = html;
       document.body.appendChild(printDiv);
-      const { default: html2canvas } = await import('html2canvas');
+      const { default: html2canvas } = await import('html2canvas-pro');
       const canvas = await html2canvas(printDiv, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       document.body.removeChild(printDiv);
       const { default: jsPDF } = await import('jspdf');
