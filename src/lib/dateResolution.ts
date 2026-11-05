@@ -86,25 +86,30 @@ export function getOriginalMeetingDate(record: {
 }
 
 /**
+ * Checks if a meeting's canonical effective date is on or before a cutoff date.
+ * Single source of truth for date-based completion/roster filtering.
+ * A meeting whose effective date is in the future (> cutoffDate) can NEVER be completed as of cutoffDate.
+ */
+export function isEffectiveDateOnOrBefore(
+  record: { meetingDate?: string; originalMeetingDate?: string; amendmentDetails?: { modifiedDate?: string } },
+  cutoffDate: string
+): boolean {
+  const effectiveDate = getEffectiveMeetingDate(record);
+  if (!effectiveDate) return false;
+  return effectiveDate <= cutoffDate;
+}
+
+/**
  * Helper to determine if a meeting is completed based on effective meeting date.
- * Rule: All meetings with status === 'completed' or effective date <= cutoff (asOfDate).
- * For amended meetings in baseline, Khadki (2026-10-29) was completed, others scheduled.
+ * Rule: Meeting is completed as of cutoffDate ONLY if its effective meeting date <= cutoffDate.
+ * A meeting scheduled in the future relative to cutoffDate can NEVER be considered completed.
  */
 export function isMeetingCompletedEffective(
   record: SocialAuditRecord,
   cutoffDate: string
 ): boolean {
-  if (record.status === 'completed') return true;
   const effectiveDate = getEffectiveMeetingDate(record);
   if (!effectiveDate) return false;
-
-  if (record.isAmended) {
-    return (
-      effectiveDate <= cutoffDate ||
-      (record.gpNameUnicode?.includes('खेड़की') ?? false) ||
-      (record.gpNameUnicode?.includes('खड़की') ?? false)
-    );
-  }
   return effectiveDate <= cutoffDate;
 }
 

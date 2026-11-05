@@ -10,6 +10,7 @@ import {
   FileBarChart2, History, Sparkles, Languages
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
+import { getEffectiveMeetingDate } from '@/lib/dateResolution';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -57,7 +58,7 @@ export default function SocialAuditSidebar({
 
   // Dynamic counts for navigation badges
   const upcomingCount = records.filter(
-    (r) => r.meetingDate > asOfDate && r.status !== 'completed'
+    (r) => getEffectiveMeetingDate(r) > asOfDate && r.status !== 'completed'
   ).length;
   const amendedCount = records.filter((r) => r.isAmended).length;
   const nirnayCapturedCount = records.filter(

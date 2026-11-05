@@ -5,6 +5,7 @@ import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { renderAuditText } from '@/lib/renderAuditText';
 import { SocialAuditRecord } from '@/types/socialAudit';
 import { matchesBRP } from '@/lib/brpHelper';
+import { getEffectiveMeetingDate } from '@/lib/dateResolution';
 import { 
   Calendar, Clock, MapPin, Phone, Users, Shield, 
   AlertCircle, CheckCircle2, ChevronRight, Sparkles,
@@ -65,20 +66,21 @@ export default function UpcomingSabhasTab() {
     }
   };
 
-  // All upcoming meetings (meetingDate >= asOfDate and not completed) filtered by global filters (BRP, Block, Date Range)
+  // All upcoming meetings (effective meeting date >= asOfDate and not completed) filtered by global filters (BRP, Block, Date Range)
   const allUpcoming = useMemo(() => {
     return records
       .filter((r) => {
-        if (r.meetingDate < asOfDate || r.status === 'completed') return false;
+        const effDate = getEffectiveMeetingDate(r);
+        if (effDate < asOfDate || r.status === 'completed') return false;
         if (!matchesBRP(r, selectedBRP)) return false;
         if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
         if (dateRange && (dateRange.startDate || dateRange.endDate)) {
-          if (dateRange.startDate && r.meetingDate < dateRange.startDate) return false;
-          if (dateRange.endDate && r.meetingDate > dateRange.endDate) return false;
+          if (dateRange.startDate && effDate < dateRange.startDate) return false;
+          if (dateRange.endDate && effDate > dateRange.endDate) return false;
         }
         return true;
       })
-      .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
+      .sort((a, b) => getEffectiveMeetingDate(a).localeCompare(getEffectiveMeetingDate(b)));
   }, [records, asOfDate, selectedBRP, selectedBlock, dateRange]);
 
   // Counts
@@ -112,7 +114,7 @@ export default function UpcomingSabhasTab() {
   // Meetings scheduled today (asOfDate) that are not yet marked completed
   const todayMeetings = useMemo(() => {
     return records
-      .filter((r) => r.meetingDate === asOfDate && r.status !== 'completed' && matchesBRP(r, selectedBRP))
+      .filter((r) => getEffectiveMeetingDate(r) === asOfDate && r.status !== 'completed' && matchesBRP(r, selectedBRP))
       .sort((a, b) => a.block.localeCompare(b.block));
   }, [records, asOfDate, selectedBRP]);
 

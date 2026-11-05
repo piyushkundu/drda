@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { SocialAuditRecord, AuditBlock, ReportType, AuditStatus } from '@/types/socialAudit';
 import { exportCalendarExcel } from '@/lib/exportSocialAuditExcel';
+import { getEffectiveMeetingDate, isEffectiveDateOnOrBefore } from '@/lib/dateResolution';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -52,11 +53,10 @@ export default function ReportCenterTab() {
       if (filterScheme === 'mgnrega' && !r.hasMGNREGA) return false;
       if (filterScheme === 'pmayg' && !r.hasPMAYG) return false;
 
-      const isCompleted = r.status === 'completed' || 
-        (r.meetingDate <= asOfDate && (!r.isAmended || r.gpNameUnicode?.includes('खेड़की') || r.gpNameUnicode?.includes('खड़की')));
+      const isCompleted = isEffectiveDateOnOrBefore(r, asOfDate);
       
       if (filterStatus === 'completed' && !isCompleted) return false;
-      if (filterStatus === 'upcoming' && (isCompleted || r.meetingDate <= asOfDate)) return false;
+      if (filterStatus === 'upcoming' && isCompleted) return false;
       if (filterStatus === 'amended' && !r.isAmended) return false;
 
       if (searchQuery.trim()) {
@@ -173,13 +173,13 @@ export default function ReportCenterTab() {
       if (selectedReport === 'gp_master' || selectedReport === 'meeting_progress') {
         ws.addRow(['क्र० सं०', 'ग्राम पंचायत', 'विकास खंड', 'प्रारम्भ तिथि', 'बैठक तिथि', 'बी०आर०पी०', 'फोन', 'पर्यवेक्षक अधिकारी', 'स्थिति', 'Nirnay स्थिति', 'MIS स्थिति']);
         filteredRecords.forEach((r, idx) => {
-          const isComp = r.status === 'completed' || r.meetingDate <= asOfDate;
+          const isComp = isEffectiveDateOnOrBefore(r, asOfDate);
           ws.addRow([
             idx + 1,
             r.gpNameUnicode,
             r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत',
             formatDateHi(r.startDate),
-            formatDateHi(r.meetingDate),
+            formatDateHi(getEffectiveMeetingDate(r)),
             r.brpName,
             r.brpPhone,
             r.supervisorOfficerUnicode,
@@ -195,8 +195,8 @@ export default function ReportCenterTab() {
 
         const getStats = (list: SocialAuditRecord[]) => ({
           total: list.length,
-          comp: list.filter(r => r.meetingDate <= asOfDate || r.status === 'completed').length,
-          up: list.filter(r => r.meetingDate > asOfDate && r.status !== 'completed').length,
+          comp: list.filter(r => isEffectiveDateOnOrBefore(r, asOfDate)).length,
+          up: list.filter(r => !isEffectiveDateOnOrBefore(r, asOfDate)).length,
           nirnay: list.filter(r => r.panchayatNirnayStatus === 'captured').length,
           mis: list.filter(r => r.misStatus === 'fed').length,
           nsap: list.filter(r => r.hasNSAP).length
@@ -212,8 +212,8 @@ export default function ReportCenterTab() {
         ws.addRow(['क्र० सं०', 'BRP का नाम', 'मोबाइल नंबर', 'आवंटित ग्राम पंचायतें', 'सम्पन्न बैठकें', 'आगामी बैठकें', 'MIS फीडेड']);
         brpList.forEach((b, idx) => {
           const assigned = records.filter(r => r.brpPhone === b.phone || r.brpName?.includes(b.name));
-          const comp = assigned.filter(r => r.meetingDate <= asOfDate || r.status === 'completed').length;
-          const up = assigned.filter(r => r.meetingDate > asOfDate && r.status !== 'completed').length;
+          const comp = assigned.filter(r => isEffectiveDateOnOrBefore(r, asOfDate)).length;
+          const up = assigned.filter(r => !isEffectiveDateOnOrBefore(r, asOfDate)).length;
           const mis = assigned.filter(r => r.misStatus === 'fed').length;
           ws.addRow([idx + 1, b.name, b.phone, assigned.length, comp, up, mis]);
         });
@@ -225,10 +225,10 @@ export default function ReportCenterTab() {
             idx + 1,
             r.gpNameUnicode,
             r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत',
-            formatDateHi(r.meetingDate),
+            formatDateHi(getEffectiveMeetingDate(r)),
             r.brpName,
             [r.hasNSAP ? 'NSAP' : '', r.hasMGNREGA ? 'मनरेगा' : '', r.hasPMAYG ? 'आवास' : ''].filter(Boolean).join(', '),
-            r.meetingDate <= asOfDate || r.status === 'completed' ? 'सम्पन्न' : 'प्रस्तावित'
+            isEffectiveDateOnOrBefore(r, asOfDate) ? 'सम्पन्न' : 'प्रस्तावित'
           ]);
         });
       }
@@ -469,7 +469,7 @@ export default function ReportCenterTab() {
                 </tr>
               ) : (
                 filteredRecords.map((r, index) => {
-                  const isCompleted = r.status === 'completed' || r.meetingDate <= asOfDate;
+                  const isCompleted = isEffectiveDateOnOrBefore(r, asOfDate);
                   const isAmended = Boolean(r.isAmended);
 
                   return (

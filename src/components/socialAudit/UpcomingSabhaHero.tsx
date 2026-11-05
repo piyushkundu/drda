@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { renderAuditText } from '@/lib/renderAuditText';
 import { SocialAuditRecord } from '@/types/socialAudit';
+import { getEffectiveMeetingDate, isEffectiveDateOnOrBefore } from '@/lib/dateResolution';
 import { 
   Calendar, Clock, MapPin, Phone, Users, Shield, 
   AlertCircle, CheckCircle2, ChevronRight, Sparkles,
@@ -42,11 +43,11 @@ export default function UpcomingSabhaHero() {
     return diff;
   };
 
-  // Filter all upcoming meetings (meetingDate >= asOfDate)
+  // Filter all upcoming meetings (effective meeting date >= asOfDate)
   const upcomingMeetings = useMemo(() => {
     return [...records]
-      .filter((r) => r.meetingDate >= asOfDate && r.status !== 'completed')
-      .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
+      .filter((r) => getEffectiveMeetingDate(r) >= asOfDate && r.status !== 'completed')
+      .sort((a, b) => getEffectiveMeetingDate(a).localeCompare(getEffectiveMeetingDate(b)));
   }, [records, asOfDate]);
 
   // Compute detailed metrics for Baghpat and Baraut
@@ -55,20 +56,20 @@ export default function UpcomingSabhaHero() {
       const all = records.filter((r) => r.block === blockName);
       const total = all.length; // 44
 
-      const completed = all.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
-      const remaining = all.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
+      const completed = all.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
+      const remaining = all.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
 
       const amendedAll = all.filter((r) => r.isAmended);
-      const amendedCompleted = amendedAll.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
-      const amendedRemaining = amendedAll.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
+      const amendedCompleted = amendedAll.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
+      const amendedRemaining = amendedAll.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
 
       const nsapAll = all.filter((r) => r.hasNSAP);
-      const nsapCompleted = nsapAll.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
-      const nsapRemaining = nsapAll.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
+      const nsapCompleted = nsapAll.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
+      const nsapRemaining = nsapAll.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
 
       const mgnregaAll = all.filter((r) => r.hasMGNREGA);
-      const mgnregaCompleted = mgnregaAll.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
-      const mgnregaRemaining = mgnregaAll.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
+      const mgnregaCompleted = mgnregaAll.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
+      const mgnregaRemaining = mgnregaAll.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
 
       return {
         total,

@@ -6,6 +6,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { FontViewMode } from '@/types/socialAudit';
 import { DISTRICT_META } from '@/data/socialAuditInitialData';
 import { getDelhiTimeString } from '@/lib/delhiTime';
+import { getEffectiveMeetingDate } from '@/lib/dateResolution';
 import { 
   Landmark, Sparkles, FileText, Calendar, Type, 
   ChevronRight, CalendarDays, RefreshCw, LayoutDashboard, Clock, Radio,
@@ -66,7 +67,7 @@ export default function SocialAuditHeader() {
 
   const amendedCount = records.filter(r => r.isAmended).length;
   const nsapCount = records.filter(r => r.hasNSAP).length;
-  const upcomingCount = records.filter(r => r.meetingDate >= asOfDate && r.status !== 'completed').length;
+  const upcomingCount = records.filter(r => getEffectiveMeetingDate(r) >= asOfDate && r.status !== 'completed').length;
   const nirnayCapturedCount = records.filter(r => r.panchayatNirnayStatus === 'captured').length;
   const misFedCount = records.filter(r => r.misStatus === 'fed').length;
 

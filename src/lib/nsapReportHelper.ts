@@ -1,4 +1,5 @@
 import { SocialAuditRecord, NSAPReportSummary, NSAPReportRow } from '@/types/socialAudit';
+import { getEffectiveMeetingDate } from './dateResolution';
 
 /**
  * Calculates official NSAP (National Social Assistance Programme) Social Audit
@@ -19,20 +20,22 @@ export function calculateNSAPReportSummary(records: SocialAuditRecord[], asOfDat
     const blockAll = nsapRecords.filter((r) => r.block === blockName);
 
     // Proposed up to asOfDate:
-    // Includes records whose original meeting date <= asOfDate OR whose current meeting date <= asOfDate
+    // Includes records whose original meeting date <= asOfDate OR whose effective meeting date <= asOfDate
     const proposedUpTo = blockAll.filter((r) => {
-      const origDate = r.amendmentDetails?.originalDate || r.originalMeetingDate || r.meetingDate;
-      return origDate <= asOfDate || r.meetingDate <= asOfDate;
+      const origDate = r.amendmentDetails?.originalDate || r.originalMeetingDate || getEffectiveMeetingDate(r);
+      const effDate = getEffectiveMeetingDate(r);
+      return origDate <= asOfDate || effDate <= asOfDate;
     });
 
     // Amended up to asOfDate:
     const amendedUpTo = proposedUpTo.filter((r) => r.isAmended);
 
     // Completed up to asOfDate:
-    // Must be physically completed on/before asOfDate. If amended to a future date > asOfDate, it's not completed yet.
+    // Strictly date-bounded: effective meeting date MUST be on or before asOfDate.
+    // A meeting scheduled in the future relative to asOfDate can NEVER be considered completed.
     const completedUpTo = proposedUpTo.filter((r) => {
-      if (r.isAmended && r.meetingDate > asOfDate) return false;
-      return r.meetingDate <= asOfDate || r.status === 'completed';
+      const effDate = getEffectiveMeetingDate(r);
+      return effDate <= asOfDate;
     });
 
     // All amended in the whole session for this block

@@ -7,6 +7,7 @@ import { renderAuditText } from '@/lib/renderAuditText';
 import { SocialAuditRecord, AuditBlock } from '@/types/socialAudit';
 import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
 import { matchesBRP, getBRPDisplayName } from '@/lib/brpHelper';
+import { getEffectiveMeetingDate, isEffectiveDateOnOrBefore } from '@/lib/dateResolution';
 import { 
   filterRecordsByGlobalFilters, 
   formatRangeLabel 
@@ -132,6 +133,10 @@ export default function ExecutiveDashboardTab() {
   }, [nsapRecords, selectedBRP, assignedGpRecordIds, assignedGpNames]);
 
   // Compute metrics dynamically from effective records & asOfDate
+  // CRITICAL: All date-based calculations use getEffectiveMeetingDate(r) — the canonical
+  // effective meeting date — NOT r.meetingDate directly, to correctly handle amended records.
+  // "X तिथि तक सम्पन्न" strictly means effectiveDate <= asOfDate.
+  // r.status === 'completed' must NEVER bypass the date boundary.
   const metrics = useMemo(() => {
     const totalGPs = effectiveRecords.length;
 
@@ -139,21 +144,21 @@ export default function ExecutiveDashboardTab() {
     const baghpatRecords = effectiveRecords.filter((r) => r.block === 'Baghpat');
     const barautRecords = effectiveRecords.filter((r) => r.block === 'Baraut');
 
-    // Completed & Upcoming
-    const completedRecords = effectiveRecords.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
-    const upcomingRecords = effectiveRecords.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
-    const duePendingRecords = effectiveRecords.filter((r) => r.meetingDate <= asOfDate && r.status !== 'completed');
+    // Completed & Upcoming — strictly date-based, status NEVER overrides date boundary
+    const completedRecords = effectiveRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
+    const upcomingRecords = effectiveRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
+    const duePendingRecords = effectiveRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'completed');
 
-    const baghpatCompleted = baghpatRecords.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
-    const baghpatUpcoming = baghpatRecords.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
-    const barautCompleted = barautRecords.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
-    const barautUpcoming = barautRecords.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
+    const baghpatCompleted = baghpatRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
+    const baghpatUpcoming = baghpatRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
+    const barautCompleted = barautRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
+    const barautUpcoming = barautRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
 
     // Panchayat Nirnay App (R 9.6.2)
     const nirnayMappedRecords = effectiveRecords.filter((r) => r.isMappedInPanchayatNirnay);
     const nirnayCapturedRecords = effectiveRecords.filter((r) => r.panchayatNirnayStatus === 'captured');
-    const nirnayDuePending = effectiveRecords.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
-    const nirnayUpcoming = effectiveRecords.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
+    const nirnayDuePending = effectiveRecords.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && isEffectiveDateOnOrBefore(r, asOfDate));
+    const nirnayUpcoming = effectiveRecords.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && !isEffectiveDateOnOrBefore(r, asOfDate));
 
     const baghpatNirnayCaptured = baghpatRecords.filter((r) => r.panchayatNirnayStatus === 'captured');
     const barautNirnayCaptured = barautRecords.filter((r) => r.panchayatNirnayStatus === 'captured');
@@ -161,7 +166,7 @@ export default function ExecutiveDashboardTab() {
     // MIS Audit Feeding (R 9.1.3)
     const misFedRecords = effectiveRecords.filter((r) => r.misStatus === 'fed');
     const misPendingRecords = effectiveRecords.filter((r) => (r.misStatus || 'pending') !== 'fed');
-    const misDuePendingRecords = effectiveRecords.filter((r) => (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
+    const misDuePendingRecords = effectiveRecords.filter((r) => (r.misStatus || 'pending') !== 'fed' && isEffectiveDateOnOrBefore(r, asOfDate));
     const misDuePendingNSAP = misDuePendingRecords.filter((r) => r.hasNSAP);
 
     const baghpatMisFed = baghpatRecords.filter((r) => r.misStatus === 'fed');
@@ -186,15 +191,17 @@ export default function ExecutiveDashboardTab() {
     });
 
     // Amended Meetings
+    // An amendment is only counted "by asOfDate" if the EFFECTIVE (new) meeting date is on or before asOfDate.
+    // r.isAmended flag alone is NOT sufficient — it must be date-bounded.
     const amendedRecords = effectiveRecords.filter((r) => r.isAmended);
-    const amendedCompleted = amendedRecords.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
-    const amendedRemaining = amendedRecords.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
+    const amendedCompleted = amendedRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
+    const amendedRemaining = amendedRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
 
-    // Original proposed meetings if NO amendment had taken place (using original date if amended)
+    // Original proposed meetings — using original date if amended, else effective date
     const originalProposedUpToDateRecords = effectiveRecords.filter((r) => {
       const origDate = (r.isAmended && (r.originalMeetingDate || r.amendmentDetails?.originalDate))
         ? (r.originalMeetingDate || r.amendmentDetails?.originalDate)!
-        : r.meetingDate;
+        : getEffectiveMeetingDate(r);
       return origDate <= asOfDate;
     });
 
@@ -209,17 +216,17 @@ export default function ExecutiveDashboardTab() {
 
     // Amended meetings that were pushed to future dates (> asOfDate) and are pending
     const amendedShiftedToFutureRecords = amendedOriginallyDueRecords.filter((r) => {
-      return r.meetingDate > asOfDate && r.status !== 'completed';
+      return !isEffectiveDateOnOrBefore(r, asOfDate);
     });
 
-    // Recent Completed (last 5)
+    // Recent Completed (last 5) — sort by effective meeting date
     const recentlyCompleted = [...completedRecords]
-      .sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))
+      .sort((a, b) => getEffectiveMeetingDate(b).localeCompare(getEffectiveMeetingDate(a)))
       .slice(0, 5);
 
-    // Upcoming next 5
+    // Upcoming next 5 — sort by effective meeting date
     const upcomingNext = [...upcomingRecords]
-      .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate))
+      .sort((a, b) => getEffectiveMeetingDate(a).localeCompare(getEffectiveMeetingDate(b)))
       .slice(0, 5);
 
     return {
@@ -335,10 +342,10 @@ export default function ExecutiveDashboardTab() {
       } else if (modalSortBy === 'name') {
         comparison = (a.gpNameUnicode || '').localeCompare(b.gpNameUnicode || '');
       } else if (modalSortBy === 'date') {
-        comparison = (a.meetingDate || '').localeCompare(b.meetingDate || '');
+        comparison = (getEffectiveMeetingDate(a) || '').localeCompare(getEffectiveMeetingDate(b) || '');
       } else if (modalSortBy === 'status') {
-        const compA = a.meetingDate <= asOfDate ? 1 : 0;
-        const compB = b.meetingDate <= asOfDate ? 1 : 0;
+        const compA = isEffectiveDateOnOrBefore(a, asOfDate) ? 1 : 0;
+        const compB = isEffectiveDateOnOrBefore(b, asOfDate) ? 1 : 0;
         comparison = compB - compA;
       }
       return modalSortOrder === 'asc' ? comparison : -comparison;
@@ -352,21 +359,22 @@ export default function ExecutiveDashboardTab() {
     return sortedModalRecords.slice(start, start + modalPageSize);
   }, [sortedModalRecords, modalPage, modalPageSize]);
 
-  // Today's meetings (if any)
+  // Today's meetings (if any) — based on canonical effective meeting date
   const todayMeetings = useMemo(() => {
-    return effectiveRecords.filter((r) => r.meetingDate === asOfDate);
+    return effectiveRecords.filter((r) => getEffectiveMeetingDate(r) === asOfDate);
   }, [effectiveRecords, asOfDate]);
 
-  // Next 7 days upcoming meetings
+  // Next 7 days upcoming meetings — based on canonical effective meeting date
   const next7DaysMeetings = useMemo(() => {
     return effectiveRecords.filter((r) => {
-      if (r.meetingDate <= asOfDate) return false;
-      const diff = getDaysDiff(r.meetingDate);
+      const effDate = getEffectiveMeetingDate(r);
+      if (effDate <= asOfDate) return false;
+      const diff = getDaysDiff(effDate);
       return diff !== null && diff >= 0 && diff <= 7;
-    }).sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
+    }).sort((a, b) => getEffectiveMeetingDate(a).localeCompare(getEffectiveMeetingDate(b)));
   }, [effectiveRecords, asOfDate]);
 
-  // BRP Directory stats
+  // BRP Directory stats — strictly date-bounded by asOfDate
   const brpSummary = useMemo(() => {
     const list = [
       { name: 'तेजपाल', phone: '9997202522', block: 'बागपत' },
@@ -378,8 +386,8 @@ export default function ExecutiveDashboardTab() {
 
     return list.map((b) => {
       const assigned = records.filter((r) => r.brpPhone === b.phone || r.brpName?.includes(b.name.split(' ')[0]));
-      const completed = assigned.filter((r) => r.meetingDate <= asOfDate || r.status === 'completed');
-      const upcoming = assigned.filter((r) => r.meetingDate > asOfDate && r.status !== 'completed');
+      const completed = assigned.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
+      const upcoming = assigned.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
       const percent = assigned.length > 0 ? Math.round((completed.length / assigned.length) * 100) : 0;
       return { ...b, assignedCount: assigned.length, completedCount: completed.length, upcomingCount: upcoming.length, percent };
     });
@@ -1760,7 +1768,7 @@ export default function ExecutiveDashboardTab() {
                       </tr>
                     ) : (
                       paginatedModalRecords.map((r, i) => {
-                        const isCompleted = r.meetingDate <= asOfDate || r.status === 'completed';
+                        const isCompleted = isEffectiveDateOnOrBefore(r, asOfDate);
                         const displayIndex = (modalPage - 1) * modalPageSize + i + 1;
                         const origDate = r.originalMeetingDate || r.amendmentDetails?.originalDate;
                         return (

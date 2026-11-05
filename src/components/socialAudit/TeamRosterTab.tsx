@@ -5,6 +5,7 @@ import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { VRPMember, AuditBlock, VRPTeamCode } from '@/types/socialAudit';
 import { exportVRPRosterExcel } from '@/lib/exportVRPExcel';
 import { matchesBRP } from '@/lib/brpHelper';
+import { isEffectiveDateOnOrBefore } from '@/lib/dateResolution';
 import { 
   Users, Phone, PhoneCall, Copy, Check, Plus, Trash2, Edit3, 
   Search, Filter, Download, Shield, CheckCircle2, 
@@ -275,10 +276,10 @@ export default function TeamRosterTab() {
       const item = map.get(phone);
       if (item) {
         item.allGPs.push(r);
-        if (r.meetingDate >= asOfDate && r.status !== 'completed') {
-          item.upcomingGPs.push(r);
-        } else {
+        if (isEffectiveDateOnOrBefore(r, asOfDate)) {
           item.completedGPs.push(r);
+        } else {
+          item.upcomingGPs.push(r);
         }
       }
     });
