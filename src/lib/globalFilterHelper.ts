@@ -1,5 +1,6 @@
 import { SocialAuditRecord, AuditBlock } from '@/types/socialAudit';
 import { matchesBRP, BRPOption, extractBRPOptions } from './brpHelper';
+import { getEffectiveMeetingDate } from './dateResolution';
 
 export type DateRangePreset = 'all' | 'today' | 'next7' | 'next30' | 'thisMonth' | 'custom';
 
@@ -152,9 +153,9 @@ export function matchesGlobalFilters(
     }
   }
 
-  // 3. Date Range Filter (inclusive)
+  // 3. Date Range Filter (inclusive) using canonical effective meeting date
   if (dateRange) {
-    const meetingDate = record.meetingDate;
+    const meetingDate = getEffectiveMeetingDate(record);
     if (dateRange.startDate && meetingDate < dateRange.startDate) {
       return false;
     }

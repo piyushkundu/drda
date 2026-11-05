@@ -52,6 +52,7 @@ interface SocialAuditState {
   fontViewMode: FontViewMode;
   selectedBlock: 'all' | AuditBlock;
   selectedBRP: string; // 'all' or BRP phone / name
+  selectedTeamMember: string; // 'all' or team member name
   dateRange: GlobalDateRange;
   selectedScheme: 'all' | 'nsap' | 'mgnrega' | 'pmayg';
   selectedStatus: 'all' | AuditStatus | 'upcoming' | 'overdue';
@@ -82,6 +83,8 @@ interface SocialAuditState {
   setSelectedBlock: (block: 'all' | AuditBlock) => void;
   setSelectedBRP: (brp: string) => void;
   resetSelectedBRP: () => void;
+  setSelectedTeamMember: (member: string) => void;
+  resetSelectedTeamMember: () => void;
   setDateRange: (range: Partial<GlobalDateRange>) => void;
   resetDateRange: () => void;
   resetAllGlobalFilters: () => void;
@@ -184,6 +187,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       fontViewMode: 'unicode',
       selectedBlock: 'all',
       selectedBRP: 'all',
+      selectedTeamMember: 'all',
       dateRange: DEFAULT_DATE_RANGE,
       selectedScheme: 'all',
       selectedStatus: 'all',
@@ -346,6 +350,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
       setSelectedBRP: (brp) => set({ selectedBRP: brp }),
       resetSelectedBRP: () => set({ selectedBRP: 'all' }),
+      setSelectedTeamMember: (member) => set({ selectedTeamMember: member }),
+      resetSelectedTeamMember: () => set({ selectedTeamMember: 'all' }),
       setDateRange: (range) =>
         set((prev) => ({
           dateRange: { ...prev.dateRange, ...range },
@@ -354,8 +360,12 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       resetAllGlobalFilters: () =>
         set({
           selectedBRP: 'all',
+          selectedTeamMember: 'all',
           selectedBlock: 'all',
           dateRange: DEFAULT_DATE_RANGE,
+          selectedScheme: 'all',
+          selectedStatus: 'all',
+          searchQuery: '',
         }),
       setSelectedScheme: (scheme) => set({ selectedScheme: scheme }),
       setSelectedStatus: (status) => set({ selectedStatus: status }),

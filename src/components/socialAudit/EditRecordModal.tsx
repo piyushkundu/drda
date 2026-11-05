@@ -161,6 +161,7 @@ export default function EditRecordModal() {
 
     updateRecord(selectedRecordForEdit.id, updates);
     setHasUnsavedChanges(false);
+    closeEditModal();
   };
 
   const handleDelete = () => {
@@ -171,6 +172,7 @@ export default function EditRecordModal() {
     if (confirm(`क्या आप ग्राम पंचायत ${selectedRecordForEdit.gpNameUnicode} का रोस्टर हटाना चाहते हैं?`)) {
       deleteRecord(selectedRecordForEdit.id);
       setHasUnsavedChanges(false);
+      closeEditModal();
     }
   };
 

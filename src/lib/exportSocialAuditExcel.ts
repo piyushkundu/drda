@@ -1,16 +1,33 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { SocialAuditRecord, NSAPReportSummary } from '@/types/socialAudit';
+import {
+  getEffectiveMeetingDate,
+  isMeetingAmended,
+  getOriginalMeetingDate,
+  formatDisplayDate
+} from '@/lib/dateResolution';
+
+export interface CalendarExcelExportOptions {
+  fontMode?: 'krutidev' | 'unicode';
+  appliedFiltersSummary?: string;
+  reportTitle?: string;
+}
 
 export async function exportCalendarExcel(
   records: SocialAuditRecord[],
-  fontMode: 'krutidev' | 'unicode' = 'krutidev',
-  blockFilter: string = 'all'
+  optionsOrMode: 'krutidev' | 'unicode' | CalendarExcelExportOptions = 'krutidev',
+  legacyBlockFilter: string = 'all'
 ) {
+  const options: CalendarExcelExportOptions = typeof optionsOrMode === 'string'
+    ? { fontMode: optionsOrMode }
+    : optionsOrMode;
+
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Social Audit Baghpat Portal';
   wb.created = new Date();
 
+  const fontMode = options.fontMode || 'krutidev';
   const isKruti = fontMode === 'krutidev';
   const fontName = isKruti ? 'Kruti Dev 010' : 'Arial';
 
@@ -24,17 +41,17 @@ export async function exportCalendarExcel(
     { key: 'start', width: 16 },
     { key: 'meeting', width: 16 },
     { key: 'supervisor', width: 34 },
-    { key: 'brp', width: 28 },
+    { key: 'brp', width: 30 },
     { key: 'team', width: 44 },
     { key: 'venue', width: 18 },
     { key: 'time', width: 14 },
     { key: 'scheme', width: 30 },
-    { key: 'status', width: 24 }
+    { key: 'status', width: 26 }
   ];
 
-  const titleText = isKruti
+  const titleText = options.reportTitle || (isKruti
     ? 'lks\'ky vkfMV dys.Mj foRrh; o"kZ 2026&27 tuin ckxir'
-    : 'सोशल ऑडिट कैलेंडर वित्तीय वर्ष 2026-27 जनपद बागपत';
+    : 'सोशल ऑडिट कैलेंडर वित्तीय वर्ष 2026-27 जनपद बागपत');
 
   const titleRow = sheet.addRow([titleText]);
   sheet.mergeCells('A1:K1');
@@ -46,6 +63,19 @@ export async function exportCalendarExcel(
     pattern: 'solid',
     fgColor: { argb: 'FF1E293B' }
   };
+
+  if (options.appliedFiltersSummary) {
+    const filterRow = sheet.addRow([options.appliedFiltersSummary]);
+    sheet.mergeCells(`A${filterRow.number}:K${filterRow.number}`);
+    filterRow.height = 22;
+    filterRow.font = { name: fontName, size: 10, italic: true, color: { argb: 'FF334155' } };
+    filterRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    filterRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFF1F5F9' }
+    };
+  }
 
   const headers = isKruti
     ? [
@@ -92,13 +122,13 @@ export async function exportCalendarExcel(
     right: { style: 'thin', color: { argb: 'FFD1D5DB' } }
   };
 
-  const filteredRecords = blockFilter === 'all' 
-    ? records 
-    : records.filter((r) => r.block === blockFilter);
+  const filteredRecords = typeof optionsOrMode === 'string' && legacyBlockFilter !== 'all'
+    ? records.filter((r) => r.block === legacyBlockFilter)
+    : records;
 
   let lastBlock = '';
 
-  filteredRecords.forEach((r) => {
+  filteredRecords.forEach((r, idx) => {
     if (r.block !== lastBlock) {
       lastBlock = r.block;
       const blockTitle = isKruti ? r.blockKrutiDev : r.blockHindi;
@@ -122,11 +152,15 @@ export async function exportCalendarExcel(
     const time = isKruti ? r.timeKrutiDev : r.timeUnicode;
     const scheme = isKruti ? r.schemeKrutiDev : r.schemeUnicode;
 
+    const effDate = getEffectiveMeetingDate(r);
+    const amended = isMeetingAmended(r);
+    const origDate = getOriginalMeetingDate(r);
+
     let statusText = '';
-    if (r.isAmended) {
+    if (amended) {
       statusText = isKruti
-        ? `la'kksf/kr ¼ewy fnukad% ${r.originalMeetingDate || ''}½`
-        : `संशोधित (मूल दिनांक: ${r.originalMeetingDate || ''})`;
+        ? `la'kksf/kr ¼ewy fnukad% ${formatDisplayDate(origDate || r.originalMeetingDate || '')}½`
+        : `संशोधित (मूल दिनांक: ${formatDisplayDate(origDate || r.originalMeetingDate || '')})`;
     } else if (r.status === 'completed') {
       statusText = isKruti ? 'lEiUu' : 'सम्पन्न';
     } else {
@@ -134,10 +168,10 @@ export async function exportCalendarExcel(
     }
 
     const row = sheet.addRow([
-      r.sno,
+      idx + 1,
       gp,
-      r.startDate,
-      r.meetingDate,
+      formatDisplayDate(r.startDate),
+      formatDisplayDate(effDate),
       supervisor,
       brp,
       team,
@@ -155,8 +189,14 @@ export async function exportCalendarExcel(
     row.getCell(3).alignment = { vertical: 'middle', horizontal: 'center' };
     row.getCell(4).alignment = { vertical: 'middle', horizontal: 'center' };
     row.getCell(9).alignment = { vertical: 'middle', horizontal: 'center' };
+    row.getCell(11).alignment = { vertical: 'middle', horizontal: 'center' };
 
-    if (r.isAmended) {
+    // Set text format on dates and IDs/phones to prevent scientific notation
+    row.getCell(3).numFmt = '@';
+    row.getCell(4).numFmt = '@';
+    row.getCell(6).numFmt = '@';
+
+    if (amended) {
       row.fill = {
         type: 'pattern',
         pattern: 'solid',

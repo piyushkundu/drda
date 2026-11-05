@@ -13,8 +13,10 @@ import {
 } from '@/lib/globalFilterHelper';
 import { 
   Users, Building2, Calendar, ChevronDown, Search, 
-  Check, RotateCcw, AlertCircle, CalendarDays 
+  Check, RotateCcw, AlertCircle, CalendarDays, Download, FileText
 } from 'lucide-react';
+import { exportBRPCalendarPDF } from '@/lib/exportSocialAuditPdf';
+import { saveAs } from 'file-saver';
 
 export default function GlobalBRPFilterBar() {
   const { 
@@ -28,7 +30,8 @@ export default function GlobalBRPFilterBar() {
     setDateRange,
     resetDateRange,
     resetAllGlobalFilters,
-    asOfDate
+    asOfDate,
+    fontViewMode
   } = useSocialAuditStore();
 
   // Dropdown open states
@@ -357,15 +360,47 @@ export default function GlobalBRPFilterBar() {
                               </span>
                             )}
                           </div>
-                          <span
-                            className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 font-mono font-bold ${
-                              isSelected
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-100 text-slate-600'
-                            }`}
-                          >
-                            {opt.totalGPs} GP
-                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                                isSelected
+                                  ? 'bg-indigo-600 text-white'
+                                  : 'bg-slate-100 text-slate-600'
+                              }`}
+                            >
+                              {opt.totalGPs} GP
+                            </span>
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  const blob = await exportBRPCalendarPDF(records, opt.id, {
+                                    fontMode: fontViewMode === 'krutidev' ? 'krutidev' : 'unicode',
+                                    brpName: opt.name,
+                                    brpPhone: opt.phone,
+                                    asOfDate
+                                  });
+                                  const fileName = `BRP_${opt.name.replace(/\s+/g, '_')}_Calendar_${new Date().toISOString().slice(0, 10)}.pdf`;
+                                  saveAs(blob, fileName);
+                                } catch (err) {
+                                  console.error('BRP PDF download error:', err);
+                                  alert('BRP कैलेंडर PDF डाउनलोड करने में त्रुटि आई।');
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.stopPropagation();
+                                  (e.target as HTMLElement).click();
+                                }
+                              }}
+                              className="p-1 rounded-md hover:bg-indigo-200/60 text-indigo-700 transition-colors cursor-pointer"
+                              title={`${opt.name} का कैलेंडर PDF डाउनलोड करें`}
+                            >
+                              <Download className="w-3 h-3" />
+                            </span>
+                          </div>
                         </button>
                       );
                     })

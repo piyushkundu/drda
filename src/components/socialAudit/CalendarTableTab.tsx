@@ -1,23 +1,36 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { renderAuditText } from '@/lib/renderAuditText';
 import { SocialAuditRecord, AuditBlock, AuditStatus } from '@/types/socialAudit';
 import { exportCalendarExcel } from '@/lib/exportSocialAuditExcel';
-import { matchesBRP } from '@/lib/brpHelper';
+import { exportCalendarPDF, exportBRPCalendarPDF } from '@/lib/exportSocialAuditPdf';
+import { matchesBRP, extractBRPOptions } from '@/lib/brpHelper';
+import {
+  getEffectiveMeetingDate,
+  isMeetingAmended,
+  getOriginalMeetingDate,
+  formatDisplayDate,
+  isMeetingCompletedEffective
+} from '@/lib/dateResolution';
+import { matchesTeamMember, extractTeamMemberOptions } from '@/lib/teamMemberHelper';
+import { saveAs } from 'file-saver';
 import { 
   Search, Filter, Calendar as CalendarIcon, Download, 
   Edit3, Plus, RotateCcw, CheckCircle2, AlertTriangle, 
   Layers, Phone, User, Users, Shield, FileSpreadsheet,
   ChevronLeft, ChevronRight, Check, X, Eye, CalendarDays,
-  Lock, Unlock
+  Lock, Unlock, FileText, ChevronDown, UserCheck
 } from 'lucide-react';
 
 export default function CalendarTableTab() {
   const {
     records,
     selectedBRP,
+    selectedTeamMember,
+    setSelectedTeamMember,
+    resetSelectedTeamMember,
     dateRange,
     fontViewMode,
     selectedBlock,
@@ -37,97 +50,117 @@ export default function CalendarTableTab() {
     canCompleteMeeting,
     markCompleted,
     resetToBaseline,
-    asOfDate
+    asOfDate,
+    vrpMembers
   } = useSocialAuditStore();
 
   const [viewType, setViewType] = useState<'table' | 'calendar'>('table');
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-10'); // YYYY-MM
   const [downloading, setDownloading] = useState(false);
 
-  // Helper date formatter
-  const formatDate = (dStr: string) => {
-    if (!dStr) return '';
-    try {
-      const [y, m, d] = dStr.split('-');
-      return `${d}/${m}/${y}`;
-    } catch {
-      return dStr;
+  // Dropdown states for export menus
+  const [isPdfMenuOpen, setIsPdfMenuOpen] = useState(false);
+  const [isExcelMenuOpen, setIsExcelMenuOpen] = useState(false);
+  const pdfMenuRef = useRef<HTMLDivElement>(null);
+  const excelMenuRef = useRef<HTMLDivElement>(null);
+
+  // Team Member dropdown state
+  const [isTeamFilterOpen, setIsTeamFilterOpen] = useState(false);
+  const [teamSearch, setTeamSearch] = useState('');
+  const teamFilterRef = useRef<HTMLDivElement>(null);
+
+  // Close menus on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (pdfMenuRef.current && !pdfMenuRef.current.contains(e.target as Node)) {
+        setIsPdfMenuOpen(false);
+      }
+      if (excelMenuRef.current && !excelMenuRef.current.contains(e.target as Node)) {
+        setIsExcelMenuOpen(false);
+      }
+      if (teamFilterRef.current && !teamFilterRef.current.contains(e.target as Node)) {
+        setIsTeamFilterOpen(false);
+      }
     }
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Universal font renderer respecting fontViewMode with bidirectional fallback
   const renderText = (unicodeText?: string, krutiText?: string) => {
     return renderAuditText(fontViewMode, unicodeText, krutiText);
   };
 
-  // Effective records filtered by global BRP and Date Range
+  const formatDate = (dateStr?: string) => formatDisplayDate(dateStr);
+
+  // Extract all dynamic BRP and Team Member options
+  const brpOptions = useMemo(() => extractBRPOptions(records), [records]);
+  const activeBRPOption = useMemo(() => {
+    if (!selectedBRP || selectedBRP === 'all') return null;
+    return brpOptions.find(b => b.id === selectedBRP || b.name === selectedBRP || b.phone === selectedBRP);
+  }, [brpOptions, selectedBRP]);
+
+  const teamMemberOptions = useMemo(() => {
+    return extractTeamMemberOptions(records, vrpMembers);
+  }, [records, vrpMembers]);
+
+  const filteredTeamOptions = useMemo(() => {
+    if (!teamSearch.trim()) return teamMemberOptions;
+    const q = teamSearch.toLowerCase().trim();
+    return teamMemberOptions.filter(t => t.name.toLowerCase().includes(q));
+  }, [teamMemberOptions, teamSearch]);
+
+  // Unified Effective Records based on global BRP, Team Member, and Date Range
   const effectiveRecords = useMemo(() => {
     return records.filter((r) => {
       if (!matchesBRP(r, selectedBRP)) return false;
+      if (!matchesTeamMember(r, selectedTeamMember)) return false;
+      const effDate = getEffectiveMeetingDate(r);
       if (dateRange && (dateRange.startDate || dateRange.endDate)) {
-        if (dateRange.startDate && r.meetingDate < dateRange.startDate) return false;
-        if (dateRange.endDate && r.meetingDate > dateRange.endDate) return false;
+        if (dateRange.startDate && effDate < dateRange.startDate) return false;
+        if (dateRange.endDate && effDate > dateRange.endDate) return false;
       }
       return true;
     });
-  }, [records, selectedBRP, dateRange]);
+  }, [records, selectedBRP, selectedTeamMember, dateRange]);
 
-  // Helper to determine if a meeting is completed:
-  // Rule: All non-amended meetings up to asOfDate (or status === 'completed') are completed.
-  // For amended meetings, Khadki (खेड़की - 2026-10-29) is completed; remaining 9 are upcoming.
-  const isMeetingCompleted = (
-    r: { status?: string; meetingDate: string; isAmended?: boolean; gpNameUnicode?: string },
-    cutoff: string
-  ): boolean => {
-    if (r.status === 'completed') return true;
-    if (r.isAmended) {
-      return (
-        r.meetingDate <= cutoff ||
-        (r.gpNameUnicode?.includes('खेड़की') ?? false) ||
-        (r.gpNameUnicode?.includes('खड़की') ?? false)
-      );
-    }
-    return r.meetingDate <= cutoff;
-  };
-
-  // Status counts for filter buttons
-  const statusCounts = useMemo(() => {
-    const amended = effectiveRecords.filter(r => r.isAmended).length;
-    const completed = effectiveRecords.filter(r => isMeetingCompleted(r, asOfDate)).length;
-    const upcoming = effectiveRecords.filter(r => !isMeetingCompleted(r, asOfDate) && r.meetingDate > asOfDate).length;
-    const overdue = effectiveRecords.filter(r => !isMeetingCompleted(r, asOfDate) && r.meetingDate <= asOfDate).length;
-    return {
-      all: effectiveRecords.length,
-      amended,
-      completed,
-      upcoming,
-      overdue
-    };
-  }, [effectiveRecords, asOfDate]);
-
-  // Filter records
+  // Unified Filtered Records - Single source of truth for Table, Monthly Grid & Exports
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
-      // Block filter
+      // 1. Block filter
       if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
 
-      // Scheme filter
+      // 2. Global BRP filter
+      if (!matchesBRP(r, selectedBRP)) return false;
+
+      // 3. Team Member filter
+      if (!matchesTeamMember(r, selectedTeamMember)) return false;
+
+      // 4. Scheme filter
       if (selectedScheme === 'nsap' && !r.hasNSAP) return false;
       if (selectedScheme === 'mgnrega' && !r.hasMGNREGA) return false;
       if (selectedScheme === 'pmayg' && !r.hasPMAYG) return false;
 
-      // Status filter
-      if (selectedStatus === 'amended' && !r.isAmended) return false;
-      if (selectedStatus === 'completed' && !isMeetingCompleted(r, asOfDate)) return false;
-      if (selectedStatus === 'upcoming' && (isMeetingCompleted(r, asOfDate) || r.meetingDate <= asOfDate)) return false;
-      if (selectedStatus === 'overdue' && (isMeetingCompleted(r, asOfDate) || r.meetingDate > asOfDate)) return false;
+      // 5. Effective Date & Status
+      const effDate = getEffectiveMeetingDate(r);
+      const isComp = isMeetingCompletedEffective(r, asOfDate);
+      const amended = isMeetingAmended(r);
 
-      // Global BRP filter
-      if (!matchesBRP(r, selectedBRP)) return false;
+      if (selectedStatus === 'amended' && !amended) return false;
+      if (selectedStatus === 'completed' && !isComp) return false;
+      if (selectedStatus === 'upcoming' && (isComp || effDate <= asOfDate)) return false;
+      if (selectedStatus === 'overdue' && (isComp || effDate > asOfDate)) return false;
 
-      // Search query
+      // 6. Global Date Range (inclusive on effective meeting date)
+      if (dateRange && (dateRange.startDate || dateRange.endDate)) {
+        if (dateRange.startDate && effDate < dateRange.startDate) return false;
+        if (dateRange.endDate && effDate > dateRange.endDate) return false;
+      }
+
+      // 7. Search query matching
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
+        const origDate = getOriginalMeetingDate(r) || '';
         const matchUnicode = 
           r.gpNameUnicode.toLowerCase().includes(q) ||
           r.brpUnicode.toLowerCase().includes(q) ||
@@ -140,23 +173,134 @@ export default function CalendarTableTab() {
           r.brpKrutiDev.toLowerCase().includes(q) ||
           r.teamMembersKrutiDev.toLowerCase().includes(q);
 
-        const matchDate = r.meetingDate.includes(q) || r.startDate.includes(q);
+        const matchDate = effDate.includes(q) || r.meetingDate.includes(q) || origDate.includes(q) || r.startDate.includes(q);
 
         if (!matchUnicode && !matchKruti && !matchDate) return false;
       }
 
       return true;
     });
-  }, [records, selectedBlock, selectedBRP, selectedScheme, selectedStatus, searchQuery, asOfDate]);
+  }, [records, selectedBlock, selectedBRP, selectedTeamMember, selectedScheme, selectedStatus, searchQuery, dateRange, asOfDate]);
 
-  // Handle Excel download
-  const handleDownload = async (mode: 'krutidev' | 'unicode') => {
+  // Status counts for filter buttons
+  const statusCounts = useMemo(() => {
+    const base = records.filter(r => {
+      if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
+      if (!matchesBRP(r, selectedBRP)) return false;
+      if (!matchesTeamMember(r, selectedTeamMember)) return false;
+      if (selectedScheme === 'nsap' && !r.hasNSAP) return false;
+      if (selectedScheme === 'mgnrega' && !r.hasMGNREGA) return false;
+      if (selectedScheme === 'pmayg' && !r.hasPMAYG) return false;
+      return true;
+    });
+
+    const amended = base.filter(r => isMeetingAmended(r)).length;
+    const completed = base.filter(r => isMeetingCompletedEffective(r, asOfDate)).length;
+    const upcoming = base.filter(r => !isMeetingCompletedEffective(r, asOfDate) && getEffectiveMeetingDate(r) > asOfDate).length;
+    const overdue = base.filter(r => !isMeetingCompletedEffective(r, asOfDate) && getEffectiveMeetingDate(r) <= asOfDate).length;
+
+    return {
+      all: base.length,
+      amended,
+      completed,
+      upcoming,
+      overdue
+    };
+  }, [records, selectedBlock, selectedBRP, selectedTeamMember, selectedScheme, asOfDate]);
+
+  // Applied Filters Summary string for reports and headers
+  const activeFiltersSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (selectedBlock !== 'all') {
+      parts.push(`विकास खंड: ${selectedBlock === 'Baghpat' ? 'बागपत' : 'बड़ौत'}`);
+    } else {
+      parts.push('विकास खंड: सभी');
+    }
+    if (selectedBRP && selectedBRP !== 'all') {
+      parts.push(`बी०आर०पी०: ${activeBRPOption?.name || selectedBRP}`);
+    }
+    if (selectedTeamMember && selectedTeamMember !== 'all') {
+      parts.push(`टीम सदस्य: ${selectedTeamMember}`);
+    }
+    if (selectedScheme !== 'all') {
+      parts.push(`योजना: ${selectedScheme === 'nsap' ? 'NSAP पेंशन' : selectedScheme === 'mgnrega' ? 'मनरेगा' : 'प्र०आ०ग्रा०'}`);
+    }
+    if (selectedStatus !== 'all') {
+      parts.push(`स्थिति: ${selectedStatus === 'amended' ? 'संशोधित' : selectedStatus === 'completed' ? 'सम्पन्न' : selectedStatus === 'upcoming' ? 'प्रस्तावित' : 'लंबित'}`);
+    }
+    if (dateRange && (dateRange.startDate || dateRange.endDate)) {
+      parts.push(`तिथि रेंज: ${formatDisplayDate(dateRange.startDate)} से ${formatDisplayDate(dateRange.endDate)}`);
+    }
+    if (searchQuery.trim()) {
+      parts.push(`खोज: "${searchQuery.trim()}"`);
+    }
+    parts.push(`कुल रिकॉर्ड: ${filteredRecords.length}`);
+    return parts.join(' | ');
+  }, [selectedBlock, selectedBRP, activeBRPOption, selectedTeamMember, selectedScheme, selectedStatus, dateRange, searchQuery, filteredRecords.length]);
+
+  // Handle Excel download (strictly filtered records)
+  const handleDownloadExcel = async (mode: 'krutidev' | 'unicode') => {
+    if (filteredRecords.length === 0) {
+      alert('डाउनलोड करने के लिए कोई रिकॉर्ड उपलब्ध नहीं है।');
+      return;
+    }
     setDownloading(true);
+    setIsExcelMenuOpen(false);
     try {
-      await exportCalendarExcel(records, mode, selectedBlock);
+      await exportCalendarExcel(filteredRecords, {
+        fontMode: mode,
+        appliedFiltersSummary: activeFiltersSummary,
+        reportTitle: `Social_Audit_Calendar_${mode}`
+      });
     } catch (err) {
       console.error('Download error:', err);
       alert('Excel डाउनलोड करने में त्रुटि आई।');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // Handle PDF download (strictly filtered records)
+  const handleDownloadPDF = async (mode: 'krutidev' | 'unicode') => {
+    if (filteredRecords.length === 0) {
+      alert('डाउनलोड करने के लिए कोई रिकॉर्ड उपलब्ध नहीं है।');
+      return;
+    }
+    setDownloading(true);
+    setIsPdfMenuOpen(false);
+    try {
+      const blob = await exportCalendarPDF(filteredRecords, {
+        fontMode: mode,
+        appliedFiltersSummary: activeFiltersSummary,
+        asOfDate
+      });
+      const fileName = `Social_Audit_Calendar_${mode}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      saveAs(blob, fileName);
+    } catch (err) {
+      console.error('PDF Download error:', err);
+      alert('PDF डाउनलोड करने में त्रुटि आई।');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // Handle BRP-specific PDF download
+  const handleDownloadBRPPDF = async (brpTarget: string, mode: 'krutidev' | 'unicode' = 'krutidev') => {
+    setDownloading(true);
+    setIsPdfMenuOpen(false);
+    try {
+      const brpOpt = brpOptions.find(b => b.id === brpTarget || b.name === brpTarget || b.phone === brpTarget);
+      const blob = await exportBRPCalendarPDF(records, brpTarget, {
+        fontMode: mode,
+        brpName: brpOpt?.name,
+        brpPhone: brpOpt?.phone,
+        asOfDate
+      });
+      const fileName = `BRP_Calendar_${(brpOpt?.name || brpTarget).replace(/\s+/g, '_')}_${mode}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      saveAs(blob, fileName);
+    } catch (err) {
+      console.error('BRP PDF Download error:', err);
+      alert('BRP कैलेंडर PDF डाउनलोड करने में त्रुटि आई।');
     } finally {
       setDownloading(false);
     }
@@ -210,19 +354,7 @@ export default function CalendarTableTab() {
   // Selected date in monthly calendar for detailed bottom table view
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>('2026-10-12');
 
-  // Filtered records for calendar respecting Block, Scheme, and BRP
-  const calendarFilteredRecords = useMemo(() => {
-    return records.filter((r) => {
-      if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
-      if (selectedScheme === 'nsap' && !r.hasNSAP) return false;
-      if (selectedScheme === 'mgnrega' && !r.hasMGNREGA) return false;
-      if (selectedScheme === 'pmayg' && !r.hasPMAYG) return false;
-      if (!matchesBRP(r, selectedBRP)) return false;
-      return true;
-    });
-  }, [records, selectedBlock, selectedScheme, selectedBRP]);
-
-  // Calendar days generation for Monthly Calendar Grid view
+  // Calendar days generation for Monthly Calendar Grid view (using effective meeting date)
   const calendarDays = useMemo(() => {
     const [yearStr, monthStr] = selectedMonth.split('-');
     const year = parseInt(yearStr, 10);
@@ -237,17 +369,17 @@ export default function CalendarTableTab() {
     }
     for (let d = 1; d <= totalDays; d++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dayMeetings = calendarFilteredRecords.filter((r) => r.meetingDate === dateStr);
+      const dayMeetings = filteredRecords.filter((r) => getEffectiveMeetingDate(r) === dateStr);
       days.push({ dayNumber: d, dateStr, meetings: dayMeetings });
     }
     return days;
-  }, [selectedMonth, calendarFilteredRecords]);
+  }, [selectedMonth, filteredRecords]);
 
   // Meetings for currently selected date in calendar
   const selectedDateMeetings = useMemo(() => {
     if (!selectedCalendarDate) return [];
-    return calendarFilteredRecords.filter((r) => r.meetingDate === selectedCalendarDate);
-  }, [calendarFilteredRecords, selectedCalendarDate]);
+    return filteredRecords.filter((r) => getEffectiveMeetingDate(r) === selectedCalendarDate);
+  }, [filteredRecords, selectedCalendarDate]);
 
   return (
     <div className="space-y-4">
@@ -307,33 +439,109 @@ export default function CalendarTableTab() {
               </button>
             )}
 
-            {/* Excel Download Dropdown */}
-            <div className="relative group">
+            {/* Dedicated BRP Calendar PDF (visible when a BRP is selected) */}
+            {selectedBRP && selectedBRP !== 'all' && (
               <button
                 disabled={downloading}
-                className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all"
+                onClick={() => handleDownloadBRPPDF(selectedBRP, fontViewMode === 'krutidev' ? 'krutidev' : 'unicode')}
+                className="flex items-center gap-1.5 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all cursor-pointer"
+                title={`${activeBRPOption?.name || selectedBRP} का संपूर्ण रोस्टर कैलेंडर PDF डाउनलोड करें`}
+              >
+                <FileText className="w-3.5 h-3.5 text-indigo-200" />
+                <span>{downloading ? 'डाउनलोड हो रहा...' : `${activeBRPOption?.name || 'BRP'} कैलेंडर PDF`}</span>
+              </button>
+            )}
+
+            {/* PDF Download Dropdown */}
+            <div className="relative" ref={pdfMenuRef}>
+              <button
+                type="button"
+                disabled={downloading}
+                onClick={() => {
+                  setIsPdfMenuOpen(!isPdfMenuOpen);
+                  setIsExcelMenuOpen(false);
+                }}
+                className="flex items-center gap-1.5 bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5 text-rose-100" />
+                <span>{downloading ? 'डाउनलोड हो रहा...' : 'PDF डाउनलोड'}</span>
+                <ChevronDown className="w-3 h-3 text-rose-200" />
+              </button>
+
+              {isPdfMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 flex flex-col bg-white border border-slate-200 rounded-xl p-1.5 shadow-xl z-30 min-w-64 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                    फ़िल्टर अनुसार कैलेंडर PDF ({filteredRecords.length} GP)
+                  </div>
+                  <button
+                    onClick={() => handleDownloadPDF('krutidev')}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-amber-900 font-bold flex items-center justify-between"
+                    style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}
+                  >
+                    <span>कृतिदेव 010 फ़ॉन्ट में</span>
+                    <span className="text-[10px] text-slate-500 font-sans">शासकीय मुद्रण हेतु</span>
+                  </button>
+                  <button
+                    onClick={() => handleDownloadPDF('unicode')}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-800 font-bold flex items-center justify-between"
+                  >
+                    <span>यूनिकोड / मंगल फ़ॉन्ट में</span>
+                    <span className="text-[10px] text-slate-500">मानक प्रारूप</span>
+                  </button>
+                  {selectedBRP && selectedBRP !== 'all' && (
+                    <>
+                      <div className="my-1 border-t border-slate-100" />
+                      <button
+                        onClick={() => handleDownloadBRPPDF(selectedBRP, 'krutidev')}
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 text-indigo-900 font-bold flex items-center justify-between"
+                      >
+                        <span>{activeBRPOption?.name || 'BRP'} का कैलेंडर (कृतिदेव)</span>
+                        <span className="text-[10px] text-indigo-600 font-mono">BRP PDF</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Excel Download Dropdown */}
+            <div className="relative" ref={excelMenuRef}>
+              <button
+                type="button"
+                disabled={downloading}
+                onClick={() => {
+                  setIsExcelMenuOpen(!isExcelMenuOpen);
+                  setIsPdfMenuOpen(false);
+                }}
+                className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all cursor-pointer"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-100" />
                 <span>{downloading ? 'डाउनलोड हो रहा...' : 'Excel डाउनलोड'}</span>
+                <ChevronDown className="w-3 h-3 text-emerald-200" />
               </button>
 
-              <div className="absolute right-0 top-full mt-1.5 hidden group-hover:flex flex-col bg-white border border-slate-200 rounded-xl p-1.5 shadow-xl z-30 min-w-56 text-xs">
-                <button
-                  onClick={() => handleDownload('krutidev')}
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-amber-800 font-bold flex items-center justify-between"
-                  style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}
-                >
-                  <span>कृतिदेव 010 फ़ॉन्ट में</span>
-                  <span className="text-[10px] text-slate-500 font-sans">शासकीय मुद्रण हेतु</span>
-                </button>
-                <button
-                  onClick={() => handleDownload('unicode')}
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-800 font-bold flex items-center justify-between"
-                >
-                  <span>यूनिकोड / मंगल फ़ॉन्ट में</span>
-                  <span className="text-[10px] text-slate-500">मानक प्रारूप</span>
-                </button>
-              </div>
+              {isExcelMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 flex flex-col bg-white border border-slate-200 rounded-xl p-1.5 shadow-xl z-30 min-w-56 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                    फ़िल्टर अनुसार Excel ({filteredRecords.length} GP)
+                  </div>
+                  <button
+                    onClick={() => handleDownloadExcel('krutidev')}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-amber-900 font-bold flex items-center justify-between"
+                    style={{ fontFamily: "'Kruti Dev 010', sans-serif" }}
+                  >
+                    <span>कृतिदेव 010 फ़ॉन्ट में</span>
+                    <span className="text-[10px] text-slate-500 font-sans">शासकीय मुद्रण हेतु</span>
+                  </button>
+                  <button
+                    onClick={() => handleDownloadExcel('unicode')}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-800 font-bold flex items-center justify-between"
+                  >
+                    <span>यूनिकोड / मंगल फ़ॉन्ट में</span>
+                    <span className="text-[10px] text-slate-500">मानक प्रारूप</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Reset to baseline button (if edited) */}
@@ -425,6 +633,99 @@ export default function CalendarTableTab() {
               </button>
             ))}
           </div>
+
+          <div className="h-4 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+          {/* Team Member Filter Dropdown */}
+          <div className="relative" ref={teamFilterRef}>
+            <button
+              type="button"
+              onClick={() => setIsTeamFilterOpen(!isTeamFilterOpen)}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border ${
+                selectedTeamMember !== 'all'
+                  ? 'bg-purple-700 text-white border-purple-800 shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
+              }`}
+              title="सोशल ऑडिट टीम सदस्य के आधार पर फ़िल्टर करें"
+            >
+              <Users className="w-3 h-3" />
+              <span>
+                {selectedTeamMember !== 'all' ? `टीम: ${selectedTeamMember}` : 'टीम सदस्य: सभी'}
+              </span>
+              <ChevronDown className="w-3 h-3" />
+            </button>
+
+            {isTeamFilterOpen && (
+              <div className="absolute left-0 top-full mt-1.5 flex flex-col bg-white border border-slate-200 rounded-xl p-2 shadow-xl z-30 min-w-64 max-h-72 overflow-y-auto text-xs animate-in fade-in zoom-in-95 duration-100">
+                <div className="pb-1.5 mb-1.5 border-b border-slate-100">
+                  <input
+                    type="text"
+                    placeholder="टीम सदस्य खोजें..."
+                    value={teamSearch}
+                    onChange={(e) => setTeamSearch(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-[11px] rounded-lg px-2.5 py-1.5 outline-none focus:border-purple-500 font-medium"
+                    autoFocus
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedTeamMember('all');
+                    setIsTeamFilterOpen(false);
+                    setTeamSearch('');
+                  }}
+                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center justify-between ${
+                    selectedTeamMember === 'all' ? 'bg-purple-50 text-purple-900' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <span>समस्त टीम सदस्य (सभी)</span>
+                  <span className="text-[10px] text-slate-400">{records.length} GP</span>
+                </button>
+                <div className="my-1 border-t border-slate-100" />
+                {filteredTeamOptions.length === 0 ? (
+                  <div className="py-3 text-center text-slate-400 text-[11px]">कोई सदस्य नहीं मिला</div>
+                ) : (
+                  filteredTeamOptions.map((opt) => (
+                    <button
+                      key={opt.name}
+                      onClick={() => {
+                        setSelectedTeamMember(opt.name);
+                        setIsTeamFilterOpen(false);
+                        setTeamSearch('');
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] flex items-center justify-between transition-colors ${
+                        selectedTeamMember === opt.name
+                          ? 'bg-purple-100 text-purple-900 font-bold'
+                          : 'text-slate-700 hover:bg-slate-50 font-medium'
+                      }`}
+                    >
+                      <span className="truncate">{opt.name}</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 ml-2">
+                        {opt.totalGPs} GP
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Reset Filters button if any filter is active */}
+          {(selectedBlock !== 'all' || selectedScheme !== 'all' || selectedStatus !== 'all' || selectedTeamMember !== 'all' || (selectedBRP && selectedBRP !== 'all') || searchQuery.trim() !== '') && (
+            <button
+              onClick={() => {
+                setSelectedBlock('all');
+                setSelectedScheme('all');
+                setSelectedStatus('all');
+                setSelectedTeamMember('all');
+                setSearchQuery('');
+              }}
+              className="flex items-center gap-1 text-[11px] text-rose-600 hover:text-rose-800 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors ml-auto cursor-pointer"
+              title="सभी सक्रिय फ़िल्टर साफ़ करें"
+            >
+              <X className="w-3 h-3" />
+              <span>फ़िल्टर रीसेट</span>
+            </button>
+          )}
         </div>
 
         {/* Edit Mode Notification Banner */}
@@ -505,15 +806,33 @@ export default function CalendarTableTab() {
                 {filteredRecords.length === 0 ? (
                   <tr>
                     <td colSpan={isEditMode ? 11 : 10} className="py-12 text-center text-slate-400">
-                      कोई ग्राम सभा बैठक नहीं मिली। कृपया अपने फ़िल्टर बदलें।
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Filter className="w-8 h-8 text-slate-300" />
+                        <p className="font-semibold text-slate-600 text-sm">चयनित फ़िल्टर के अनुसार कोई सोशल ऑडिट रिकॉर्ड नहीं मिला।</p>
+                        <p className="text-slate-400 text-xs">कृपया अपने फ़िल्टर बदलें या खोज शब्द साफ़ करें।</p>
+                        <button
+                          onClick={() => {
+                            setSelectedBlock('all');
+                            setSelectedScheme('all');
+                            setSelectedStatus('all');
+                            setSelectedTeamMember('all');
+                            setSearchQuery('');
+                          }}
+                          className="mt-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors cursor-pointer"
+                        >
+                          समस्त फ़िल्टर रीसेट करें
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   filteredRecords.map((r, index) => {
-                    const isCompleted = isMeetingCompleted(r, asOfDate);
-                    const isOverdue = !isCompleted && r.meetingDate <= asOfDate;
-                    const isUpcoming = !isCompleted && r.meetingDate > asOfDate;
-                    const isAmended = Boolean(r.isAmended);
+                    const effDate = getEffectiveMeetingDate(r);
+                    const isCompleted = isMeetingCompletedEffective(r, asOfDate);
+                    const isOverdue = !isCompleted && effDate <= asOfDate;
+                    const isUpcoming = !isCompleted && effDate > asOfDate;
+                    const isAmended = isMeetingAmended(r);
+                    const origDate = getOriginalMeetingDate(r);
 
                     // Row subtle background & left status indicator
                     let rowBorder = 'border-l-4 border-l-transparent';
@@ -574,18 +893,18 @@ export default function CalendarTableTab() {
 
                         {/* Meeting Date */}
                         <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                          {r.isAmended && r.originalMeetingDate ? (
+                          {isAmended && origDate && origDate !== effDate ? (
                             <div className="flex flex-col items-center">
-                              <span className="line-through text-slate-400 text-[10px]">
-                                {formatDate(r.originalMeetingDate)}
+                              <span className="line-through text-slate-400 text-[10px]" title="मूल निर्धारित तिथि">
+                                {formatDate(origDate)}
                               </span>
-                              <span className="font-bold text-amber-900 bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-300">
-                                {formatDate(r.meetingDate)}
+                              <span className="font-bold text-amber-900 bg-amber-100/90 px-1.5 py-0.5 rounded border border-amber-300 shadow-2xs" title="संशोधित प्रभावी बैठक तिथि">
+                                {formatDate(effDate)}
                               </span>
                             </div>
                           ) : (
                             <span className={`font-semibold ${isCompleted ? 'text-emerald-700' : isOverdue ? 'text-rose-700 font-bold' : 'text-blue-700 font-bold'}`}>
-                              {formatDate(r.meetingDate)}
+                              {formatDate(effDate)}
                             </span>
                           )}
                         </td>
@@ -777,7 +1096,7 @@ export default function CalendarTableTab() {
                   {monthNames[selectedMonth.split('-')[1]] || selectedMonth}
                 </span>
                 <span className="text-[10px] text-blue-700 font-bold block">
-                  {records.filter(r => r.meetingDate.startsWith(selectedMonth)).length} बैठकें निर्धारित
+                  {records.filter(r => getEffectiveMeetingDate(r).startsWith(selectedMonth)).length} बैठकें निर्धारित
                 </span>
               </div>
 
@@ -805,7 +1124,7 @@ export default function CalendarTableTab() {
             {/* Calendar Status Legend */}
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3 px-3 py-2 bg-slate-50/80 rounded-xl border border-slate-200/80 text-xs">
               <span className="text-slate-600 font-semibold text-[11px]">
-                माह में कुल <strong>{calendarFilteredRecords.filter(r => r.meetingDate.startsWith(selectedMonth)).length}</strong> बैठकें निर्धारित
+                माह में कुल <strong>{filteredRecords.filter(r => getEffectiveMeetingDate(r).startsWith(selectedMonth)).length}</strong> बैठकें निर्धारित
               </span>
               {/* Status Color Legend */}
               <div className="flex flex-wrap items-center gap-3 font-semibold text-[11px]">
@@ -889,9 +1208,10 @@ export default function CalendarTableTab() {
                     {hasMeetings && (
                       <div className="flex md:hidden items-center gap-1 mt-1 flex-wrap">
                         {day.meetings.slice(0, 3).map((m) => {
-                          const isComp = isMeetingCompleted(m, asOfDate);
-                          const isOver = !isComp && m.meetingDate <= asOfDate;
-                          const isAm = Boolean(m.isAmended);
+                          const mEff = getEffectiveMeetingDate(m);
+                          const isComp = isMeetingCompletedEffective(m, asOfDate);
+                          const isOver = !isComp && mEff <= asOfDate;
+                          const isAm = isMeetingAmended(m);
 
                           let dotColor = 'bg-blue-500';
                           if (isComp) dotColor = 'bg-emerald-500';
@@ -915,9 +1235,10 @@ export default function CalendarTableTab() {
                     {/* Desktop Meetings preview inside cell with status color badges */}
                     <div className="hidden md:block overflow-y-auto space-y-1 text-[10px] scrollbar-none flex-1 mt-1">
                       {day.meetings.slice(0, 2).map((m) => {
-                        const isComp = isMeetingCompleted(m, asOfDate);
-                        const isOver = !isComp && m.meetingDate <= asOfDate;
-                        const isAm = Boolean(m.isAmended);
+                        const mEff = getEffectiveMeetingDate(m);
+                        const isComp = isMeetingCompletedEffective(m, asOfDate);
+                        const isOver = !isComp && mEff <= asOfDate;
+                        const isAm = isMeetingAmended(m);
 
                         let pillClass = 'bg-blue-50/90 text-blue-900 border-blue-200 hover:bg-blue-100';
                         if (isComp) {
@@ -1003,10 +1324,11 @@ export default function CalendarTableTab() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {selectedDateMeetings.map((r, i) => {
-                        const isCompleted = isMeetingCompleted(r, asOfDate);
-                        const isOverdue = !isCompleted && r.meetingDate <= asOfDate;
-                        const isUpcoming = !isCompleted && r.meetingDate > asOfDate;
-                        const isAmended = Boolean(r.isAmended);
+                        const effDate = getEffectiveMeetingDate(r);
+                        const isCompleted = isMeetingCompletedEffective(r, asOfDate);
+                        const isOverdue = !isCompleted && effDate <= asOfDate;
+                        const isUpcoming = !isCompleted && effDate > asOfDate;
+                        const isAmended = isMeetingAmended(r);
 
                         let rowBorder = 'border-l-4 border-l-transparent';
                         if (isCompleted) rowBorder = 'border-l-4 border-l-emerald-500 bg-emerald-50/15 hover:bg-emerald-50/30';
