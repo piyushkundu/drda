@@ -5,7 +5,9 @@
  * 2. Dedicated BRP-wise Calendar PDF
  * 3. Team Member-wise Calendar PDF
  * 4. Kruti Dev 010 (size 10) font support with clean English dates/numbers
- * 5. Unicode / Mangal fallback mode
+ * 5. Dynamic multi-block calculation (Baghpat एवं Baraut)
+ * 6. Prominent revised meeting dates with red strikethrough cancelled dates
+ * 7. Unicode / Mangal fallback mode
  */
 
 import { jsPDF } from 'jspdf';
@@ -175,14 +177,15 @@ export async function exportCalendarPDF(
     : '';
 
   // Column definitions (Total 277mm)
+  // Adjusted: 'meeting' increased from 24mm to 28mm to cleanly display 3 lines for revised dates
   const cols = [
     { key: 'sno', headerKruti: 'Ø0 la0', headerUni: 'क्र० सं०', width: 12, align: 'center' },
     { key: 'gp', headerKruti: 'xzke iapk;r dk uke', headerUni: 'ग्राम पंचायत', width: 32, align: 'left' },
     { key: 'block', headerKruti: 'fodkl [k.M', headerUni: 'विकास खण्ड', width: 20, align: 'center' },
     { key: 'start', headerKruti: 'çkjEHk fnukad', headerUni: 'प्रारम्भ दिनांक', width: 22, align: 'center' },
-    { key: 'meeting', headerKruti: 'cSBd fnukad', headerUni: 'बैठक दिनांक', width: 24, align: 'center' },
-    { key: 'brp', headerKruti: 'ch0vkj0ih0 dk uke', headerUni: 'बी०आर०पी०', width: 34, align: 'left' },
-    { key: 'team', headerKruti: 'Vhe lnL;ks dk uke', headerUni: 'सोशल ऑडिट टीम सदस्य', width: 50, align: 'left' },
+    { key: 'meeting', headerKruti: 'cSBd fnukad', headerUni: 'बैठक दिनांक', width: 28, align: 'center' },
+    { key: 'brp', headerKruti: 'ch0vkj0ih0 dk uke', headerUni: 'बी०आर०पी०', width: 32, align: 'left' },
+    { key: 'team', headerKruti: 'Vhe lnL;ks dk uke', headerUni: 'सोशल ऑडिट टीम सदस्य', width: 48, align: 'left' },
     { key: 'supervisor', headerKruti: 'i;Zos{kd vf/kdkjh', headerUni: 'पर्यवेक्षक अधिकारी', width: 33, align: 'left' },
     { key: 'scheme', headerKruti: ';kstuk dk uke', headerUni: 'योजना', width: 28, align: 'left' },
     { key: 'status', headerKruti: 'fLFkfr', headerUni: 'स्थिति', width: 22, align: 'center' }
@@ -248,14 +251,11 @@ export async function exportCalendarPDF(
       const amended = isMeetingAmended(r);
       const origDate = getOriginalMeetingDate(r);
       const isComp = isMeetingCompletedEffective(r, options.asOfDate || '2026-10-30');
+      const hasDateRevision = amended && Boolean(origDate) && origDate !== effDate;
 
       const blockText = isKruti
         ? (r.block === 'Baghpat' ? 'ckxir' : 'cM+kSr')
         : (r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत');
-
-      const meetingDateText = amended && origDate
-        ? `${formatDisplayDate(effDate)}\n(${formatDisplayDate(origDate)})`
-        : formatDisplayDate(effDate);
 
       let statusText = '';
       if (amended) {
@@ -286,12 +286,21 @@ export async function exportCalendarPDF(
         ? (r.schemeKrutiDev || toKrutiDevPdfText(r.schemeUnicode || ''))
         : (r.schemeUnicode || (r.schemeKrutiDev ? krutiDevToUnicode(r.schemeKrutiDev) : ''));
 
+      // If meeting has a date revision, allocate 3 distinct lines for col 4
+      const meetingLines = hasDateRevision
+        ? [
+            formatDisplayDate(effDate),
+            formatDisplayDate(origDate),
+            isKruti ? "iqjkuh frfFk fujLr" : "पुरानी तिथि निरस्त"
+          ]
+        : [formatDisplayDate(effDate)];
+
       const cellValues = [
         String(idx + 1),
         gpText || '',
         blockText,
         formatDisplayDate(r.startDate),
-        meetingDateText,
+        meetingLines,
         brpText || '',
         teamText || '',
         supervisorText || '',
@@ -301,14 +310,18 @@ export async function exportCalendarPDF(
 
       // Measure column lines
       const colLines = cellValues.map((val, i) => {
-        const useNum = (i === 0 || i === 3 || i === 4);
+        if (i === 4) {
+          return val as string[];
+        }
+        const useNum = (i === 0 || i === 3);
         doc.setFont(useNum ? numFont : primaryFont, 'normal');
         doc.setFontSize(8.5);
-        return doc.splitTextToSize(val, cols[i].width - 2);
+        return doc.splitTextToSize(val as string, cols[i].width - 2);
       });
 
       const maxLines = Math.max(...colLines.map((l) => l.length), 1);
-      const rowHeight = Math.max(maxLines * lineHeight + 2.5, 6.2);
+      const minRowHeight = hasDateRevision ? 14.5 : 6.2;
+      const rowHeight = Math.max(maxLines * lineHeight + 2.5, minRowHeight);
 
       // Page boundary check
       if (curY + rowHeight > pageHeight - bottomMargin) {
@@ -316,9 +329,9 @@ export async function exportCalendarPDF(
         curY = drawPageHeader(12);
       }
 
-      // Fill background
+      // Fill background: Amber-100 for amended records, Slate-50 for zebra rows
       if (amended) {
-        doc.setFillColor(254, 243, 199); // Amber-100 for amended records
+        doc.setFillColor(254, 243, 199); // Amber-100
         doc.rect(startX, curY, totalWidth, rowHeight, 'F');
       } else if (idx % 2 === 1) {
         doc.setFillColor(248, 250, 252); // Slate-50 zebra
@@ -331,28 +344,87 @@ export async function exportCalendarPDF(
 
       cols.forEach((col, i) => {
         doc.rect(curX, curY, col.width, rowHeight, 'S');
-        const lines = colLines[i];
-        const isNumericCol = (i === 0 || i === 3 || i === 4);
-        doc.setFont(isNumericCol ? numFont : primaryFont, 'normal');
-        doc.setFontSize(8.5);
 
-        if (amended && (i === 4 || i === 9)) {
-          doc.setTextColor(180, 83, 9); // Amber-700
-        } else if (isComp && i === 9) {
-          doc.setTextColor(4, 120, 87); // Emerald-700
-        } else {
-          doc.setTextColor(15, 23, 42);
-        }
+        if (i === 4) {
+          // Dedicated Meeting Date Cell Renderer
+          const centerX = curX + col.width / 2;
 
-        const textY = curY + 3.8;
-        if (col.align === 'center') {
-          lines.forEach((line: string, lineIdx: number) => {
-            doc.text(line, curX + col.width / 2, textY + lineIdx * lineHeight, { align: 'center' });
-          });
+          if (hasDateRevision) {
+            const effStr = formatDisplayDate(effDate);
+            const origStr = formatDisplayDate(origDate);
+            const cancelLabel = isKruti ? "iqjkuh frfFk fujLr" : "पुरानी तिथि निरस्त";
+
+            // Vertically center the 3 lines in the cell
+            const startMeetingY = curY + (rowHeight - 11.5) / 2 + 3.2;
+
+            // 1. New Active Date (Bold, Amber-900, prominent)
+            doc.setFont(numFont, 'bold');
+            doc.setFontSize(8.5);
+            doc.setTextColor(146, 64, 14); // Amber-800
+            doc.text(effStr, centerX, startMeetingY, { align: 'center' });
+
+            // 2. Old Cancelled Date (Red-600 with clean strikethrough)
+            const oldDateY = startMeetingY + 4.0;
+            doc.setFont(numFont, 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(220, 38, 38); // Red-600
+            doc.text(origStr, centerX, oldDateY, { align: 'center' });
+
+            const oldWidth = doc.getTextWidth(origStr);
+            doc.setDrawColor(220, 38, 38);
+            doc.setLineWidth(0.35);
+            doc.line(
+              centerX - oldWidth / 2 - 0.5,
+              oldDateY - 0.8,
+              centerX + oldWidth / 2 + 0.5,
+              oldDateY - 0.8
+            );
+
+            // 3. Explicit label "पुरानी तिथि निरस्त" in Kruti Dev font (6.5pt, Red-700)
+            const labelY = oldDateY + 3.6;
+            doc.setFont(primaryFont, 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(185, 28, 28); // Red-700
+            doc.text(cancelLabel, centerX, labelY, { align: 'center' });
+          } else {
+            // Normal non-revised meeting date
+            doc.setFont(numFont, 'normal');
+            doc.setFontSize(8.5);
+            if (isComp) {
+              doc.setTextColor(4, 120, 87);
+            } else if (effDate <= (options.asOfDate || '2026-10-30')) {
+              doc.setTextColor(190, 18, 60);
+            } else {
+              doc.setTextColor(29, 78, 216);
+            }
+            const singleY = curY + rowHeight / 2 + 1.2;
+            doc.text(formatDisplayDate(effDate), centerX, singleY, { align: 'center' });
+          }
         } else {
-          lines.forEach((line: string, lineIdx: number) => {
-            doc.text(line, curX + 1.2, textY + lineIdx * lineHeight);
-          });
+          // Standard cell rendering
+          const lines = colLines[i];
+          const isNumericCol = (i === 0 || i === 3);
+          doc.setFont(isNumericCol ? numFont : primaryFont, 'normal');
+          doc.setFontSize(8.5);
+
+          if (amended && (i === 9)) {
+            doc.setTextColor(180, 83, 9); // Amber-700
+          } else if (isComp && i === 9) {
+            doc.setTextColor(4, 120, 87); // Emerald-700
+          } else {
+            doc.setTextColor(15, 23, 42);
+          }
+
+          const textY = curY + 3.8;
+          if (col.align === 'center') {
+            lines.forEach((line: string, lineIdx: number) => {
+              doc.text(line, curX + col.width / 2, textY + lineIdx * lineHeight, { align: 'center' });
+            });
+          } else {
+            lines.forEach((line: string, lineIdx: number) => {
+              doc.text(line, curX + 1.2, textY + lineIdx * lineHeight);
+            });
+          }
         }
 
         curX += col.width;
@@ -411,6 +483,7 @@ export async function exportCalendarPDF(
 /**
  * Dedicated BRP-wise Calendar PDF generator.
  * Generates an individualized monthly calendar for the selected BRP.
+ * Accurately computes all distinct development blocks present in the filtered dataset.
  */
 export async function exportBRPCalendarPDF(
   allRecords: SocialAuditRecord[],
@@ -433,10 +506,25 @@ export async function exportBRPCalendarPDF(
   const brpRecord = brpRecords[0];
   const brpDisplayName = options.brpName || brpRecord?.brpUnicode || brpRecord?.brpName || (brpRecord?.brpKrutiDev ? krutiDevToUnicode(brpRecord.brpKrutiDev) : brpIdentifier);
   const brpPhone = options.brpPhone || brpRecord?.brpPhone || '';
-  const blockNameUni = brpRecord?.block === 'Baraut' ? 'बड़ौत' : 'बागपत';
+
+  // Calculate distinct blocks from the exact filtered records included in the PDF
+  const distinctBlocks = Array.from(new Set(brpRecords.map(r => r.block).filter(Boolean)));
+  
+  let blockLabelUni = '';
+  if (distinctBlocks.includes('Baghpat') && distinctBlocks.includes('Baraut')) {
+    blockLabelUni = 'बागपत एवं बड़ौत';
+  } else if (distinctBlocks.includes('Baraut')) {
+    blockLabelUni = 'बड़ौत';
+  } else if (distinctBlocks.includes('Baghpat')) {
+    blockLabelUni = 'बागपत';
+  } else if (distinctBlocks.length > 0) {
+    blockLabelUni = distinctBlocks.join(' एवं ');
+  } else {
+    blockLabelUni = 'सभी';
+  }
 
   const titleUni = `बी०आर०पी० सोशल ऑडिट कैलेंडर – वित्तीय वर्ष 2026-27`;
-  const summaryUni = `बी०आर०पी०: ${brpDisplayName} ${brpPhone ? `(${brpPhone})` : ''}   -   विकास खण्ड: ${blockNameUni}   -   कुल आवंटित ग्राम पंचायतें: ${brpRecords.length}`;
+  const summaryUni = `बी०आर०पी०: ${brpDisplayName} ${brpPhone ? `(${brpPhone})` : ''}   -   विकास खण्ड: ${blockLabelUni}   -   कुल आवंटित ग्राम पंचायतें: ${brpRecords.length}`;
 
   return exportCalendarPDF(brpRecords, {
     ...options,

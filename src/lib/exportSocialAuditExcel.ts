@@ -40,6 +40,7 @@ export async function exportCalendarExcel(
     { key: 'gp', width: 24 },
     { key: 'start', width: 16 },
     { key: 'meeting', width: 16 },
+    { key: 'cancelledDate', width: 18 },
     { key: 'supervisor', width: 34 },
     { key: 'brp', width: 30 },
     { key: 'team', width: 44 },
@@ -54,7 +55,7 @@ export async function exportCalendarExcel(
     : 'सोशल ऑडिट कैलेंडर वित्तीय वर्ष 2026-27 जनपद बागपत');
 
   const titleRow = sheet.addRow([titleText]);
-  sheet.mergeCells('A1:K1');
+  sheet.mergeCells('A1:L1');
   titleRow.height = 36;
   titleRow.font = { name: fontName, size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
   titleRow.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -66,7 +67,7 @@ export async function exportCalendarExcel(
 
   if (options.appliedFiltersSummary) {
     const filterRow = sheet.addRow([options.appliedFiltersSummary]);
-    sheet.mergeCells(`A${filterRow.number}:K${filterRow.number}`);
+    sheet.mergeCells(`A${filterRow.number}:L${filterRow.number}`);
     filterRow.height = 22;
     filterRow.font = { name: fontName, size: 10, italic: true, color: { argb: 'FF334155' } };
     filterRow.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -83,6 +84,7 @@ export async function exportCalendarExcel(
         'xzke iapk;r dk uke',
         'lks\'ky vkfMV çkjEHk fnukad',
         'lks\'ky vkfMV cSBd fnukad',
+        'fujLr iqjkuh frfFk',
         'tuin Lrjh; i;Zos{kd vf/kdkjh',
         'ch0vkj0ih0 dk uke eks0 u0 lfgr',
         'lks\'ky vkfMV Vhe lnL;ks dk uke',
@@ -95,7 +97,8 @@ export async function exportCalendarExcel(
         'क्र० सं०',
         'ग्राम पंचायत का नाम',
         'प्रारम्भ होने का दिनांक',
-        'बैठक का दिनांक',
+        'बैठक का दिनांक (नवीन/प्रभावी)',
+        'निरस्त पुरानी तिथि',
         'पर्यवेक्षक अधिकारी',
         'बी०आर०पी० (मो० नं० सहित)',
         'सोशल ऑडिट टीम सदस्य',
@@ -133,7 +136,7 @@ export async function exportCalendarExcel(
       lastBlock = r.block;
       const blockTitle = isKruti ? r.blockKrutiDev : r.blockHindi;
       const bRow = sheet.addRow([blockTitle]);
-      sheet.mergeCells(`A${bRow.number}:K${bRow.number}`);
+      sheet.mergeCells(`A${bRow.number}:L${bRow.number}`);
       bRow.height = 26;
       bRow.font = { name: fontName, size: 12, bold: true, color: { argb: 'FF1E3A8A' } };
       bRow.alignment = { vertical: 'middle', horizontal: 'left' };
@@ -155,6 +158,7 @@ export async function exportCalendarExcel(
     const effDate = getEffectiveMeetingDate(r);
     const amended = isMeetingAmended(r);
     const origDate = getOriginalMeetingDate(r);
+    const hasDateRevision = amended && Boolean(origDate) && origDate !== effDate;
 
     let statusText = '';
     if (amended) {
@@ -172,6 +176,7 @@ export async function exportCalendarExcel(
       gp,
       formatDisplayDate(r.startDate),
       formatDisplayDate(effDate),
+      hasDateRevision ? formatDisplayDate(origDate) : '-',
       supervisor,
       brp,
       team,
@@ -188,13 +193,21 @@ export async function exportCalendarExcel(
     row.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
     row.getCell(3).alignment = { vertical: 'middle', horizontal: 'center' };
     row.getCell(4).alignment = { vertical: 'middle', horizontal: 'center' };
-    row.getCell(9).alignment = { vertical: 'middle', horizontal: 'center' };
-    row.getCell(11).alignment = { vertical: 'middle', horizontal: 'center' };
+    row.getCell(5).alignment = { vertical: 'middle', horizontal: 'center' };
+    row.getCell(10).alignment = { vertical: 'middle', horizontal: 'center' };
+    row.getCell(12).alignment = { vertical: 'middle', horizontal: 'center' };
 
     // Set text format on dates and IDs/phones to prevent scientific notation
     row.getCell(3).numFmt = '@';
     row.getCell(4).numFmt = '@';
-    row.getCell(6).numFmt = '@';
+    row.getCell(5).numFmt = '@';
+    row.getCell(7).numFmt = '@';
+
+    if (hasDateRevision) {
+      row.getCell(4).font = { name: fontName, size: 10, bold: true, color: { argb: 'FFB45309' } };
+      // Cancelled date in red with strikethrough
+      row.getCell(5).font = { name: fontName, size: 10, strike: true, color: { argb: 'FFDC2626' } };
+    }
 
     if (amended) {
       row.fill = {
@@ -202,11 +215,10 @@ export async function exportCalendarExcel(
         pattern: 'solid',
         fgColor: { argb: 'FFFFFBEB' }
       };
-      row.getCell(4).font = { name: fontName, size: 10, bold: true, color: { argb: 'FFB45309' } };
-      row.getCell(11).font = { name: fontName, size: 9, bold: true, color: { argb: 'FFB45309' } };
+      row.getCell(12).font = { name: fontName, size: 9, bold: true, color: { argb: 'FFB45309' } };
     }
 
-    for (let c = 1; c <= 11; c++) {
+    for (let c = 1; c <= 12; c++) {
       row.getCell(c).border = thinBorder;
     }
   });
@@ -222,13 +234,14 @@ export async function exportCalendarExcel(
     '',
     '',
     '',
+    '',
     isKruti ? 'eq[; fodkl vf/kdkjh' : 'मुख्य विकास अधिकारी',
     '',
     ''
   ]);
   sigRow.font = { name: fontName, size: 11, bold: true };
   sheet.mergeCells(`B${sigRow.number}:D${sigRow.number}`);
-  sheet.mergeCells(`I${sigRow.number}:K${sigRow.number}`);
+  sheet.mergeCells(`J${sigRow.number}:L${sigRow.number}`);
 
   const buffer = await wb.xlsx.writeBuffer();
   const fileName = `Social_Audit_Calendar_Baghpat_${fontMode}_${new Date().toISOString().slice(0, 10)}.xlsx`;
