@@ -9,7 +9,7 @@
  */
 
 import { jsPDF } from 'jspdf';
-import { SocialAuditRecord, FontViewMode } from '@/types/socialAudit';
+import { SocialAuditRecord } from '@/types/socialAudit';
 import {
   getEffectiveMeetingDate,
   isMeetingAmended,
@@ -18,8 +18,10 @@ import {
   isMeetingCompletedEffective
 } from '@/lib/dateResolution';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
+import { krutiDevToUnicode } from '@/lib/fontConversion/krutiDevToUnicode';
 
 let _cachedKrutiFont: string | null = null;
+let _cachedMangalFont: string | null = null;
 
 async function getKrutiDevFontBase64(): Promise<string> {
   if (_cachedKrutiFont) return _cachedKrutiFont;
@@ -50,6 +52,56 @@ async function getKrutiDevFontBase64(): Promise<string> {
     console.error('Failed to load Kruti Dev font for PDF export:', err);
     return '';
   }
+}
+
+async function getMangalFontBase64(): Promise<string> {
+  if (_cachedMangalFont) return _cachedMangalFont;
+  if (typeof window === 'undefined') {
+    try {
+      const fs = await import('fs');
+      _cachedMangalFont = fs.readFileSync('public/fonts/mangal.ttf').toString('base64');
+      return _cachedMangalFont;
+    } catch {
+      return '';
+    }
+  }
+
+  try {
+    const res = await fetch('/fonts/mangal.ttf');
+    const buffer = await res.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    _cachedMangalFont = btoa(binary);
+    return _cachedMangalFont;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Universal text converter for PDF generation.
+ * Handles Unicode -> Kruti Dev (converting colons to visarga %, hyphens to &, slashes to @, and brackets to ¼ ½)
+ * Preserves already encoded Kruti Dev strings and clean numbers.
+ */
+export function toKrutiDevPdfText(text: string): string {
+  if (!text) return '';
+  // If text has Devanagari Unicode (U+0900 to U+097F), convert it exactly once
+  if (/[\u0900-\u097F]/.test(text)) {
+    const prepared = text
+      .replace(/:/g, 'ः')
+      .replace(/\s*\|\s*/g, '   -   ')
+      .replace(/\s*–\s*/g, ' - ')
+      .replace(/(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+)/g, '$1@$2@$3');
+    return unicodeToKrutiDev(prepared);
+  }
+  // If already Kruti Dev ASCII, protect punctuation
+  return text
+    .replace(/\s*\|\s*/g, '   &   ')
+    .replace(/(?<!\d):(?!\d)/g, '%');
 }
 
 export interface PDFExportOptions {
@@ -84,7 +136,16 @@ export async function exportCalendarPDF(
     doc.addFont('KrutiDev010.ttf', 'KrutiDev010', 'normal');
   }
 
-  const primaryFont = isKruti ? 'KrutiDev010' : 'Helvetica';
+  let mangalBase64 = '';
+  if (!isKruti) {
+    mangalBase64 = await getMangalFontBase64();
+    if (mangalBase64) {
+      doc.addFileToVFS('mangal.ttf', mangalBase64);
+      doc.addFont('mangal.ttf', 'Mangal', 'normal');
+    }
+  }
+
+  const primaryFont = isKruti ? 'KrutiDev010' : (mangalBase64 ? 'Mangal' : 'Helvetica');
   const numFont = 'Helvetica';
 
   const startX = 10;
@@ -93,27 +154,38 @@ export async function exportCalendarPDF(
   const bottomMargin = 16;
   const lineHeight = 3.8;
 
-  // Title text
-  const title = isKruti
-    ? "lks'ky vkfMV dys.Mj foRrh; o\"kZ 2026-27 tuin ckxir"
+  // Title text - Respect custom title (e.g. BRP Calendar) with verified Kruti Dev conversion
+  const defaultTitle = isKruti
+    ? "lks'ky vkfMV dys.Mj & foRrh; o\"kZ 2026&27 tuin ckxir"
     : "Social Audit Calendar FY 2026-27 District Baghpat (UP)";
+  
+  const title = options.reportTitle 
+    ? (isKruti ? toKrutiDevPdfText(options.reportTitle) : options.reportTitle)
+    : defaultTitle;
+
+  const todayFormatted = formatDisplayDate(new Date().toISOString().slice(0, 10));
+  const dateForKruti = todayFormatted.replace(/\//g, '@');
 
   const subtitle = isKruti
-    ? `lkekftd vads{k.k lHkk,a  |  dqy fjdkMZ% ${records.length}  |  fnukad% ${formatDisplayDate(new Date().toISOString().slice(0, 10))}`
-    : `Social Audit Sabha Calendar | Total Records: ${records.length} | Date: ${formatDisplayDate(new Date().toISOString().slice(0, 10))}`;
+    ? `lkekftd vads{k.k lHkk,a   fnukad% ${dateForKruti}   tuin% ckxir ¼m0ç0½`
+    : `Social Audit Sabha Calendar | Date: ${todayFormatted} | District: Baghpat (UP)`;
+
+  const filterSummary = options.appliedFiltersSummary
+    ? (isKruti ? toKrutiDevPdfText(options.appliedFiltersSummary) : options.appliedFiltersSummary)
+    : '';
 
   // Column definitions (Total 277mm)
   const cols = [
-    { key: 'sno', headerKruti: 'Ø0 la0', headerUni: 'S.No', width: 12, align: 'center' },
-    { key: 'gp', headerKruti: 'xzke iapk;r dk uke', headerUni: 'Gram Panchayat', width: 32, align: 'left' },
-    { key: 'block', headerKruti: 'fodkl [k.M', headerUni: 'Block', width: 20, align: 'center' },
-    { key: 'start', headerKruti: 'çkjEHk fnukad', headerUni: 'Start Date', width: 22, align: 'center' },
-    { key: 'meeting', headerKruti: 'cSBd fnukad', headerUni: 'Meeting Date', width: 24, align: 'center' },
-    { key: 'brp', headerKruti: 'ch0vkj0ih0 dk uke', headerUni: 'BRP Name', width: 34, align: 'left' },
-    { key: 'team', headerKruti: 'Vhe lnL;ks dk uke', headerUni: 'Team Members', width: 50, align: 'left' },
-    { key: 'supervisor', headerKruti: 'i;Zos{kd vf/kdkjh', headerUni: 'Supervisor Officer', width: 33, align: 'left' },
-    { key: 'scheme', headerKruti: ';kstuk dk uke', headerUni: 'Scheme', width: 28, align: 'left' },
-    { key: 'status', headerKruti: 'fLFkfr', headerUni: 'Status', width: 22, align: 'center' }
+    { key: 'sno', headerKruti: 'Ø0 la0', headerUni: 'क्र० सं०', width: 12, align: 'center' },
+    { key: 'gp', headerKruti: 'xzke iapk;r dk uke', headerUni: 'ग्राम पंचायत', width: 32, align: 'left' },
+    { key: 'block', headerKruti: 'fodkl [k.M', headerUni: 'विकास खण्ड', width: 20, align: 'center' },
+    { key: 'start', headerKruti: 'çkjEHk fnukad', headerUni: 'प्रारम्भ दिनांक', width: 22, align: 'center' },
+    { key: 'meeting', headerKruti: 'cSBd fnukad', headerUni: 'बैठक दिनांक', width: 24, align: 'center' },
+    { key: 'brp', headerKruti: 'ch0vkj0ih0 dk uke', headerUni: 'बी०आर०पी०', width: 34, align: 'left' },
+    { key: 'team', headerKruti: 'Vhe lnL;ks dk uke', headerUni: 'सोशल ऑडिट टीम सदस्य', width: 50, align: 'left' },
+    { key: 'supervisor', headerKruti: 'i;Zos{kd vf/kdkjh', headerUni: 'पर्यवेक्षक अधिकारी', width: 33, align: 'left' },
+    { key: 'scheme', headerKruti: ';kstuk dk uke', headerUni: 'योजना', width: 28, align: 'left' },
+    { key: 'status', headerKruti: 'fLFkfr', headerUni: 'स्थिति', width: 22, align: 'center' }
   ];
 
   function drawPageHeader(y: number): number {
@@ -123,19 +195,22 @@ export async function exportCalendarPDF(
     doc.setTextColor(15, 23, 42);
     doc.text(title, 148, y, { align: 'center' });
 
-    // Subtitle & Filter summary
+    // Subtitle
+    doc.setFont(primaryFont, 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(71, 85, 105);
     doc.text(subtitle, 148, y + 5.5, { align: 'center' });
 
-    if (options.appliedFiltersSummary) {
-      doc.setFont(numFont, 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(100, 116, 139);
-      doc.text(options.appliedFiltersSummary, 148, y + 9.5, { align: 'center' });
+    // Filter summary / BRP summary card
+    // MUST use primaryFont (KrutiDev010) at font size 10 to ensure crisp Hindi rendering without raw ASCII!
+    if (filterSummary) {
+      doc.setFont(primaryFont, 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(30, 41, 59);
+      doc.text(filterSummary, 148, y + 10.5, { align: 'center' });
     }
 
-    const tableStartY = options.appliedFiltersSummary ? y + 13 : y + 9;
+    const tableStartY = filterSummary ? y + 14 : y + 9;
 
     // Draw table header bar
     doc.setFillColor(30, 41, 59); // Slate-800
@@ -158,10 +233,15 @@ export async function exportCalendarPDF(
   let curY = drawPageHeader(12);
 
   if (records.length === 0) {
-    doc.setFont('Helvetica', 'normal');
+    doc.setFont(primaryFont, 'normal');
     doc.setFontSize(11);
     doc.setTextColor(148, 163, 184);
-    doc.text('No matching social audit records found for the applied filters.', 148, curY + 20, { align: 'center' });
+    doc.text(
+      isKruti ? "p;fur fQYVj ds vuqlkj dksbZ jsdkMZ ugha feykA" : "No matching social audit records found for the applied filters.",
+      148,
+      curY + 20,
+      { align: 'center' }
+    );
   } else {
     records.forEach((r, idx) => {
       const effDate = getEffectiveMeetingDate(r);
@@ -171,7 +251,7 @@ export async function exportCalendarPDF(
 
       const blockText = isKruti
         ? (r.block === 'Baghpat' ? 'ckxir' : 'cM+kSr')
-        : (r.block === 'Baghpat' ? 'Baghpat' : 'Baraut');
+        : (r.block === 'Baghpat' ? 'बागपत' : 'बड़ौत');
 
       const meetingDateText = amended && origDate
         ? `${formatDisplayDate(effDate)}\n(${formatDisplayDate(origDate)})`
@@ -179,18 +259,32 @@ export async function exportCalendarPDF(
 
       let statusText = '';
       if (amended) {
-        statusText = isKruti ? "la'kksf/kr" : 'Amended';
+        statusText = isKruti ? "la'kksf/kr" : 'संशोधित';
       } else if (isComp) {
-        statusText = isKruti ? 'lEiUu' : 'Completed';
+        statusText = isKruti ? 'lEiUu' : 'सम्पन्न';
       } else {
-        statusText = isKruti ? 'çLrkfor' : 'Scheduled';
+        statusText = isKruti ? 'çLrkfor' : 'प्रस्तावित';
       }
 
-      const gpText = isKruti ? (r.gpNameKrutiDev || unicodeToKrutiDev(r.gpNameUnicode)) : r.gpNameUnicode;
-      const brpText = isKruti ? (r.brpKrutiDev || unicodeToKrutiDev(r.brpUnicode)) : r.brpUnicode;
-      const teamText = isKruti ? (r.teamMembersKrutiDev || unicodeToKrutiDev(r.teamMembersUnicode)) : r.teamMembersUnicode;
-      const supervisorText = isKruti ? (r.supervisorOfficerKrutiDev || unicodeToKrutiDev(r.supervisorOfficerUnicode)) : r.supervisorOfficerUnicode;
-      const schemeText = isKruti ? (r.schemeKrutiDev || unicodeToKrutiDev(r.schemeUnicode)) : r.schemeUnicode;
+      const gpText = isKruti
+        ? (r.gpNameKrutiDev || toKrutiDevPdfText(r.gpNameUnicode))
+        : (r.gpNameUnicode || (r.gpNameKrutiDev ? krutiDevToUnicode(r.gpNameKrutiDev) : ''));
+
+      const brpText = isKruti
+        ? (r.brpKrutiDev || toKrutiDevPdfText(r.brpUnicode || r.brpName))
+        : (r.brpUnicode || r.brpName || (r.brpKrutiDev ? krutiDevToUnicode(r.brpKrutiDev) : ''));
+
+      const teamText = isKruti
+        ? (r.teamMembersKrutiDev || toKrutiDevPdfText(r.teamMembersUnicode))
+        : (r.teamMembersUnicode || (r.teamMembersKrutiDev ? krutiDevToUnicode(r.teamMembersKrutiDev) : ''));
+
+      const supervisorText = isKruti
+        ? (r.supervisorOfficerKrutiDev || toKrutiDevPdfText(r.supervisorOfficerUnicode))
+        : (r.supervisorOfficerUnicode || (r.supervisorOfficerKrutiDev ? krutiDevToUnicode(r.supervisorOfficerKrutiDev) : ''));
+
+      const schemeText = isKruti
+        ? (r.schemeKrutiDev || toKrutiDevPdfText(r.schemeUnicode || ''))
+        : (r.schemeUnicode || (r.schemeKrutiDev ? krutiDevToUnicode(r.schemeKrutiDev) : ''));
 
       const cellValues = [
         String(idx + 1),
@@ -209,7 +303,7 @@ export async function exportCalendarPDF(
       const colLines = cellValues.map((val, i) => {
         const useNum = (i === 0 || i === 3 || i === 4);
         doc.setFont(useNum ? numFont : primaryFont, 'normal');
-        doc.setFontSize(8);
+        doc.setFontSize(8.5);
         return doc.splitTextToSize(val, cols[i].width - 2);
       });
 
@@ -240,7 +334,7 @@ export async function exportCalendarPDF(
         const lines = colLines[i];
         const isNumericCol = (i === 0 || i === 3 || i === 4);
         doc.setFont(isNumericCol ? numFont : primaryFont, 'normal');
-        doc.setFontSize(8);
+        doc.setFontSize(8.5);
 
         if (amended && (i === 4 || i === 9)) {
           doc.setTextColor(180, 83, 9); // Amber-700
@@ -279,10 +373,10 @@ export async function exportCalendarPDF(
     doc.setFontSize(9);
     doc.setTextColor(30, 41, 59);
 
-    const leftSigTitle = isKruti ? 'ftyk fodkl vf/kdkjh' : 'District Development Officer';
-    const leftSigDist = isKruti ? 'tuin ckxir' : 'District Baghpat';
-    const rightSigTitle = isKruti ? 'eq[; fodkl vf/kdkjh' : 'Chief Development Officer';
-    const rightSigDist = isKruti ? 'tuin ckxir' : 'District Baghpat';
+    const leftSigTitle = isKruti ? 'ftyk fodkl vf/kdkjh' : 'जिला विकास अधिकारी';
+    const leftSigDist = isKruti ? 'tuin ckxir' : 'जनपद बागपत';
+    const rightSigTitle = isKruti ? 'eq[; fodkl vf/kdkjh' : 'मुख्य विकास अधिकारी';
+    const rightSigDist = isKruti ? 'tuin ckxir' : 'जनपद बागपत';
 
     doc.text(leftSigTitle, startX + 25, curY, { align: 'center' });
     doc.text(leftSigDist, startX + 25, curY + 4.5, { align: 'center' });
@@ -295,13 +389,19 @@ export async function exportCalendarPDF(
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(7.5);
+    doc.setFont(primaryFont, 'normal');
+    doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
 
-    doc.text('Social Audit Baghpat Portal - Official Copy', startX, pageHeight - 6);
-    doc.text(`Page ${p} of ${totalPages}`, 148, pageHeight - 6, { align: 'center' });
-    doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, startX + totalWidth, pageHeight - 6, { align: 'right' });
+    if (isKruti) {
+      doc.text("lks'ky vkfMV tuin ckxir & vkf/kdkfjd çfr", startX, pageHeight - 6);
+      doc.text("i`\"B " + p + " @ " + totalPages, 148, pageHeight - 6, { align: 'center' });
+      doc.text("fnukad% " + dateForKruti, startX + totalWidth, pageHeight - 6, { align: 'right' });
+    } else {
+      doc.text('सोशल ऑडिट जनपद बागपत - आधिकारिक प्रति', startX, pageHeight - 6);
+      doc.text(`पृष्ठ ${p} / ${totalPages}`, 148, pageHeight - 6, { align: 'center' });
+      doc.text(`दिनांक: ${todayFormatted}`, startX + totalWidth, pageHeight - 6, { align: 'right' });
+    }
   }
 
   const arrayBuffer = doc.output('arraybuffer');
@@ -318,7 +418,6 @@ export async function exportBRPCalendarPDF(
   options: PDFExportOptions = {}
 ): Promise<Blob> {
   const fontMode = options.fontMode || 'krutidev';
-  const isKruti = fontMode === 'krutidev';
 
   // Filter only records for this BRP
   const brpRecords = allRecords.filter((r) => {
@@ -331,21 +430,18 @@ export async function exportBRPCalendarPDF(
   // Sort by canonical effective date
   brpRecords.sort((a, b) => getEffectiveMeetingDate(a).localeCompare(getEffectiveMeetingDate(b)));
 
-  const brpDisplayName = options.brpName || brpRecords[0]?.brpName || brpIdentifier;
-  const brpPhone = options.brpPhone || brpRecords[0]?.brpPhone || '';
-  const blockName = brpRecords[0]?.block === 'Baraut' ? (isKruti ? 'cM+kSr' : 'Baraut') : (isKruti ? 'ckxir' : 'Baghpat');
+  const brpRecord = brpRecords[0];
+  const brpDisplayName = options.brpName || brpRecord?.brpUnicode || brpRecord?.brpName || (brpRecord?.brpKrutiDev ? krutiDevToUnicode(brpRecord.brpKrutiDev) : brpIdentifier);
+  const brpPhone = options.brpPhone || brpRecord?.brpPhone || '';
+  const blockNameUni = brpRecord?.block === 'Baraut' ? 'बड़ौत' : 'बागपत';
 
-  const customFilterSummary = isKruti
-    ? `ch0vkj0ih0% ${options.brpName ? unicodeToKrutiDev(options.brpName) : (brpRecords[0]?.brpKrutiDev || brpIdentifier)} ${brpPhone ? `(${brpPhone})` : ''}  |  fodkl [k.M% ${blockName}  |  dqy vkcafVr xzke iapk;rs% ${brpRecords.length}`
-    : `BRP: ${brpDisplayName} ${brpPhone ? `(${brpPhone})` : ''} | Block: ${blockName} | Total Assigned GPs: ${brpRecords.length}`;
+  const titleUni = `बी०आर०पी० सोशल ऑडिट कैलेंडर – वित्तीय वर्ष 2026-27`;
+  const summaryUni = `बी०आर०पी०: ${brpDisplayName} ${brpPhone ? `(${brpPhone})` : ''}   -   विकास खण्ड: ${blockNameUni}   -   कुल आवंटित ग्राम पंचायतें: ${brpRecords.length}`;
 
   return exportCalendarPDF(brpRecords, {
     ...options,
     fontMode,
-    reportTitle: isKruti
-      ? `ch0vkj0ih0 lkekftd vads{k.k dys.Mj & ${options.brpName ? unicodeToKrutiDev(options.brpName) : (brpRecords[0]?.brpKrutiDev || brpIdentifier)}`
-      : `BRP Social Audit Calendar - ${brpDisplayName}`,
-    appliedFiltersSummary: customFilterSummary
+    reportTitle: titleUni,
+    appliedFiltersSummary: summaryUni
   });
 }
-
