@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { 
   SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, 
   PanchayatNirnayStatus, MisAuditStatus, NSAPGramPanchayatData, NSAPBeneficiaryRecord,
-  SocialAuditActivityLog, VRPMember, VRPTeamCode
+  SocialAuditActivityLog, VRPMember, VRPTeamCode, CancellationDetails, RescheduleStatus
 } from '@/types/socialAudit';
 import { 
   SocialAuditUser, DEFAULT_DDO_USER, canUserEnableEditMode, 
@@ -61,6 +61,8 @@ interface SocialAuditState {
   hasUnsavedChanges: boolean;
   currentUser: SocialAuditUser;
   selectedRecordForCompletion: SocialAuditRecord | null;
+  selectedRecordForCancel: SocialAuditRecord | null;
+  selectedRecordForReschedule: SocialAuditRecord | null;
   asOfDate: string; // YYYY-MM-DD used for NSAP reports and upcoming calculations
   isLiveSync: boolean; // Whether date automatically syncs with live Delhi date
   liveDelhiTime: string; // Real-time ticking Delhi time string e.g. "12:15:30 AM"
@@ -96,6 +98,12 @@ interface SocialAuditState {
   setHasUnsavedChanges: (hasChanges: boolean) => void;
   openCompletionModal: (record: SocialAuditRecord) => void;
   closeCompletionModal: () => void;
+  openCancelModal: (record: SocialAuditRecord) => void;
+  closeCancelModal: () => void;
+  openRescheduleModal: (record: SocialAuditRecord) => void;
+  closeRescheduleModal: () => void;
+  cancelMeeting: (id: string, reason: string, remarks?: string) => Promise<boolean>;
+  rescheduleMeeting: (id: string, newDate: string, newTime?: string, reason?: string) => Promise<boolean>;
   canCompleteMeeting: (record: SocialAuditRecord | null | undefined) => { canComplete: boolean; errorCode?: string; errorMessage?: string };
   setAsOfDate: (date: string) => void;
   setLiveSync: (enabled: boolean) => void;
@@ -196,6 +204,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       hasUnsavedChanges: false,
       currentUser: DEFAULT_DDO_USER,
       selectedRecordForCompletion: null,
+      selectedRecordForCancel: null,
+      selectedRecordForReschedule: null,
       // Default to live current Delhi (IST) date
       asOfDate: getDelhiDateString(),
       isLiveSync: true,
@@ -435,6 +445,18 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       closeCompletionModal: () => set({ selectedRecordForCompletion: null }),
+
+      openCancelModal: (record: SocialAuditRecord) => {
+        set({ selectedRecordForCancel: record });
+      },
+
+      closeCancelModal: () => set({ selectedRecordForCancel: null }),
+
+      openRescheduleModal: (record: SocialAuditRecord) => {
+        set({ selectedRecordForReschedule: record });
+      },
+
+      closeRescheduleModal: () => set({ selectedRecordForReschedule: null }),
 
       setAsOfDate: (date) => {
         const liveDate = getDelhiDateString();
@@ -700,7 +722,11 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               return {
                 ...r,
                 status: isCompleted ? 'completed' : (r.isAmended ? 'amended' : 'scheduled'),
-                completedDate: isCompleted ? (r.completedDate || state.asOfDate) : undefined
+                completedDate: isCompleted ? (r.completedDate || state.asOfDate) : undefined,
+                completedAt: isCompleted ? (r.completedAt || new Date().toISOString()) : undefined,
+                rescheduleStatus: 'not_required',
+                // Strict rule: MIS status becomes pending only upon explicit completion (if not already fed)
+                misStatus: isCompleted ? (r.misStatus === 'fed' ? 'fed' : 'pending') : 'not_eligible'
               };
             }
             return r;
@@ -708,7 +734,10 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           selectedGPForProfile: state.selectedGPForProfile?.id === id ? {
             ...state.selectedGPForProfile,
             status: isCompleted ? 'completed' : (state.selectedGPForProfile.isAmended ? 'amended' : 'scheduled'),
-            completedDate: isCompleted ? (state.selectedGPForProfile.completedDate || state.asOfDate) : undefined
+            completedDate: isCompleted ? (state.selectedGPForProfile.completedDate || state.asOfDate) : undefined,
+            completedAt: isCompleted ? (state.selectedGPForProfile.completedAt || new Date().toISOString()) : undefined,
+            rescheduleStatus: 'not_required',
+            misStatus: isCompleted ? (state.selectedGPForProfile.misStatus === 'fed' ? 'fed' : 'pending') : 'not_eligible'
           } : state.selectedGPForProfile
         }));
 
@@ -724,6 +753,165 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           newValue: isCompleted ? 'सम्पन्न' : 'प्रस्तावित'
         });
         notifyStoreChange(get());
+      },
+
+      cancelMeeting: async (id: string, reason: string, remarks?: string): Promise<boolean> => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: बैठक निरस्त करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return false;
+        }
+
+        const state = get();
+        const current = state.records.find((r) => r.id === id);
+        if (!current) return false;
+
+        const cancellationDetail: CancellationDetails = {
+          cancelledDate: state.asOfDate,
+          cancelledAt: new Date().toISOString(),
+          reason,
+          remarks: remarks || '',
+          cancelledBy: state.currentUser.name || 'नोडल अधिकारी',
+          previousMeetingDate: current.meetingDate
+        };
+
+        const existingHistory = current.cancellationHistory || [];
+        const newHistory = [...existingHistory, cancellationDetail];
+
+        const gpName = current.gpNameUnicode || 'ग्राम पंचायत';
+        const block = current.block || 'Baghpat';
+
+        set((state) => ({
+          records: state.records.map((r) => {
+            if (r.id === id) {
+              return {
+                ...r,
+                status: 'cancelled',
+                rescheduleStatus: 'pending',
+                misStatus: 'not_eligible', // Cancelled meetings are NEVER eligible for MIS Pending!
+                cancellationDetails: cancellationDetail,
+                cancellationHistory: newHistory,
+                completedDate: undefined,
+                completedAt: undefined
+              };
+            }
+            return r;
+          }),
+          selectedGPForProfile: state.selectedGPForProfile?.id === id ? {
+            ...state.selectedGPForProfile,
+            status: 'cancelled',
+            rescheduleStatus: 'pending',
+            misStatus: 'not_eligible',
+            cancellationDetails: cancellationDetail,
+            cancellationHistory: newHistory,
+            completedDate: undefined,
+            completedAt: undefined
+          } : state.selectedGPForProfile,
+          selectedRecordForCancel: null
+        }));
+
+        get().logActivity({
+          module: 'meeting',
+          recordId: id,
+          gpName,
+          block,
+          actionType: 'status_change',
+          actionLabel: 'बैठक निरस्त',
+          userName: get().currentUser.name || 'नोडल अधिकारी',
+          details: `${gpName} की सोशल ऑडिट बैठक निरस्त की गई। कारण: ${reason} ${remarks ? `(${remarks})` : ''}`,
+          newValue: 'निरस्त'
+        });
+
+        notifyStoreChange(get());
+        return true;
+      },
+
+      rescheduleMeeting: async (id: string, newDate: string, newTime?: string, reason?: string): Promise<boolean> => {
+        if (!get().isEditMode) {
+          if (typeof window !== 'undefined') {
+            alert('त्रुटि: बैठक पुनर्निर्धारित करने के लिए कृपया पहले Header से Edit Mode ON करें।');
+          }
+          return false;
+        }
+
+        const state = get();
+        const current = state.records.find((r) => r.id === id);
+        if (!current) return false;
+
+        const prevDate = current.meetingDate;
+        const origDate = current.originalMeetingDate || current.amendmentDetails?.originalDate || prevDate;
+
+        const gpName = current.gpNameUnicode || 'ग्राम पंचायत';
+        const block = current.block || 'Baghpat';
+
+        // Update cancellation history with rescheduled date on the last cancellation if present
+        const updatedHistory = (current.cancellationHistory || []).map((c, idx, arr) => {
+          if (idx === arr.length - 1 && !c.rescheduledDate) {
+            return { ...c, rescheduledDate: newDate };
+          }
+          return c;
+        });
+
+        set((state) => ({
+          records: state.records.map((r) => {
+            if (r.id === id) {
+              return {
+                ...r,
+                meetingDate: newDate,
+                originalMeetingDate: origDate,
+                timeUnicode: newTime ? `${newTime} बजे` : r.timeUnicode,
+                isAmended: true,
+                amendmentDetails: {
+                  originalDate: origDate,
+                  modifiedDate: newDate,
+                  reason: reason || 'पुनर्निर्धारित रोस्टर'
+                },
+                status: 'scheduled', // Back to proposed/scheduled
+                rescheduleStatus: 'not_required',
+                misStatus: 'not_eligible', // Never MIS pending before completion
+                cancellationHistory: updatedHistory,
+                completedDate: undefined,
+                completedAt: undefined
+              };
+            }
+            return r;
+          }),
+          selectedGPForProfile: state.selectedGPForProfile?.id === id ? {
+            ...state.selectedGPForProfile,
+            meetingDate: newDate,
+            originalMeetingDate: origDate,
+            timeUnicode: newTime ? `${newTime} बजे` : state.selectedGPForProfile.timeUnicode,
+            isAmended: true,
+            amendmentDetails: {
+              originalDate: origDate,
+              modifiedDate: newDate,
+              reason: reason || 'पुनर्निर्धारित रोस्टर'
+            },
+            status: 'scheduled',
+            rescheduleStatus: 'not_required',
+            misStatus: 'not_eligible',
+            cancellationHistory: updatedHistory,
+            completedDate: undefined,
+            completedAt: undefined
+          } : state.selectedGPForProfile,
+          selectedRecordForReschedule: null
+        }));
+
+        get().logActivity({
+          module: 'meeting',
+          recordId: id,
+          gpName,
+          block,
+          actionType: 'status_change',
+          actionLabel: 'बैठक पुनर्निर्धारित',
+          userName: get().currentUser.name || 'नोडल अधिकारी',
+          details: `${gpName} की सोशल ऑडिट बैठक को नई तिथि ${newDate} पर पुनर्निर्धारित किया गया।`,
+          newValue: `पुनर्निर्धारित: ${newDate}`
+        });
+
+        notifyStoreChange(get());
+        return true;
       },
 
       syncNirnayFromPayload: (payload: NirnaySyncPayload) => {

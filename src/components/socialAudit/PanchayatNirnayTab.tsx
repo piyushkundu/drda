@@ -72,15 +72,15 @@ export default function PanchayatNirnayTab() {
     const capturedBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'captured');
     const capturedBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && r.panchayatNirnayStatus === 'captured');
 
-    // Due Pending: Meeting date has arrived (meetingDate <= asOfDate) and status is pending
-    const duePendingTotal = effectiveRecords.filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
-    const duePendingBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
-    const duePendingBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+    // Due Pending: Meeting date has arrived (meetingDate <= asOfDate) and status is pending (strictly excludes cancelled meetings)
+    const duePendingTotal = effectiveRecords.filter(r => r.status !== 'cancelled' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+    const duePendingBaghpat = effectiveRecords.filter(r => r.status !== 'cancelled' && r.block === 'Baghpat' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
+    const duePendingBaraut = effectiveRecords.filter(r => r.status !== 'cancelled' && r.block === 'Baraut' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate);
 
-    // Upcoming Scheduled: Future meetings (meetingDate > asOfDate) awaiting their meeting date
-    const upcomingTotal = effectiveRecords.filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
-    const upcomingBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
-    const upcomingBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
+    // Upcoming Scheduled: Future meetings (meetingDate > asOfDate) awaiting their meeting date (strictly excludes cancelled meetings)
+    const upcomingTotal = effectiveRecords.filter(r => r.status !== 'cancelled' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
+    const upcomingBaghpat = effectiveRecords.filter(r => r.status !== 'cancelled' && r.block === 'Baghpat' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
+    const upcomingBaraut = effectiveRecords.filter(r => r.status !== 'cancelled' && r.block === 'Baraut' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate);
 
     const notCapturedTotal = effectiveRecords.filter(r => r.panchayatNirnayStatus === 'not_captured');
     const notCapturedBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && r.panchayatNirnayStatus === 'not_captured');
@@ -110,10 +110,10 @@ export default function PanchayatNirnayTab() {
     };
   }, [effectiveRecords, asOfDate]);
 
-  // Active Pending Queue: Meetings that occurred on or before asOfDate AND have not been confirmed yet
+  // Active Pending Queue: Meetings that occurred on or before asOfDate AND have not been confirmed yet (excluding cancelled)
   const duePendingRecords = useMemo(() => {
     return effectiveRecords
-      .filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate)
+      .filter(r => r.status !== 'cancelled' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate <= asOfDate)
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
   }, [effectiveRecords, asOfDate]);
 
@@ -124,10 +124,10 @@ export default function PanchayatNirnayTab() {
     });
   }, [duePendingRecords, pendingBlockFilter]);
 
-  // Upcoming Scheduled Meetings (meetingDate > asOfDate): Future meetings not due yet
+  // Upcoming Scheduled Meetings (meetingDate > asOfDate): Future meetings not due yet (excluding cancelled)
   const upcomingScheduledRecords = useMemo(() => {
     return effectiveRecords
-      .filter(r => (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate)
+      .filter(r => r.status !== 'cancelled' && (r.panchayatNirnayStatus || 'pending') === 'pending' && r.meetingDate > asOfDate)
       .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate));
   }, [effectiveRecords, asOfDate]);
 

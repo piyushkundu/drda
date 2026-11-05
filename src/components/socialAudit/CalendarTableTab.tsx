@@ -21,7 +21,7 @@ import {
   Edit3, Plus, RotateCcw, CheckCircle2, AlertTriangle, 
   Layers, Phone, User, Users, Shield, FileSpreadsheet,
   ChevronLeft, ChevronRight, Check, X, Eye, CalendarDays,
-  Lock, Unlock, FileText, ChevronDown, UserCheck
+  Lock, Unlock, FileText, ChevronDown, UserCheck, Ban
 } from 'lucide-react';
 
 export default function CalendarTableTab() {
@@ -47,6 +47,8 @@ export default function CalendarTableTab() {
     openAddModal,
     openGPProfile,
     openCompletionModal,
+    openCancelModal,
+    openRescheduleModal,
     canCompleteMeeting,
     markCompleted,
     resetToBaseline,
@@ -147,9 +149,10 @@ export default function CalendarTableTab() {
       const amended = isMeetingAmended(r);
 
       if (selectedStatus === 'amended' && !amended) return false;
+      if (selectedStatus === 'cancelled' && r.status !== 'cancelled') return false;
       if (selectedStatus === 'completed' && !isComp) return false;
-      if (selectedStatus === 'upcoming' && (isComp || effDate <= asOfDate)) return false;
-      if (selectedStatus === 'overdue' && (isComp || effDate > asOfDate)) return false;
+      if (selectedStatus === 'upcoming' && (isComp || effDate <= asOfDate || r.status === 'cancelled')) return false;
+      if (selectedStatus === 'overdue' && (isComp || effDate > asOfDate || r.status === 'cancelled')) return false;
 
       // 6. Global Date Range (inclusive on effective meeting date)
       if (dateRange && (dateRange.startDate || dateRange.endDate)) {
@@ -195,13 +198,15 @@ export default function CalendarTableTab() {
     });
 
     const amended = base.filter(r => isMeetingAmended(r)).length;
+    const cancelled = base.filter(r => r.status === 'cancelled' || r.rescheduleStatus === 'pending').length;
     const completed = base.filter(r => isMeetingCompletedEffective(r, asOfDate)).length;
-    const upcoming = base.filter(r => !isMeetingCompletedEffective(r, asOfDate) && getEffectiveMeetingDate(r) > asOfDate).length;
-    const overdue = base.filter(r => !isMeetingCompletedEffective(r, asOfDate) && getEffectiveMeetingDate(r) <= asOfDate).length;
+    const upcoming = base.filter(r => r.status !== 'cancelled' && !isMeetingCompletedEffective(r, asOfDate) && getEffectiveMeetingDate(r) > asOfDate).length;
+    const overdue = base.filter(r => r.status !== 'cancelled' && !isMeetingCompletedEffective(r, asOfDate) && getEffectiveMeetingDate(r) <= asOfDate).length;
 
     return {
       all: base.length,
       amended,
+      cancelled,
       completed,
       upcoming,
       overdue
@@ -610,7 +615,8 @@ export default function CalendarTableTab() {
               { id: 'completed', label: `🟢 सम्पन्न (${statusCounts.completed})` },
               { id: 'upcoming', label: `🔵 प्रस्तावित (${statusCounts.upcoming})` },
               ...(statusCounts.overdue > 0 ? [{ id: 'overdue', label: `🔴 लंबित (${statusCounts.overdue})` }] : []),
-              { id: 'amended', label: `🟠 संशोधित (${statusCounts.amended})` }
+              { id: 'amended', label: `🟠 संशोधित (${statusCounts.amended})` },
+              ...(statusCounts.cancelled > 0 ? [{ id: 'cancelled', label: `🚫 निरस्त (${statusCounts.cancelled})` }] : [])
             ].map((st) => (
               <button
                 key={st.id}
@@ -625,6 +631,8 @@ export default function CalendarTableTab() {
                       ? 'bg-blue-700 text-white shadow-sm'
                       : st.id === 'amended'
                       ? 'bg-amber-600 text-white shadow-sm'
+                      : st.id === 'cancelled'
+                      ? 'bg-rose-800 text-white shadow-sm'
                       : 'bg-slate-800 text-white shadow-sm'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
@@ -962,30 +970,42 @@ export default function CalendarTableTab() {
                         {/* Clear Status Column with Badges & Icons */}
                         <td className="py-3.5 px-3 text-center whitespace-nowrap">
                           <div className="inline-flex items-center gap-1.5 justify-center flex-wrap">
-                            {isAmended && (
+                            {r.status === 'cancelled' ? (
                               <span 
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs"
-                                title="BRP कार्यमुक्त होने के कारण बैठक तिथि व टीम संशोधित"
+                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs"
+                                title={r.cancellationDetails?.reason ? `निरस्त: ${r.cancellationDetails.reason}` : 'बैठक निरस्त'}
                               >
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                                संशोधित
-                              </span>
-                            )}
-                            {isCompleted ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                सम्पन्न
-                              </span>
-                            ) : isOverdue ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
-                                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                                लंबित
+                                <Ban className="w-3 h-3 text-rose-600" />
+                                निरस्त
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                प्रस्तावित
-                              </span>
+                              <>
+                                {isAmended && (
+                                  <span 
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs"
+                                    title="BRP कार्यमुक्त होने के कारण बैठक तिथि व टीम संशोधित"
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                                    संशोधित
+                                  </span>
+                                )}
+                                {isCompleted ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    सम्पन्न
+                                  </span>
+                                ) : isOverdue ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                                    लंबित
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                    प्रस्तावित
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                         </td>
@@ -994,51 +1014,71 @@ export default function CalendarTableTab() {
                         {isEditMode && (
                           <td className="py-3.5 px-3 text-center whitespace-nowrap">
                             <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                onClick={() => openEditModal(r)}
-                                className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-200"
-                                title="विवरण संशोधित करें"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              {(() => {
-                                const completionCheck = canCompleteMeeting(r);
-                                if (isCompleted) {
-                                  return (
-                                    <button
-                                      onClick={() => {
-                                        if (confirm(`क्या आप ${r.gpNameUnicode} की बैठक को पुनः प्रस्तावित करना चाहते हैं?`)) {
-                                          markCompleted(r.id, false);
-                                        }
-                                      }}
-                                      className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-rose-600 transition-colors shadow-2xs"
-                                      title="सम्पन्न (पुनः प्रस्तावित करने हेतु क्लिक करें)"
-                                    >
-                                      <Check className="w-3.5 h-3.5" />
-                                    </button>
-                                  );
-                                }
-                                if (!completionCheck.canComplete) {
-                                  return (
-                                    <button
-                                      disabled
-                                      className="p-1.5 rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                                      title={completionCheck.errorMessage || 'निर्धारित तिथि से पूर्व सम्पन्न नहीं किया जा सकता'}
-                                    >
-                                      <Lock className="w-3.5 h-3.5 text-rose-400" />
-                                    </button>
-                                  );
-                                }
-                                return (
+                              {r.status === 'cancelled' ? (
+                                <button
+                                  onClick={() => openRescheduleModal(r)}
+                                  className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-200 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                                  title="निरस्त बैठक की नई तिथि निर्धारित करें"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  <span>पुनर्निर्धारित</span>
+                                </button>
+                              ) : (
+                                <>
                                   <button
-                                    onClick={() => openCompletionModal(r)}
-                                    className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-300 transition-colors shadow-2xs"
-                                    title="सत्यापन कर बैठक सम्पन्न करें"
+                                    onClick={() => openEditModal(r)}
+                                    className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors border border-blue-200 cursor-pointer"
+                                    title="विवरण संशोधित करें"
                                   >
-                                    <Check className="w-3.5 h-3.5" />
+                                    <Edit3 className="w-3.5 h-3.5" />
                                   </button>
-                                );
-                              })()}
+                                  {(() => {
+                                    const completionCheck = canCompleteMeeting(r);
+                                    if (isCompleted) {
+                                      return (
+                                        <button
+                                          onClick={() => {
+                                            if (confirm(`क्या आप ${r.gpNameUnicode} की बैठक को पुनः प्रस्तावित करना चाहते हैं?`)) {
+                                              markCompleted(r.id, false);
+                                            }
+                                          }}
+                                          className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-rose-600 transition-colors shadow-2xs cursor-pointer"
+                                          title="सम्पन्न (पुनः प्रस्तावित करने हेतु क्लिक करें)"
+                                        >
+                                          <Check className="w-3.5 h-3.5" />
+                                        </button>
+                                      );
+                                    }
+                                    if (!completionCheck.canComplete) {
+                                      return (
+                                        <button
+                                          disabled
+                                          className="p-1.5 rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                                          title={completionCheck.errorMessage || 'निर्धारित तिथि से पूर्व सम्पन्न नहीं किया जा सकता'}
+                                        >
+                                          <Lock className="w-3.5 h-3.5 text-rose-400" />
+                                        </button>
+                                      );
+                                    }
+                                    return (
+                                      <button
+                                        onClick={() => openCompletionModal(r)}
+                                        className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-300 transition-colors shadow-2xs cursor-pointer"
+                                        title="सत्यापन कर बैठक सम्पन्न करें"
+                                      >
+                                        <Check className="w-3.5 h-3.5" />
+                                      </button>
+                                    );
+                                  })()}
+                                  <button
+                                    onClick={() => openCancelModal(r)}
+                                    className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition-colors border border-rose-200 cursor-pointer"
+                                    title="बैठक निरस्त करें"
+                                  >
+                                    <Ban className="w-3.5 h-3.5 text-rose-600" />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         )}
@@ -1208,21 +1248,23 @@ export default function CalendarTableTab() {
                     {hasMeetings && (
                       <div className="flex md:hidden items-center gap-1 mt-1 flex-wrap">
                         {day.meetings.slice(0, 3).map((m) => {
+                          const isCanc = m.status === 'cancelled';
                           const mEff = getEffectiveMeetingDate(m);
                           const isComp = isMeetingCompletedEffective(m, asOfDate);
-                          const isOver = !isComp && mEff <= asOfDate;
+                          const isOver = !isComp && !isCanc && mEff <= asOfDate;
                           const isAm = isMeetingAmended(m);
 
                           let dotColor = 'bg-blue-500';
-                          if (isComp) dotColor = 'bg-emerald-500';
+                          if (isCanc) dotColor = 'bg-slate-400';
+                          else if (isComp) dotColor = 'bg-emerald-500';
                           else if (isOver) dotColor = 'bg-rose-500';
-                          if (isAm) dotColor = 'bg-amber-500';
+                          if (isAm && !isCanc) dotColor = 'bg-amber-500';
 
                           return (
                             <span
                               key={m.id}
                               className={`w-2 h-2 rounded-full ${dotColor} inline-block`}
-                              title={`${m.gpNameUnicode} (${isComp ? 'सम्पन्न' : isOver ? 'लंबित' : 'प्रस्तावित'}${isAm ? ' - संशोधित' : ''})`}
+                              title={`${m.gpNameUnicode} (${isCanc ? 'निरस्त' : isComp ? 'सम्पन्न' : isOver ? 'लंबित' : 'प्रस्तावित'}${isAm ? ' - संशोधित' : ''})`}
                             />
                           );
                         })}
@@ -1235,18 +1277,21 @@ export default function CalendarTableTab() {
                     {/* Desktop Meetings preview inside cell with status color badges */}
                     <div className="hidden md:block overflow-y-auto space-y-1 text-[10px] scrollbar-none flex-1 mt-1">
                       {day.meetings.slice(0, 2).map((m) => {
+                        const isCanc = m.status === 'cancelled';
                         const mEff = getEffectiveMeetingDate(m);
                         const isComp = isMeetingCompletedEffective(m, asOfDate);
-                        const isOver = !isComp && mEff <= asOfDate;
+                        const isOver = !isComp && !isCanc && mEff <= asOfDate;
                         const isAm = isMeetingAmended(m);
 
                         let pillClass = 'bg-blue-50/90 text-blue-900 border-blue-200 hover:bg-blue-100';
-                        if (isComp) {
+                        if (isCanc) {
+                          pillClass = 'bg-slate-100 text-slate-500 border-slate-300 line-through';
+                        } else if (isComp) {
                           pillClass = 'bg-emerald-50/90 text-emerald-900 border-emerald-200 hover:bg-emerald-100';
                         } else if (isOver) {
                           pillClass = 'bg-rose-50/90 text-rose-900 border-rose-200 hover:bg-rose-100';
                         }
-                        if (isAm) {
+                        if (isAm && !isCanc) {
                           pillClass = 'bg-amber-50/90 text-amber-950 border-amber-300 hover:bg-amber-100';
                         }
 
@@ -1256,14 +1301,18 @@ export default function CalendarTableTab() {
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedCalendarDate(day.dateStr);
-                              openEditModal(m);
+                              if (isCanc) {
+                                openRescheduleModal(m);
+                              } else {
+                                openEditModal(m);
+                              }
                             }}
-                            className={`p-1 rounded truncate font-medium text-[10px] border transition-colors flex items-center justify-between gap-1 ${pillClass}`}
-                            title={`${m.gpNameUnicode} (${m.blockHindi || (m.block === 'Baghpat' ? 'बागपत' : 'बड़ौत')}) - ${isComp ? 'सम्पन्न' : isOver ? 'लंबित' : 'प्रस्तावित'}${isAm ? ' [संशोधित]' : ''}`}
+                            className={`p-1 rounded truncate font-medium text-[10px] border transition-colors flex items-center justify-between gap-1 cursor-pointer ${pillClass}`}
+                            title={`${m.gpNameUnicode} (${m.blockHindi || (m.block === 'Baghpat' ? 'बागपत' : 'बड़ौत')}) - ${isCanc ? 'निरस्त' : isComp ? 'सम्पन्न' : isOver ? 'लंबित' : 'प्रस्तावित'}${isAm ? ' [संशोधित]' : ''}`}
                           >
                             <span className="truncate">{m.gpNameUnicode}</span>
                             <span className="shrink-0 text-[8px] font-bold">
-                              {isComp ? '✓' : isOver ? '!' : isAm ? 'सं' : ''}
+                              {isCanc ? 'निरस्त' : isComp ? '✓' : isOver ? '!' : isAm ? 'सं' : ''}
                             </span>
                           </div>
                         );

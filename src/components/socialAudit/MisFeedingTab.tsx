@@ -57,24 +57,25 @@ export default function MisFeedingTab() {
     return filterRecordsByGlobalFilters(records, selectedBRP, selectedBlock, dateRange);
   }, [records, selectedBRP, selectedBlock, dateRange]);
 
+  // Helper to determine completed meetings
+  const isMeetingCompleted = (r: SocialAuditRecord) => {
+    if (r.status === 'cancelled') return false;
+    if (r.status === 'completed') return true;
+    if (r.isAmended) {
+      return (
+        r.meetingDate <= asOfDate ||
+        (r.gpNameUnicode?.includes('खेड़की') ?? false) ||
+        (r.gpNameUnicode?.includes('खड़की') ?? false)
+      );
+    }
+    return r.meetingDate <= asOfDate;
+  };
+
   // Detailed Metrics computation strictly respecting asOfDate and selected BRP
   const metrics = useMemo(() => {
     const totalGps = effectiveRecords.length;
     const baghpatTotal = effectiveRecords.filter(r => r.block === 'Baghpat').length;
     const barautTotal = effectiveRecords.filter(r => r.block === 'Baraut').length;
-
-    // Helper to determine completed meetings
-    const isMeetingCompleted = (r: typeof effectiveRecords[0]) => {
-      if (r.status === 'completed') return true;
-      if (r.isAmended) {
-        return (
-          r.meetingDate <= asOfDate ||
-          (r.gpNameUnicode?.includes('खेड़की') ?? false) ||
-          (r.gpNameUnicode?.includes('खड़की') ?? false)
-        );
-      }
-      return r.meetingDate <= asOfDate;
-    };
 
     const completedTotal = effectiveRecords.filter(isMeetingCompleted);
     const completedBaghpat = completedTotal.filter(r => r.block === 'Baghpat');
@@ -84,20 +85,20 @@ export default function MisFeedingTab() {
     const fedBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && r.misStatus === 'fed');
     const fedBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && r.misStatus === 'fed');
 
-    // All Pending (Everything not yet fed on MIS)
-    const allPendingTotal = effectiveRecords.filter(r => (r.misStatus || 'pending') !== 'fed');
-    const allPendingBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed');
-    const allPendingBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed');
+    // Due Pending: Meeting completed and MIS is not fed (strictly excludes cancelled meetings)
+    const duePendingTotal = effectiveRecords.filter(r => r.status !== 'cancelled' && isMeetingCompleted(r) && r.misStatus !== 'fed');
+    const duePendingBaghpat = duePendingTotal.filter(r => r.block === 'Baghpat');
+    const duePendingBaraut = duePendingTotal.filter(r => r.block === 'Baraut');
 
-    // Due Pending: Meeting date has arrived (meetingDate <= asOfDate) and status is pending (not yet fed on MIS)
-    const duePendingTotal = effectiveRecords.filter(r => (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
-    const duePendingBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
-    const duePendingBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate <= asOfDate);
+    // Upcoming Scheduled: Future meetings awaiting meeting day (strictly excludes cancelled meetings)
+    const upcomingTotal = effectiveRecords.filter(r => r.status !== 'cancelled' && !isMeetingCompleted(r) && r.misStatus !== 'fed');
+    const upcomingBaghpat = upcomingTotal.filter(r => r.block === 'Baghpat');
+    const upcomingBaraut = upcomingTotal.filter(r => r.block === 'Baraut');
 
-    // Upcoming Scheduled: Future meetings (meetingDate > asOfDate) awaiting their meeting date
-    const upcomingTotal = effectiveRecords.filter(r => (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
-    const upcomingBaghpat = effectiveRecords.filter(r => r.block === 'Baghpat' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
-    const upcomingBaraut = effectiveRecords.filter(r => r.block === 'Baraut' && (r.misStatus || 'pending') !== 'fed' && r.meetingDate > asOfDate);
+    // All Pending (Due Pending + Upcoming Pending, strictly excludes cancelled meetings)
+    const allPendingTotal = effectiveRecords.filter(r => r.status !== 'cancelled' && r.misStatus !== 'fed');
+    const allPendingBaghpat = allPendingTotal.filter(r => r.block === 'Baghpat');
+    const allPendingBaraut = allPendingTotal.filter(r => r.block === 'Baraut');
 
     // Pending with NSAP Pension
     const pendingWithNSAPTotal = allPendingTotal.filter(r => r.hasNSAP);
@@ -144,9 +145,10 @@ export default function MisFeedingTab() {
   const pendingBoxRecords = useMemo(() => {
     return effectiveRecords
       .filter(r => {
-        const isPending = (r.misStatus || 'pending') !== 'fed';
+        if (r.status === 'cancelled') return false; // Cancelled is NEVER MIS pending
+        const isPending = r.misStatus !== 'fed';
         if (!isPending) return false;
-        if (pendingViewScope === 'due' && r.meetingDate > asOfDate) return false;
+        if (pendingViewScope === 'due' && !isMeetingCompleted(r)) return false;
         if (pendingBlockFilter === 'all') return true;
         return r.block === pendingBlockFilter;
       })
@@ -157,8 +159,9 @@ export default function MisFeedingTab() {
   const upcomingScheduledRecords = useMemo(() => {
     return effectiveRecords
       .filter(r => {
-        const isPending = (r.misStatus || 'pending') !== 'fed';
-        const isFuture = r.meetingDate > asOfDate;
+        if (r.status === 'cancelled') return false;
+        const isPending = r.misStatus !== 'fed';
+        const isFuture = !isMeetingCompleted(r);
         if (!isPending || !isFuture) return false;
         if (pendingBlockFilter === 'all') return true;
         return r.block === pendingBlockFilter;
@@ -176,13 +179,13 @@ export default function MisFeedingTab() {
       if (selectedStatusFilter === 'fed') {
         if (r.misStatus !== 'fed') return false;
       } else if (selectedStatusFilter === 'all_pending') {
-        if (r.misStatus === 'fed') return false;
+        if (r.misStatus === 'fed' || r.status === 'cancelled') return false;
       } else if (selectedStatusFilter === 'due_pending') {
-        if (r.misStatus === 'fed' || r.meetingDate > asOfDate) return false;
+        if (r.misStatus === 'fed' || r.status === 'cancelled' || !isMeetingCompleted(r)) return false;
       } else if (selectedStatusFilter === 'pending_nsap') {
-        if (r.misStatus === 'fed' || !r.hasNSAP) return false;
+        if (r.misStatus === 'fed' || r.status === 'cancelled' || !r.hasNSAP) return false;
       } else if (selectedStatusFilter === 'upcoming') {
-        if (r.misStatus === 'fed' || r.meetingDate <= asOfDate) return false;
+        if (r.misStatus === 'fed' || r.status === 'cancelled' || isMeetingCompleted(r)) return false;
       }
 
       // 3. Search Query
@@ -211,7 +214,7 @@ export default function MisFeedingTab() {
       if (prioA !== prioB) return prioA - prioB;
       return a.meetingDate.localeCompare(b.meetingDate);
     });
-  }, [records, asOfDate, selectedBlockFilter, selectedStatusFilter, searchQuery]);
+  }, [effectiveRecords, asOfDate, selectedBlockFilter, selectedStatusFilter, searchQuery]);
 
   const handleStatusChange = (id: string, newStatus: MisAuditStatus) => {
     if (!isEditMode) {

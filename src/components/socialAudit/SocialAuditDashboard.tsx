@@ -21,6 +21,8 @@ import AddRecordModal from './AddRecordModal';
 import GramPanchayatProfilePanel from './GramPanchayatProfilePanel';
 import GlobalSearchModal from './GlobalSearchModal';
 import MeetingCompletionModal from './MeetingCompletionModal';
+import CancelMeetingModal from './CancelMeetingModal';
+import RescheduleMeetingModal from './RescheduleMeetingModal';
 
 const NSAPWorkbook = dynamic(() => import('./workbook/NSAPWorkbook'), {
   ssr: false,
@@ -32,7 +34,15 @@ const NSAPWorkbook = dynamic(() => import('./workbook/NSAPWorkbook'), {
 });
 
 export default function SocialAuditDashboard() {
-  const { activeTab, selectedRecordForCompletion, closeCompletionModal } = useSocialAuditStore();
+  const { 
+    activeTab, 
+    selectedRecordForCompletion, 
+    closeCompletionModal,
+    selectedRecordForCancel,
+    closeCancelModal,
+    selectedRecordForReschedule,
+    closeRescheduleModal
+  } = useSocialAuditStore();
 
   // Desktop sidebar collapse state & mobile drawer state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -132,6 +142,16 @@ export default function SocialAuditDashboard() {
         record={selectedRecordForCompletion}
         isOpen={Boolean(selectedRecordForCompletion)}
         onClose={closeCompletionModal}
+      />
+      <CancelMeetingModal
+        record={selectedRecordForCancel}
+        isOpen={Boolean(selectedRecordForCancel)}
+        onClose={closeCancelModal}
+      />
+      <RescheduleMeetingModal
+        record={selectedRecordForReschedule}
+        isOpen={Boolean(selectedRecordForReschedule)}
+        onClose={closeRescheduleModal}
       />
     </div>
   );

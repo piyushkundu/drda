@@ -145,28 +145,37 @@ export default function ExecutiveDashboardTab() {
     const barautRecords = effectiveRecords.filter((r) => r.block === 'Baraut');
 
     // Completed & Upcoming — strictly date-based, status NEVER overrides date boundary
-    const completedRecords = effectiveRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
-    const upcomingRecords = effectiveRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
-    const duePendingRecords = effectiveRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'completed');
+    // Cancelled meetings must NOT be counted as completed, upcoming or duePending
+    const completedRecords = effectiveRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
+    const upcomingRecords = effectiveRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
+    const duePendingRecords = effectiveRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'completed' && r.status !== 'cancelled');
 
-    const baghpatCompleted = baghpatRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
-    const baghpatUpcoming = baghpatRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
-    const barautCompleted = barautRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
-    const barautUpcoming = barautRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
+    const baghpatCompleted = baghpatRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
+    const baghpatUpcoming = baghpatRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
+    const barautCompleted = barautRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
+    const barautUpcoming = barautRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
+
+    // Cancelled / Reschedule Pending
+    const cancelledRecords = effectiveRecords.filter((r) => r.status === 'cancelled' || r.rescheduleStatus === 'pending');
+    const baghpatCancelled = cancelledRecords.filter((r) => r.block === 'Baghpat');
+    const barautCancelled = cancelledRecords.filter((r) => r.block === 'Baraut');
 
     // Panchayat Nirnay App (R 9.6.2)
-    const nirnayMappedRecords = effectiveRecords.filter((r) => r.isMappedInPanchayatNirnay);
+    const nirnayMappedRecords = effectiveRecords.filter((r) => r.isMappedInPanchayatNirnay && r.status !== 'cancelled');
     const nirnayCapturedRecords = effectiveRecords.filter((r) => r.panchayatNirnayStatus === 'captured');
-    const nirnayDuePending = effectiveRecords.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && isEffectiveDateOnOrBefore(r, asOfDate));
-    const nirnayUpcoming = effectiveRecords.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && !isEffectiveDateOnOrBefore(r, asOfDate));
+    const nirnayDuePending = effectiveRecords.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
+    const nirnayUpcoming = effectiveRecords.filter((r) => (r.panchayatNirnayStatus || 'pending') === 'pending' && !isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
 
     const baghpatNirnayCaptured = baghpatRecords.filter((r) => r.panchayatNirnayStatus === 'captured');
     const barautNirnayCaptured = barautRecords.filter((r) => r.panchayatNirnayStatus === 'captured');
 
     // MIS Audit Feeding (R 9.1.3)
+    // STRICT RULE: MIS Pending = Meeting Completed AND MIS Not Submitted.
+    // A cancelled meeting is NEVER eligible for MIS Pending.
+    // A proposed/scheduled meeting is NEVER eligible for MIS Pending.
     const misFedRecords = effectiveRecords.filter((r) => r.misStatus === 'fed');
-    const misPendingRecords = effectiveRecords.filter((r) => (r.misStatus || 'pending') !== 'fed');
-    const misDuePendingRecords = effectiveRecords.filter((r) => (r.misStatus || 'pending') !== 'fed' && isEffectiveDateOnOrBefore(r, asOfDate));
+    const misPendingRecords = effectiveRecords.filter((r) => r.status === 'completed' && r.misStatus !== 'fed');
+    const misDuePendingRecords = effectiveRecords.filter((r) => r.status === 'completed' && r.misStatus !== 'fed' && isEffectiveDateOnOrBefore(r, asOfDate));
     const misDuePendingNSAP = misDuePendingRecords.filter((r) => r.hasNSAP);
 
     const baghpatMisFed = baghpatRecords.filter((r) => r.misStatus === 'fed');
@@ -280,6 +289,10 @@ export default function ExecutiveDashboardTab() {
       completedRecords,
       upcomingRecords,
       duePendingRecords,
+      cancelledCount: cancelledRecords.length,
+      baghpatCancelledCount: baghpatCancelled.length,
+      barautCancelledCount: barautCancelled.length,
+      cancelledRecords,
       nirnayCapturedRecords,
       misFedRecords,
       misDuePendingRecords,
@@ -316,6 +329,7 @@ export default function ExecutiveDashboardTab() {
     else if (activeModal === 'mis-due') list = metrics.misDuePendingRecords;
     else if (activeModal === 'amended') list = metrics.amendedRecords;
     else if (activeModal === 'original-proposed') list = metrics.originalProposedUpToDateRecords;
+    else if (activeModal === 'cancelled') list = metrics.cancelledRecords;
 
     if (modalBlockFilter !== 'all') {
       list = list.filter((r) => r.block === modalBlockFilter);
@@ -600,7 +614,12 @@ export default function ExecutiveDashboardTab() {
               </span>
             </div>
             <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
-              <span>{metrics.amendedShiftedToFutureCount} आगे खिसकीं | अवशेष: {metrics.amendedRemainingCount}</span>
+              <span>
+                {metrics.amendedShiftedToFutureCount} आगे खिसकीं | अवशेष: {metrics.amendedRemainingCount}
+                {metrics.cancelledCount > 0 && (
+                  <strong className="text-rose-700 ml-1">| निरस्त: {metrics.cancelledCount}</strong>
+                )}
+              </span>
               <span className="text-[11px] text-amber-800 font-bold group-hover:underline">सूची देखें →</span>
             </div>
           </div>

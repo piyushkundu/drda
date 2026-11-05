@@ -5,11 +5,24 @@
 
 export type AuditBlock = 'Baghpat' | 'Baraut';
 
-export type AuditStatus = 'scheduled' | 'in_progress' | 'completed' | 'amended' | 'postponed';
+export type AuditStatus = 'scheduled' | 'proposed' | 'in_progress' | 'completed' | 'amended' | 'postponed' | 'cancelled';
+
+export type RescheduleStatus = 'not_required' | 'pending';
 
 export type PanchayatNirnayStatus = 'captured' | 'pending' | 'not_captured';
 
-export type MisAuditStatus = 'fed' | 'pending' | 'not_fed';
+export type MisAuditStatus = 'fed' | 'pending' | 'not_fed' | 'not_eligible';
+
+export interface CancellationDetails {
+  cancelledDate: string; // YYYY-MM-DD
+  cancelledAt: string;   // ISO timestamp
+  reason: string;
+  remarks?: string;
+  cancelledBy?: string;
+  previousMeetingDate: string;
+  previousDate?: string;
+  rescheduledDate?: string;
+}
 
 export interface AmendmentDetails {
   originalDate: string;
@@ -59,6 +72,11 @@ export interface SocialAuditRecord {
   status: AuditStatus;
   notes?: string;
   completedDate?: string;
+  completedAt?: string;
+  // Lifecycle & Rescheduling Control
+  rescheduleStatus?: RescheduleStatus;
+  cancellationDetails?: CancellationDetails;
+  cancellationHistory?: CancellationDetails[];
   // Panchayat Nirnay App (R 9.6.2) Tracking
   panchayatNirnayStatus?: PanchayatNirnayStatus;
   isMappedInPanchayatNirnay?: boolean;

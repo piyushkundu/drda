@@ -10,7 +10,7 @@ import {
   Calendar, Clock, MapPin, Phone, Users, Shield, 
   AlertCircle, CheckCircle2, ChevronRight, Sparkles,
   Layers, Check, AlertTriangle, Search, Filter, 
-  ChevronDown, BarChart3, ArrowRight, Lock
+  ChevronDown, BarChart3, ArrowRight, Lock, Ban, RotateCcw
 } from 'lucide-react';
 
 export default function UpcomingSabhasTab() {
@@ -32,12 +32,15 @@ export default function UpcomingSabhasTab() {
     isEditMode,
     openEditModal, 
     openCompletionModal,
+    openCancelModal,
+    openRescheduleModal,
     canCompleteMeeting,
     markCompleted,
     setActiveTab,
     setSelectedBlock 
   } = useSocialAuditStore();
 
+  const [activeSubView, setActiveSubView] = useState<'upcoming' | 'reschedule_pending'>('upcoming');
   const [filterBlock, setFilterBlock] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
   const [filterScheme, setFilterScheme] = useState<'all' | 'nsap' | 'mgnrega'>('all');
   const [filterOnlyAmended, setFilterOnlyAmended] = useState(false);
@@ -66,12 +69,12 @@ export default function UpcomingSabhasTab() {
     }
   };
 
-  // All upcoming meetings (effective meeting date >= asOfDate and not completed) filtered by global filters (BRP, Block, Date Range)
+  // All upcoming meetings (effective meeting date >= asOfDate, not completed, and not cancelled) filtered by global filters (BRP, Block, Date Range)
   const allUpcoming = useMemo(() => {
     return records
       .filter((r) => {
         const effDate = getEffectiveMeetingDate(r);
-        if (effDate < asOfDate || r.status === 'completed') return false;
+        if (effDate < asOfDate || r.status === 'completed' || r.status === 'cancelled') return false;
         if (!matchesBRP(r, selectedBRP)) return false;
         if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
         if (dateRange && (dateRange.startDate || dateRange.endDate)) {
@@ -82,6 +85,22 @@ export default function UpcomingSabhasTab() {
       })
       .sort((a, b) => getEffectiveMeetingDate(a).localeCompare(getEffectiveMeetingDate(b)));
   }, [records, asOfDate, selectedBRP, selectedBlock, dateRange]);
+
+  // Cancelled meetings awaiting reschedule (rescheduleStatus === 'pending' or status === 'cancelled')
+  const cancelledMeetings = useMemo(() => {
+    return records
+      .filter((r) => {
+        if (r.status !== 'cancelled' && r.rescheduleStatus !== 'pending') return false;
+        if (!matchesBRP(r, selectedBRP)) return false;
+        if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const dateA = a.cancellationDetails?.cancelledAt || getEffectiveMeetingDate(a);
+        const dateB = b.cancellationDetails?.cancelledAt || getEffectiveMeetingDate(b);
+        return dateB.localeCompare(dateA);
+      });
+  }, [records, selectedBRP, selectedBlock]);
 
   // Counts
   const upcomingCountTotal = allUpcoming.length;
@@ -194,6 +213,12 @@ export default function UpcomingSabhasTab() {
             <span className="text-slate-300 mx-1">|</span>
             <span>संशोधित:</span>
             <strong className="text-amber-700 font-bold">{upcomingAmendedCount}</strong>
+            {cancelledMeetings.length > 0 && (
+              <>
+                <span className="text-slate-300 mx-1">|</span>
+                <span className="text-rose-600 font-bold">निरस्त: {cancelledMeetings.length}</span>
+              </>
+            )}
           </div>
 
           <button
@@ -206,6 +231,149 @@ export default function UpcomingSabhasTab() {
           </button>
         </div>
       </div>
+
+      {/* Sub-view Navigation Tabs: Active Upcoming vs Reschedule Pending */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+        <button
+          onClick={() => setActiveSubView('upcoming')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeSubView === 'upcoming'
+              ? 'bg-blue-700 text-white shadow-sm'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          <span>सक्रिय आगामी सभाएं</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-black ${
+            activeSubView === 'upcoming' ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-700'
+          }`}>
+            {upcomingCountTotal}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubView('reschedule_pending')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeSubView === 'reschedule_pending'
+              ? 'bg-rose-700 text-white shadow-sm'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          <RotateCcw className="w-4 h-4" />
+          <span>पुनर्निर्धारण लंबित (Reschedule Pending)</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-black ${
+            cancelledMeetings.length > 0 
+              ? activeSubView === 'reschedule_pending'
+                ? 'bg-rose-800 text-white'
+                : 'bg-rose-100 text-rose-800 border border-rose-200'
+              : 'bg-slate-100 text-slate-500'
+          }`}>
+            {cancelledMeetings.length}
+          </span>
+        </button>
+      </div>
+
+      {activeSubView === 'reschedule_pending' ? (
+        <div className="space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 flex items-start gap-3 shadow-sm">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-sm text-amber-950">पुनर्निर्धारण लंबित बैठकें (Awaiting Reschedule)</h3>
+              <p className="mt-1 text-amber-800 leading-relaxed">
+                ये वे ग्राम पंचायत बैठकें हैं जिन्हें किसी कारणवश निरस्त किया गया है। जब तक इनकी नई तिथि निर्धारित नहीं होती, ये आगामी सक्रिय बैठकों में प्रदर्शित नहीं होंगी और <strong>MIS फीडिंग हेतु देय नहीं होंगी</strong>। नई तिथि निर्धारित करते ही ये पुनः रोस्टर कैलेंडर व आगामी सूची में सम्मिलित हो जाएंगी।
+              </p>
+            </div>
+          </div>
+
+          {cancelledMeetings.length === 0 ? (
+            <div className="p-12 rounded-3xl bg-white border border-slate-200 text-center text-slate-500 shadow-sm space-y-2">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+              <p className="font-bold text-slate-700">कोई भी पुनर्निर्धारण लंबित बैठक नहीं है।</p>
+              <p className="text-xs text-slate-400">सभी निर्धारित बैठकें सक्रिय व रोस्टर के अनुरूप हैं।</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {cancelledMeetings.map((sabha) => (
+                <div
+                  key={sabha.id}
+                  className="bg-white rounded-2xl border-2 border-rose-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1">
+                        <Ban className="w-3 h-3 text-rose-600" />
+                        निरस्त बैठक
+                      </span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                        {sabha.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ग्राम पंचायत</div>
+                      <h3 className="text-lg font-black text-slate-900">
+                        {renderText(sabha.gpNameUnicode, sabha.gpNameKrutiDev)}
+                      </h3>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between text-slate-600">
+                        <span>पूर्व निर्धारित तिथि:</span>
+                        <span className="font-bold text-slate-900 line-through">
+                          {formatDateHi(sabha.cancellationDetails?.previousMeetingDate || sabha.cancellationDetails?.previousDate || sabha.meetingDate)}
+                        </span>
+                      </div>
+                      <div className="flex items-start justify-between text-slate-600 gap-2">
+                        <span>निरस्तीकरण का कारण:</span>
+                        <span className="font-bold text-rose-700 text-right">
+                          {sabha.cancellationDetails?.reason || 'अपरिहार्य कारण'}
+                        </span>
+                      </div>
+                      {sabha.cancellationDetails?.remarks && (
+                        <div className="text-[11px] text-slate-500 italic border-t border-slate-200/80 pt-1">
+                          टिप्पणी: "{sabha.cancellationDetails.remarks}"
+                        </div>
+                      )}
+                      <div className="text-[10px] text-slate-400 border-t border-slate-200/60 pt-1 flex items-center justify-between">
+                        <span>निरस्त दिनांक:</span>
+                        <span>{sabha.cancellationDetails?.cancelledAt || 'ज्ञात नहीं'}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs space-y-1 text-slate-600">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">BRP:</span>
+                        <span className="font-bold text-slate-800">
+                          {renderText(sabha.brpName || sabha.brpUnicode, sabha.brpKrutiDev)}
+                        </span>
+                      </div>
+                      {sabha.brpPhone && (
+                        <div className="text-[11px] text-blue-700 font-mono font-bold">
+                          📞 {sabha.brpPhone}
+                        </div>
+                      )}
+                      <div className="text-[11px] truncate text-slate-500" title={sabha.teamMembersUnicode}>
+                        टीम: {sabha.teamMembersUnicode}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 mt-3 border-t border-slate-100">
+                    <button
+                      onClick={() => openRescheduleModal(sabha)}
+                      className="w-full bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-white" />
+                      <span>नई बैठक तिथि निर्धारित करें</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+      <>
 
       {/* ========================================================================= */}
       {/* 2. TODAY'S / NEXT UPCOMING MEETINGS SECTION */}
@@ -403,6 +571,15 @@ export default function UpcomingSabhasTab() {
                           </button>
                         );
                       })()}
+
+                      <button
+                        onClick={() => openCancelModal(nextSabha)}
+                        className="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                        title="अपरिहार्य कारणों से बैठक निरस्त करें"
+                      >
+                        <Ban className="w-3.5 h-3.5 text-white" />
+                        <span>बैठक निरस्त करें</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -534,12 +711,12 @@ export default function UpcomingSabhasTab() {
 
                   {/* Action Buttons (Visible only in Edit Mode) */}
                   {isEditMode && (
-                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
                       <button
                         onClick={() => openEditModal(sabha)}
-                        className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold py-2 px-3 rounded-xl transition-all text-center"
+                        className="flex-1 min-w-[80px] bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold py-2 px-2.5 rounded-xl transition-all text-center"
                       >
-                        संशोधित करें
+                        संशोधित
                       </button>
                       {(() => {
                         const dateCheck = canCompleteMeeting(sabha);
@@ -547,7 +724,7 @@ export default function UpcomingSabhasTab() {
                           return (
                             <button
                               disabled
-                              className="bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold py-2 px-3 rounded-xl cursor-not-allowed flex items-center justify-center gap-1"
+                              className="bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold py-2 px-2.5 rounded-xl cursor-not-allowed flex items-center justify-center gap-1"
                               title={dateCheck.errorMessage || 'निर्धारित तिथि से पहले सम्पन्न नहीं किया जा सकता'}
                             >
                               <Lock className="w-3.5 h-3.5 text-rose-400" />
@@ -558,13 +735,21 @@ export default function UpcomingSabhasTab() {
                         return (
                           <button
                             onClick={() => openCompletionModal(sabha)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-2.5 rounded-xl transition-all flex items-center justify-center gap-1 shadow-sm"
                           >
                             <Check className="w-3.5 h-3.5 text-white" />
                             <span>सम्पन्न</span>
                           </button>
                         );
                       })()}
+                      <button
+                        onClick={() => openCancelModal(sabha)}
+                        className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold py-2 px-2.5 rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95"
+                        title="बैठक निरस्त करें"
+                      >
+                        <Ban className="w-3.5 h-3.5 text-rose-600" />
+                        <span>निरस्त</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -780,6 +965,14 @@ export default function UpcomingSabhasTab() {
                             </button>
                           );
                         })()}
+                        <button
+                          onClick={() => openCancelModal(sabha)}
+                          className="text-xs text-rose-700 hover:text-rose-900 font-bold bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 transition-colors flex items-center gap-1 active:scale-95"
+                          title="बैठक निरस्त करें"
+                        >
+                          <Ban className="w-3 h-3 text-rose-600" />
+                          <span>निरस्त</span>
+                        </button>
                       </>
                     )}
                   </div>
@@ -809,6 +1002,8 @@ export default function UpcomingSabhasTab() {
             फ़िल्टर रीसेट करें
           </button>
         </div>
+      )}
+      </>
       )}
     </div>
   );

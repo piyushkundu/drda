@@ -108,6 +108,7 @@ export function isMeetingCompletedEffective(
   record: SocialAuditRecord,
   cutoffDate: string
 ): boolean {
+  if (record.status === 'cancelled') return false;
   const effectiveDate = getEffectiveMeetingDate(record);
   if (!effectiveDate) return false;
   return effectiveDate <= cutoffDate;
