@@ -373,14 +373,15 @@ export default function ExecutiveDashboardTab() {
     return sortedModalRecords.slice(start, start + modalPageSize);
   }, [sortedModalRecords, modalPage, modalPageSize]);
 
-  // Today's meetings (if any) — based on canonical effective meeting date
+  // Today's meetings (if any) — based on canonical effective meeting date, excluding cancelled
   const todayMeetings = useMemo(() => {
-    return effectiveRecords.filter((r) => getEffectiveMeetingDate(r) === asOfDate);
+    return effectiveRecords.filter((r) => getEffectiveMeetingDate(r) === asOfDate && r.status !== 'cancelled' && r.rescheduleStatus !== 'pending');
   }, [effectiveRecords, asOfDate]);
 
-  // Next 7 days upcoming meetings — based on canonical effective meeting date
+  // Next 7 days upcoming meetings — based on canonical effective meeting date, excluding cancelled
   const next7DaysMeetings = useMemo(() => {
     return effectiveRecords.filter((r) => {
+      if (r.status === 'cancelled' || r.rescheduleStatus === 'pending') return false;
       const effDate = getEffectiveMeetingDate(r);
       if (effDate <= asOfDate) return false;
       const diff = getDaysDiff(effDate);

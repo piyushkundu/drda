@@ -88,6 +88,15 @@ assert(testRecord.misStatus === 'not_eligible', 'MIS status is set to "not_eligi
 const isUpcoming = (testRecord.status as string) !== 'cancelled' && (testRecord.status as string) !== 'completed' && getEffectiveMeetingDate(testRecord) >= asOfDate;
 assert(!isUpcoming, 'Cancelled meeting is excluded from active Upcoming Sabhas');
 
+// Check todayMeetings and primaryMeetings exclusion
+const todayAllUpcoming = records.filter(r => {
+  const eff = getEffectiveMeetingDate(r);
+  if (eff < asOfDate || r.status === 'completed' || r.status === 'cancelled' || r.rescheduleStatus === 'pending') return false;
+  return true;
+});
+const todayMeetingsFiltered = todayAllUpcoming.filter(r => getEffectiveMeetingDate(r) === asOfDate);
+assert(!todayMeetingsFiltered.some(r => r.id === testRecord.id), 'Cancelled meeting is strictly excluded from todayMeetings');
+
 // Check MIS Pending exclusion
 const isMisPending = (testRecord.status as string) === 'completed' && (testRecord.misStatus as string) !== 'fed';
 assert(!isMisPending, 'Cancelled meeting is NEVER considered MIS Pending');

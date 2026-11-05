@@ -74,7 +74,7 @@ export default function UpcomingSabhasTab() {
     return records
       .filter((r) => {
         const effDate = getEffectiveMeetingDate(r);
-        if (effDate < asOfDate || r.status === 'completed' || r.status === 'cancelled') return false;
+        if (effDate < asOfDate || r.status === 'completed' || r.status === 'cancelled' || r.rescheduleStatus === 'pending') return false;
         if (!matchesBRP(r, selectedBRP)) return false;
         if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
         if (dateRange && (dateRange.startDate || dateRange.endDate)) {
@@ -130,16 +130,16 @@ export default function UpcomingSabhasTab() {
     });
   }, [allUpcoming, filterBlock, filterScheme, filterOnlyAmended, searchQuery]);
 
-  // Meetings scheduled today (asOfDate) that are not yet marked completed
+  // Meetings scheduled today (asOfDate) that are active (derived directly from allUpcoming to strictly exclude cancelled and completed)
   const todayMeetings = useMemo(() => {
-    return records
-      .filter((r) => getEffectiveMeetingDate(r) === asOfDate && r.status !== 'completed' && matchesBRP(r, selectedBRP))
+    return allUpcoming
+      .filter((r) => getEffectiveMeetingDate(r) === asOfDate)
       .sort((a, b) => a.block.localeCompare(b.block));
-  }, [records, asOfDate, selectedBRP]);
+  }, [allUpcoming, asOfDate]);
 
   // Primary batch to feature at top:
-  // If today has meetings, use todayMeetings.
-  // Else, use the earliest upcoming date meetings.
+  // If today has active meetings, use todayMeetings.
+  // Else, use the earliest upcoming active date meetings.
   const { primaryMeetings, isTodayBatch, targetDate } = useMemo(() => {
     if (todayMeetings.length > 0) {
       return {
@@ -150,8 +150,8 @@ export default function UpcomingSabhasTab() {
     }
 
     if (allUpcoming.length > 0) {
-      const earliestDate = allUpcoming[0].meetingDate;
-      const earliestBatch = allUpcoming.filter(r => r.meetingDate === earliestDate);
+      const earliestDate = getEffectiveMeetingDate(allUpcoming[0]);
+      const earliestBatch = allUpcoming.filter(r => getEffectiveMeetingDate(r) === earliestDate);
       return {
         primaryMeetings: earliestBatch,
         isTodayBatch: earliestDate === asOfDate,
@@ -382,7 +382,7 @@ export default function UpcomingSabhasTab() {
         // CASE A: ONLY 1 MEETING TODAY -> SHOW LARGE HERO CARD
         (() => {
           const nextSabha = primaryMeetings[0];
-          const diff = getDaysDiff(nextSabha.meetingDate);
+          const diff = getDaysDiff(getEffectiveMeetingDate(nextSabha));
           return (
             <div className="relative overflow-hidden rounded-3xl bg-white/95 border border-slate-200/90 p-6 md:p-8 shadow-sm backdrop-blur-xl">
               <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
@@ -421,7 +421,7 @@ export default function UpcomingSabhasTab() {
                     {nextSabha.isAmended && nextSabha.originalMeetingDate && (
                       <div className="mt-1 text-xs text-amber-800 flex items-center gap-2">
                         <span className="line-through text-slate-400">मूल तिथि: {formatDateHi(nextSabha.originalMeetingDate)}</span>
-                        <span className="font-bold">→ नई संशोधित तिथि: {formatDateHi(nextSabha.meetingDate)}</span>
+                        <span className="font-bold">→ नई संशोधित तिथि: {formatDateHi(getEffectiveMeetingDate(nextSabha))}</span>
                         <span className="text-[11px] bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                           BRP कार्यमुक्त/परिवर्तन के कारण
                         </span>
@@ -437,7 +437,7 @@ export default function UpcomingSabhasTab() {
                       <div>
                         <div className="text-[10px] text-slate-500 uppercase font-bold">बैठक दिनांक एवं समय</div>
                         <div className="text-sm font-bold text-slate-900 mt-0.5">
-                          {formatDateHi(nextSabha.meetingDate)} ({renderText(nextSabha.timeUnicode, nextSabha.timeKrutiDev)})
+                          {formatDateHi(getEffectiveMeetingDate(nextSabha))} ({renderText(nextSabha.timeUnicode, nextSabha.timeKrutiDev)})
                         </div>
                         <div className="text-[11px] text-slate-500">
                           प्रारम्भ: {formatDateHi(nextSabha.startDate)}
@@ -535,7 +535,7 @@ export default function UpcomingSabhasTab() {
                   </div>
 
                   <div className="text-xs text-slate-600 mb-4 font-medium">
-                    दिनांक: <span className="font-bold text-slate-900">{formatDateHi(nextSabha.meetingDate)}</span>
+                    दिनांक: <span className="font-bold text-slate-900">{formatDateHi(getEffectiveMeetingDate(nextSabha))}</span>
                   </div>
 
                   {isEditMode && (
@@ -679,7 +679,7 @@ export default function UpcomingSabhasTab() {
                     <div className="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
                       <div className="flex items-center gap-1.5 text-slate-800 font-bold">
                         <Calendar className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-                        <span>{formatDateHi(sabha.meetingDate)} ({renderText(sabha.timeUnicode, sabha.timeKrutiDev)})</span>
+                        <span>{formatDateHi(getEffectiveMeetingDate(sabha))} ({renderText(sabha.timeUnicode, sabha.timeKrutiDev)})</span>
                       </div>
 
                       <div className="flex items-center gap-1.5 text-slate-600 text-[11px]">
@@ -867,7 +867,7 @@ export default function UpcomingSabhasTab() {
       {subsequentMeetings.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {subsequentMeetings.map((sabha) => {
-            const diff = getDaysDiff(sabha.meetingDate);
+            const diff = getDaysDiff(getEffectiveMeetingDate(sabha));
             return (
               <div
                 key={sabha.id}
@@ -900,7 +900,7 @@ export default function UpcomingSabhasTab() {
 
                   <div className="text-xs font-semibold text-slate-600 mt-1 flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-                    <span>बैठक: {formatDateHi(sabha.meetingDate)} ({renderText(sabha.timeUnicode, sabha.timeKrutiDev)})</span>
+                    <span>बैठक: {formatDateHi(getEffectiveMeetingDate(sabha))} ({renderText(sabha.timeUnicode, sabha.timeKrutiDev)})</span>
                   </div>
 
                   {sabha.isAmended && (
