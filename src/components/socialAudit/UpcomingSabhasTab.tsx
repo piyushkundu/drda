@@ -10,8 +10,10 @@ import {
   Calendar, Clock, MapPin, Phone, Users, Shield, 
   AlertCircle, CheckCircle2, ChevronRight, Sparkles,
   Layers, Check, AlertTriangle, Search, Filter, 
-  ChevronDown, BarChart3, ArrowRight, Lock, Ban, RotateCcw
+  ChevronDown, BarChart3, ArrowRight, Lock, Ban, RotateCcw,
+  FileImage
 } from 'lucide-react';
+import UpcomingMeetingsImageModal from './UpcomingMeetingsImageModal';
 
 export default function UpcomingSabhasTab() {
   const [mounted, setMounted] = useState(false);
@@ -41,6 +43,7 @@ export default function UpcomingSabhasTab() {
   } = useSocialAuditStore();
 
   const [activeSubView, setActiveSubView] = useState<'upcoming' | 'reschedule_pending'>('upcoming');
+  const [isImageExportModalOpen, setIsImageExportModalOpen] = useState(false);
   const [filterBlock, setFilterBlock] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
   const [filterScheme, setFilterScheme] = useState<'all' | 'nsap' | 'mgnrega'>('all');
   const [filterOnlyAmended, setFilterOnlyAmended] = useState(false);
@@ -220,6 +223,15 @@ export default function UpcomingSabhasTab() {
               </>
             )}
           </div>
+
+          <button
+            onClick={() => setIsImageExportModalOpen(true)}
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
+            title="जनपद की समस्त आगामी बैठकों का संपूर्ण विवरण एक सिंगल इमेज में बनाएं"
+          >
+            <FileImage className="w-4 h-4 text-emerald-100" />
+            <span>सभी आगामी बैठकों की इमेज बनाएं</span>
+          </button>
 
           <button
             onClick={() => setActiveTab('dashboard')}
@@ -775,16 +787,27 @@ export default function UpcomingSabhasTab() {
             </h3>
           </div>
 
-          {/* Search box */}
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ग्राम पंचायत, BRP या अधिकारी खोजें..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 font-medium"
-            />
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => setIsImageExportModalOpen(true)}
+              className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-3 py-1.5 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0"
+              title="समस्त आगामी बैठकों की इमेज बनाएं"
+            >
+              <FileImage className="w-3.5 h-3.5 text-emerald-600" />
+              <span>इमेज बनाएं</span>
+            </button>
+
+            {/* Search box */}
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ग्राम पंचायत, BRP या अधिकारी खोजें..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 font-medium"
+              />
+            </div>
           </div>
         </div>
 
@@ -1005,6 +1028,13 @@ export default function UpcomingSabhasTab() {
       )}
       </>
       )}
+
+      {/* Upcoming Meetings All-in-One High-Res Poster Image Modal */}
+      <UpcomingMeetingsImageModal
+        isOpen={isImageExportModalOpen}
+        onClose={() => setIsImageExportModalOpen(false)}
+        filteredUpcomingRecords={filteredUpcoming}
+      />
     </div>
   );
 }
