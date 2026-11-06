@@ -227,10 +227,15 @@ export default function UpcomingSabhasTab() {
           <button
             onClick={() => setIsImageExportModalOpen(true)}
             className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
-            title="जनपद की समस्त आगामी बैठकों का संपूर्ण विवरण एक सिंगल इमेज में बनाएं"
+            title={targetDate ? `अगली बैठक दिनांक (${formatDateHi(targetDate)}) की इमेज बनाएं` : 'बैठक की इमेज बनाएं'}
           >
             <FileImage className="w-4 h-4 text-emerald-100" />
-            <span>सभी आगामी बैठकों की इमेज बनाएं</span>
+            <span>अगली बैठक की इमेज बनाएं</span>
+            {targetDate && (
+              <span className="text-[10px] bg-emerald-800 text-emerald-100 px-1.5 py-0.5 rounded font-mono">
+                {formatDateHi(targetDate)}
+              </span>
+            )}
           </button>
 
           <button
@@ -592,6 +597,15 @@ export default function UpcomingSabhasTab() {
                         <Ban className="w-3.5 h-3.5 text-white" />
                         <span>बैठक निरस्त करें</span>
                       </button>
+
+                      <button
+                        onClick={() => setIsImageExportModalOpen(true)}
+                        className="w-full bg-slate-900 hover:bg-black text-white text-xs font-bold py-2 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer mt-1"
+                        title="इस बैठक का WhatsApp पोस्टर / इमेज बनाएं"
+                      >
+                        <FileImage className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>बैठक इमेज बनाएं</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -635,6 +649,15 @@ export default function UpcomingSabhasTab() {
               <span className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 font-medium">
                 बागपत: <strong className="text-blue-700 font-bold">{primaryMeetings.filter(r => r.block === 'Baghpat').length}</strong> | बड़ौत: <strong className="text-indigo-700 font-bold">{primaryMeetings.filter(r => r.block === 'Baraut').length}</strong>
               </span>
+
+              <button
+                onClick={() => setIsImageExportModalOpen(true)}
+                className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+                title="आज की बैठकों की इमेज बनाएं"
+              >
+                <FileImage className="w-3.5 h-3.5 text-emerald-100" />
+                <span>इमेज बनाएं</span>
+              </button>
             </div>
           </div>
 
@@ -1034,6 +1057,7 @@ export default function UpcomingSabhasTab() {
         isOpen={isImageExportModalOpen}
         onClose={() => setIsImageExportModalOpen(false)}
         filteredUpcomingRecords={filteredUpcoming}
+        targetDate={targetDate}
       />
     </div>
   );
