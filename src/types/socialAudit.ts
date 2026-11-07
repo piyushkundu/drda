@@ -214,7 +214,23 @@ export type ReportType =
   | 'panchayat_nirnay'     // F. Panchayat Nirnay Report
   | 'mis_feeding'          // G. MIS Audit Feeding Report
   | 'nsap_beneficiary'     // H. NSAP Beneficiary Report
-  | 'nsap_social_audit';   // I. NSAP Social Audit Report
+  | 'nsap_social_audit'    // I. NSAP Social Audit Report
+  | 'monthly_mpr'
+  | 'all_status'
+  | 'pending_actions'
+  | 'scheme_wise'
+  | 'brp_detail'
+  | 'vrp_wise'
+  | 'vrp_detail'
+  | 'nsap_quality';
+
+export type MonthlyReportSection = 'pmay' | 'mgnrega' | 'nsap' | 'nfbs';
+export interface MonthlyReportDraft {
+  values: Record<string, number | null>;
+  completeThrough: Partial<Record<MonthlyReportSection, string>>;
+  updatedAt: string;
+  updatedBy?: string;
+}
 
 export interface ReportFilterState {
   financialYear: string;

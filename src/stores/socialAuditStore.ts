@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { 
   SocialAuditRecord, FontViewMode, AuditBlock, AuditStatus, 
   PanchayatNirnayStatus, MisAuditStatus, NSAPGramPanchayatData, NSAPBeneficiaryRecord,
-  SocialAuditActivityLog, VRPMember, VRPTeamCode, CancellationDetails, RescheduleStatus
+  SocialAuditActivityLog, VRPMember, VRPTeamCode, CancellationDetails, RescheduleStatus, MonthlyReportDraft
 } from '@/types/socialAudit';
 import { 
   SocialAuditUser, DEFAULT_DDO_USER, canUserEnableEditMode, 
@@ -18,6 +18,10 @@ import { getDelhiDateString, getDelhiTimeString, fetchOnlineDelhiTime } from '@/
 import { NirnaySyncPayload } from '@/lib/nirnaySyncBookmarklet';
 import { MisSyncPayload } from '@/lib/misSyncBookmarklet';
 import { extractBRPOptions } from '@/lib/brpHelper';
+import { confirmHistoricalEdit, reportingDate } from '@/lib/socialAuditAsOf';
+import { getEffectiveMeetingDate, getProgressCutoffDate } from '@/lib/dateResolution';
+import { getNSAPWriteError, getNSAPVerification, withDerivedNSAPUnverified } from '@/lib/nsapVerification';
+import { getMonthlyReportPeriod, validateMonthlyReportDraft } from '@/lib/socialAuditReports';
 import { 
   GlobalDateRange, DEFAULT_DATE_RANGE, 
   shouldResetBRPOnBlockChange 
@@ -48,6 +52,9 @@ export type FirebaseSyncStatus = 'synced' | 'syncing' | 'error' | 'loading' | 'o
 interface SocialAuditState {
   records: SocialAuditRecord[];
   nsapRecords: NSAPGramPanchayatData[];
+  monthlyReportDrafts: Record<string, MonthlyReportDraft>;
+  saveMonthlyReportDraft: (month: string, draft: MonthlyReportDraft) => boolean;
+  resetMonthlyReportDraft: (month: string) => boolean;
   activityLogs: SocialAuditActivityLog[];
   fontViewMode: FontViewMode;
   selectedBlock: 'all' | AuditBlock;
@@ -73,6 +80,7 @@ interface SocialAuditState {
   isAddModalOpen: boolean;
   selectedGPForProfile: SocialAuditRecord | null;
   isGlobalSearchOpen: boolean;
+  nsapWorkbookTargetId: string | null;
 
   // Firebase Real-time Cloud Sync
   firebaseSyncStatus: FirebaseSyncStatus;
@@ -117,26 +125,28 @@ interface SocialAuditState {
   openGPProfile: (record: SocialAuditRecord) => void;
   closeGPProfile: () => void;
   setIsGlobalSearchOpen: (open: boolean) => void;
+  openNsapWorkbook: (rosterRecordId: string) => void;
+  clearNsapWorkbookTarget: () => void;
   logActivity: (log: Omit<SocialAuditActivityLog, 'id' | 'timestamp'>) => void;
 
   // Record CRUD, Nirnay App & MIS Feeding Confirmation
-  updateRecord: (id: string, updates: Partial<SocialAuditRecord>) => void;
-  updatePanchayatNirnayStatus: (id: string, status: PanchayatNirnayStatus, notes?: string) => void;
+  updateRecord: (id: string, updates: Partial<SocialAuditRecord>) => boolean;
+  updatePanchayatNirnayStatus: (id: string, status: PanchayatNirnayStatus, notes?: string) => boolean;
   syncNirnayFromPayload: (payload: NirnaySyncPayload) => { updatedCount: number; updatedNames: string[]; blockMatched: string };
-  updateMisStatus: (id: string, status: MisAuditStatus, notes?: string, fedDate?: string) => void;
+  updateMisStatus: (id: string, status: MisAuditStatus, notes?: string, fedDate?: string) => boolean;
   syncMisFromPayload: (payload: MisSyncPayload) => { updatedCount: number; updatedNames: string[]; blockMatched: string };
   addRecord: (record: Omit<SocialAuditRecord, 'id'>) => void;
   deleteRecord: (id: string) => void;
-  markCompleted: (id: string, isCompleted: boolean) => void;
+  markCompleted: (id: string, isCompleted: boolean) => boolean;
   resetToBaseline: () => void;
 
   // NSAP Detailed Beneficiary Data Management Actions
-  setNsapRecords: (records: NSAPGramPanchayatData[]) => void;
-  addNsapRecord: (data: NSAPGramPanchayatData) => void;
-  updateNsapRecord: (id: string, updates: Partial<NSAPGramPanchayatData>) => void;
+  setNsapRecords: (records: NSAPGramPanchayatData[]) => boolean;
+  addNsapRecord: (data: NSAPGramPanchayatData) => boolean;
+  updateNsapRecord: (id: string, updates: Partial<NSAPGramPanchayatData>) => boolean;
   deleteNsapRecord: (id: string) => void;
-  addNsapBeneficiary: (gpId: string, beneficiary: Omit<NSAPBeneficiaryRecord, 'id'>) => void;
-  addNsapBeneficiariesBatch: (gpId: string, beneficiaries: Omit<NSAPBeneficiaryRecord, 'id'>[]) => void;
+  addNsapBeneficiary: (gpId: string, beneficiary: Omit<NSAPBeneficiaryRecord, 'id'>) => boolean;
+  addNsapBeneficiariesBatch: (gpId: string, beneficiaries: Omit<NSAPBeneficiaryRecord, 'id'>[]) => boolean;
   deleteNsapBeneficiary: (gpId: string, beneficiaryId: string) => void;
 
   // VRP (Village Resource Person) / Team Management Actions
@@ -173,7 +183,8 @@ function notifyStoreChange(state: SocialAuditState, immediate = false) {
     state.isLiveSync,
     immediate,
     state.activityLogs,
-    state.vrpMembers
+    state.vrpMembers,
+    state.monthlyReportDrafts
   ).then((success) => {
     useSocialAuditStore.setState({
       firebaseSyncStatus: success ? 'synced' : 'error',
@@ -190,6 +201,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
     (set, get) => ({
       records: INITIAL_SOCIAL_AUDIT_RECORDS,
       nsapRecords: INITIAL_NSAP_DATA_RECORDS,
+      monthlyReportDrafts: {},
       activityLogs: INITIAL_ACTIVITY_LOGS,
       vrpMembers: INITIAL_VRP_RECORDS,
       fontViewMode: 'unicode',
@@ -217,6 +229,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       isAddModalOpen: false,
       selectedGPForProfile: null,
       isGlobalSearchOpen: false,
+      nsapWorkbookTargetId: null,
 
       // Firebase Sync State
       firebaseSyncStatus: 'loading',
@@ -248,6 +261,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             set({
               records: remoteDoc.records,
               nsapRecords: mergedNsap,
+              monthlyReportDrafts: remoteDoc.monthlyReportDrafts ?? get().monthlyReportDrafts,
               activityLogs: (remoteDoc.activityLogs && remoteDoc.activityLogs.length > 0)
                 ? remoteDoc.activityLogs
                 : get().activityLogs,
@@ -268,7 +282,9 @@ export const useSocialAuditStore = create<SocialAuditState>()(
                 currentState.asOfDate,
                 currentState.isLiveSync,
                 true,
-                currentState.activityLogs
+                currentState.activityLogs,
+                currentState.vrpMembers,
+                currentState.monthlyReportDrafts
               ).catch((e) => console.warn('Auto-persisting merged NSAP baseline records failed:', e));
             }
           } else {
@@ -280,7 +296,9 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               state.asOfDate,
               state.isLiveSync,
               true,
-              state.activityLogs
+              state.activityLogs,
+              state.vrpMembers,
+              state.monthlyReportDrafts
             );
             set({
               firebaseSyncStatus: 'synced',
@@ -307,6 +325,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               set({
                 records: remoteData.records,
                 nsapRecords: mergedNsap,
+                monthlyReportDrafts: remoteData.monthlyReportDrafts ?? get().monthlyReportDrafts,
                 activityLogs: (remoteData.activityLogs && remoteData.activityLogs.length > 0)
                   ? remoteData.activityLogs
                   : get().activityLogs,
@@ -330,6 +349,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       forceSyncToFirebase: async () => {
+        if (!confirmHistoricalEdit(get().asOfDate)) return false;
         const state = get();
         set({ firebaseSyncStatus: 'syncing' });
         const success = await saveSocialAuditToFirestore(
@@ -339,7 +359,8 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           state.isLiveSync,
           true,
           state.activityLogs,
-          state.vrpMembers
+          state.vrpMembers,
+          state.monthlyReportDrafts
         );
         set({
           firebaseSyncStatus: success ? 'synced' : 'error',
@@ -424,7 +445,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       canCompleteMeeting: (record) => {
-        return validateMeetingCompletionDate(record?.meetingDate, get().asOfDate);
+        return validateMeetingCompletionDate(record ? getEffectiveMeetingDate(record) : undefined, getProgressCutoffDate(get().asOfDate));
       },
 
       openCompletionModal: (record) => {
@@ -459,12 +480,12 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       closeRescheduleModal: () => set({ selectedRecordForReschedule: null }),
 
       setAsOfDate: (date) => {
+        if (!reportingDate(date) || date.length !== 10) return;
         const liveDate = getDelhiDateString();
         set({
           asOfDate: date,
           isLiveSync: date === liveDate
         });
-        notifyStoreChange(get());
       },
 
       setLiveSync: (enabled) => {
@@ -480,7 +501,6 @@ export const useSocialAuditStore = create<SocialAuditState>()(
         } else {
           set({ isLiveSync: false });
         }
-        notifyStoreChange(get());
       },
 
       tickDelhiClock: () => {
@@ -524,8 +544,14 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       setActiveTab: (tab) => set({ activeTab: tab }),
+      openNsapWorkbook: (rosterRecordId) => {
+        if (get().records.some(record => record.id === rosterRecordId && record.hasNSAP)) {
+          set({ nsapWorkbookTargetId: rosterRecordId, activeTab: 'nsap-workbook' });
+        }
+      },
+      clearNsapWorkbookTarget: () => set({ nsapWorkbookTargetId: null }),
 
-      openEditModal: (record) => set({ selectedRecordForEdit: record }),
+      openEditModal: (record) => set({ selectedRecordForEdit: get().records.find(r => r.id === record.id) || record }),
       closeEditModal: () => set({ selectedRecordForEdit: null }),
 
       openAddModal: () => set({ isAddModalOpen: true }),
@@ -548,14 +574,27 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       updateRecord: (id, updates) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: अभिलेख में संपादन करने के लिए कृपया पहले Header से Edit Mode ON करें।');
           }
-          return;
+          return false;
         }
 
         const current = get().records.find(r => r.id === id);
+        if (updates.status === 'completed') {
+          const validation = get().canCompleteMeeting(current ? { ...current, ...updates } : undefined);
+          if (!validation.canComplete) {
+            if (typeof window !== 'undefined') alert(validation.errorMessage);
+            return false;
+          }
+          updates = {
+            ...updates,
+            completedDate: updates.completedDate || current?.completedDate || getProgressCutoffDate(get().asOfDate),
+            completedAt: updates.completedAt || current?.completedAt || new Date().toISOString(),
+          };
+        }
         const gpName = current?.gpNameUnicode || 'ग्राम पंचायत';
         const block = current?.block || 'Baghpat';
 
@@ -580,14 +619,16 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           details: `${gpName} के अभिलेख में अद्यतन किया गया।`
         });
         notifyStoreChange(get());
+        return true;
       },
 
       updatePanchayatNirnayStatus: (id, status, notes) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: पंचायत निर्णय स्थिति बदलने के लिए कृपया पहले Header से Edit Mode ON करें।');
           }
-          return;
+          return false;
         }
 
         const current = get().records.find(r => r.id === id);
@@ -627,9 +668,11 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           newValue: statusHi
         });
         notifyStoreChange(get());
+        return true;
       },
 
       addRecord: (recordData) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: नया रोस्टर रिकॉर्ड जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
@@ -661,6 +704,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       deleteRecord: (id) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: रिकॉर्ड हटाने के लिए कृपया पहले Header से Edit Mode ON करें।');
@@ -692,15 +736,16 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       markCompleted: (id, isCompleted) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: बैठक स्थिति बदलने के लिए कृपया पहले Header से Edit Mode ON करें।');
           }
-          return;
+          return false;
         }
 
         const current = get().records.find(r => r.id === id);
-        if (!current) return;
+        if (!current) return false;
 
         // Strict Date-based lock check for marking completion
         if (isCompleted) {
@@ -709,7 +754,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
             if (typeof window !== 'undefined') {
               alert(dateValidation.errorMessage || 'इस ग्राम पंचायत की सोशल ऑडिट बैठक की निर्धारित तिथि अभी नहीं आई है। निर्धारित तिथि से पहले बैठक को सम्पन्न नहीं किया जा सकता।');
             }
-            return;
+            return false;
           }
         }
 
@@ -722,7 +767,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               return {
                 ...r,
                 status: isCompleted ? 'completed' : (r.isAmended ? 'amended' : 'scheduled'),
-                completedDate: isCompleted ? (r.completedDate || state.asOfDate) : undefined,
+                completedDate: isCompleted ? (r.completedDate || getProgressCutoffDate(state.asOfDate)) : undefined,
                 completedAt: isCompleted ? (r.completedAt || new Date().toISOString()) : undefined,
                 rescheduleStatus: 'not_required',
                 // Strict rule: MIS status becomes pending only upon explicit completion (if not already fed)
@@ -734,7 +779,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           selectedGPForProfile: state.selectedGPForProfile?.id === id ? {
             ...state.selectedGPForProfile,
             status: isCompleted ? 'completed' : (state.selectedGPForProfile.isAmended ? 'amended' : 'scheduled'),
-            completedDate: isCompleted ? (state.selectedGPForProfile.completedDate || state.asOfDate) : undefined,
+            completedDate: isCompleted ? (state.selectedGPForProfile.completedDate || getProgressCutoffDate(state.asOfDate)) : undefined,
             completedAt: isCompleted ? (state.selectedGPForProfile.completedAt || new Date().toISOString()) : undefined,
             rescheduleStatus: 'not_required',
             misStatus: isCompleted ? (state.selectedGPForProfile.misStatus === 'fed' ? 'fed' : 'pending') : 'not_eligible'
@@ -753,9 +798,11 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           newValue: isCompleted ? 'सम्पन्न' : 'प्रस्तावित'
         });
         notifyStoreChange(get());
+        return true;
       },
 
       cancelMeeting: async (id: string, reason: string, remarks?: string): Promise<boolean> => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: बैठक निरस्त करने के लिए कृपया पहले Header से Edit Mode ON करें।');
@@ -768,7 +815,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
         if (!current) return false;
 
         const cancellationDetail: CancellationDetails = {
-          cancelledDate: state.asOfDate,
+          cancelledDate: getProgressCutoffDate(state.asOfDate),
           cancelledAt: new Date().toISOString(),
           reason,
           remarks: remarks || '',
@@ -828,6 +875,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       rescheduleMeeting: async (id: string, newDate: string, newTime?: string, reason?: string): Promise<boolean> => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: बैठक पुनर्निर्धारित करने के लिए कृपया पहले Header से Edit Mode ON करें।');
@@ -915,6 +963,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       syncNirnayFromPayload: (payload: NirnaySyncPayload) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return { updatedCount: 0, updatedNames: [], blockMatched: '' };
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: पंचायत निर्णय डेटा सिंक करने के लिए कृपया पहले Header से Edit Mode ON करें।');
@@ -970,11 +1019,12 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       updateMisStatus: (id: string, status: MisAuditStatus, notes?: string, fedDate?: string) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: MIS फीडिंग स्थिति बदलने के लिए कृपया पहले Header से Edit Mode ON करें।');
           }
-          return;
+          return false;
         }
 
         const current = get().records.find(r => r.id === id);
@@ -1016,9 +1066,11 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           newValue: statusHi
         });
         notifyStoreChange(get());
+        return true;
       },
 
       syncMisFromPayload: (payload: MisSyncPayload) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return { updatedCount: 0, updatedNames: [], blockMatched: '' };
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: MIS फीडिंग डेटा सिंक करने के लिए कृपया पहले Header से Edit Mode ON करें।');
@@ -1074,6 +1126,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       resetToBaseline: () => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: कैलेंडर रीसेट करने के लिए कृपया पहले Header से Edit Mode ON करें।');
@@ -1090,16 +1143,51 @@ export const useSocialAuditStore = create<SocialAuditState>()(
         }
       },
 
+      saveMonthlyReportDraft: (month, draft) => {
+        const state = get();
+        if (!state.isEditMode) return false;
+        const cutoff = getProgressCutoffDate(state.asOfDate);
+        const error = validateMonthlyReportDraft(month, draft, cutoff);
+        if (error) { if (typeof window !== 'undefined') alert(error); return false; }
+        const period = getMonthlyReportPeriod(month, cutoff);
+        if (!confirmHistoricalEdit(period.cutoff)) return false;
+        const saved: MonthlyReportDraft = { values: { ...draft.values }, completeThrough: { ...draft.completeThrough }, updatedAt: new Date().toISOString(), updatedBy: state.currentUser.name };
+        set({ monthlyReportDrafts: { ...state.monthlyReportDrafts, [month]: saved } });
+        get().logActivity({ module: 'system', recordId: `mpr-${month}`, gpName: 'मासिक प्रगति रिपोर्ट', actionType: 'update', actionLabel: 'मासिक रिपोर्ट संशोधन', userName: state.currentUser.name, details: `${month} की रिपोर्ट के ${Object.keys(draft.values).length} मैनुअल खाने एवं पूर्णता तिथियाँ सुरक्षित की गईं।` });
+        notifyStoreChange(get(), true);
+        return true;
+      },
+      resetMonthlyReportDraft: (month) => {
+        const state = get();
+        if (!state.isEditMode) return false;
+        let period;
+        try { period = getMonthlyReportPeriod(month, getProgressCutoffDate(state.asOfDate)); } catch { return false; }
+        if (!confirmHistoricalEdit(period.cutoff)) return false;
+        // Keep an explicit empty month so Firestore merge also resets remote values.
+        set({ monthlyReportDrafts: { ...state.monthlyReportDrafts, [month]: { values: {}, completeThrough: {}, updatedAt: new Date().toISOString(), updatedBy: state.currentUser.name } } });
+        get().logActivity({ module: 'system', recordId: `mpr-${month}`, gpName: 'मासिक प्रगति रिपोर्ट', actionType: 'update', actionLabel: 'मासिक रिपोर्ट मूल आँकड़े बहाल', userName: state.currentUser.name, details: `${month} के मैनुअल संशोधन हटाए गए। मूल पंचायत रिकॉर्ड यथावत हैं।` });
+        notifyStoreChange(get(), true);
+        return true;
+      },
+
       // NSAP Detailed Beneficiary Actions
       setNsapRecords: (newRecords: NSAPGramPanchayatData[]) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: NSAP डेटा अद्यतन करने के लिए कृपया पहले Header से Edit Mode ON करें।');
           }
-          return;
+          return false;
         }
 
-        set({ nsapRecords: newRecords });
+        const error = newRecords.map(record => getNSAPWriteError(record, get().nsapRecords.find(previous =>
+          previous.id === record.id || Boolean(record.rosterRecordId && previous.rosterRecordId === record.rosterRecordId)
+        ))).find(Boolean);
+        if (error) {
+          if (typeof window !== 'undefined') alert(error);
+          return false;
+        }
+        set({ nsapRecords: newRecords.map(withDerivedNSAPUnverified) });
         get().logActivity({
           module: 'nsap',
           recordId: 'nsap-workbook-batch',
@@ -1110,37 +1198,56 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           details: `NSAP एक्सेल वर्कबुक से ${newRecords.length} ग्राम पंचायतों का डेटा अद्यतन किया गया।`
         });
         notifyStoreChange(get(), true);
+        return true;
       },
 
       addNsapRecord: (data: NSAPGramPanchayatData) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: NSAP डेटा जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
           }
-          return;
+          return false;
         }
 
+        const error = getNSAPWriteError(data);
+        if (error) {
+          if (typeof window !== 'undefined') alert(error);
+          return false;
+        }
         set((state) => ({
-          nsapRecords: [data, ...state.nsapRecords.filter(r => r.gpNameUnicode !== data.gpNameUnicode)]
+          nsapRecords: [withDerivedNSAPUnverified(data), ...state.nsapRecords.filter(r => r.gpNameUnicode !== data.gpNameUnicode)]
         }));
         notifyStoreChange(get());
+        return true;
       },
 
       updateNsapRecord: (id: string, updates: Partial<NSAPGramPanchayatData>) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: NSAP डेटा संपादित करने के लिए कृपया पहले Header से Edit Mode ON करें।');
           }
-          return;
+          return false;
         }
 
+        const current = get().nsapRecords.find(record => record.id === id);
+        if (!current) return false;
+        const updated = { ...current, ...updates };
+        const error = getNSAPWriteError(updated, current);
+        if (error) {
+          if (typeof window !== 'undefined') alert(error);
+          return false;
+        }
         set((state) => ({
-          nsapRecords: state.nsapRecords.map(r => r.id === id ? { ...r, ...updates } : r)
+          nsapRecords: state.nsapRecords.map(r => r.id === id ? withDerivedNSAPUnverified(updated) : r)
         }));
         notifyStoreChange(get());
+        return true;
       },
 
       deleteNsapRecord: (id: string) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: NSAP डेटा हटाने के लिए कृपया पहले Header से Edit Mode ON करें।');
@@ -1155,11 +1262,12 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       addNsapBeneficiary: (gpId: string, beneficiary: Omit<NSAPBeneficiaryRecord, 'id'>) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: लाभार्थी जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
           }
-          return;
+          return false;
         }
 
         set((state) => {
@@ -1176,19 +1284,21 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               beneficiaries: updatedBens,
               ineligibleCount: updatedBens.filter(b => b.category === 'ineligible').length,
               deceasedCount: updatedBens.filter(b => b.category === 'deceased').length,
-              unverifiedCount: updatedBens.filter(b => b.category === 'unverified').length,
+              unverifiedCount: getNSAPVerification(r).unverified ?? undefined,
             } : r)
           };
         });
         notifyStoreChange(get());
+        return true;
       },
 
       addNsapBeneficiariesBatch: (gpId: string, beneficiaries: Omit<NSAPBeneficiaryRecord, 'id'>[]) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return false;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: बैच लाभार्थी जोड़ने के लिए कृपया पहले Header से Edit Mode ON करें।');
           }
-          return;
+          return false;
         }
 
         set((state) => {
@@ -1206,14 +1316,16 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               beneficiaries: updatedBens,
               ineligibleCount: updatedBens.filter(b => b.category === 'ineligible').length,
               deceasedCount: updatedBens.filter(b => b.category === 'deceased').length,
-              unverifiedCount: updatedBens.filter(b => b.category === 'unverified').length,
+              unverifiedCount: getNSAPVerification(r).unverified ?? undefined,
             } : r)
           };
         });
         notifyStoreChange(get(), true);
+        return true;
       },
 
       deleteNsapBeneficiary: (gpId: string, beneficiaryId: string) => {
+        if (get().isEditMode && !confirmHistoricalEdit(get().asOfDate)) return;
         if (!get().isEditMode) {
           if (typeof window !== 'undefined') {
             alert('त्रुटि: लाभार्थी हटाने के लिए कृपया पहले Header से Edit Mode ON करें।');
@@ -1231,7 +1343,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
               beneficiaries: updatedBens,
               ineligibleCount: updatedBens.filter(b => b.category === 'ineligible').length,
               deceasedCount: updatedBens.filter(b => b.category === 'deceased').length,
-              unverifiedCount: updatedBens.filter(b => b.category === 'unverified').length,
+              unverifiedCount: getNSAPVerification(r).unverified ?? undefined,
             } : r)
           };
         });
@@ -1239,6 +1351,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       assignVRPMember: (vrpId: string, block: AuditBlock, subTeam?: VRPTeamCode | null, role?: string) => {
+        if (!get().isEditMode || !confirmHistoricalEdit(get().asOfDate)) return;
         set((state) => {
           const target = state.vrpMembers.find((m) => m.id === vrpId);
           const blockHindi = block === 'Baghpat' ? 'बागपत' : 'बड़ौत';
@@ -1283,6 +1396,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       unassignVRPMember: (vrpId: string) => {
+        if (!get().isEditMode || !confirmHistoricalEdit(get().asOfDate)) return;
         set((state) => {
           const target = state.vrpMembers.find((m) => m.id === vrpId);
           const prevBlockHindi = target?.assignedBlock === 'Baghpat' ? 'बागपत' : target?.assignedBlock === 'Baraut' ? 'बड़ौत' : 'सक्रिय टीम';
@@ -1326,6 +1440,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       addVRPMember: (memberData) => {
+        if (!get().isEditMode || !confirmHistoricalEdit(get().asOfDate)) return;
         set((state) => {
           const maxSrNo = state.vrpMembers.reduce((max, m) => Math.max(max, m.srNo || 0), 0);
           const newId = `vrp-${memberData.empCode || Date.now()}`;
@@ -1360,6 +1475,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       updateVRPMember: (vrpId, updates) => {
+        if (!get().isEditMode || !confirmHistoricalEdit(get().asOfDate)) return;
         set((state) => {
           const target = state.vrpMembers.find((m) => m.id === vrpId);
           const updated = state.vrpMembers.map((m) =>
@@ -1391,6 +1507,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       deleteVRPMember: (vrpId) => {
+        if (!get().isEditMode || !confirmHistoricalEdit(get().asOfDate)) return;
         set((state) => {
           const target = state.vrpMembers.find((m) => m.id === vrpId);
           const updated = state.vrpMembers.filter((m) => m.id !== vrpId);
@@ -1420,6 +1537,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       },
 
       resetVRPMembersToBaseline: () => {
+        if (!get().isEditMode || !confirmHistoricalEdit(get().asOfDate)) return;
         set((state) => {
           const newState = { ...state, vrpMembers: INITIAL_VRP_RECORDS, hasUnsavedChanges: true };
           notifyStoreChange(newState, true);
@@ -1433,6 +1551,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
       partialize: (state) => ({
         records: state.records,
         nsapRecords: state.nsapRecords,
+        monthlyReportDrafts: state.monthlyReportDrafts,
         activityLogs: state.activityLogs,
         vrpMembers: state.vrpMembers,
         fontViewMode: state.fontViewMode,
@@ -1447,6 +1566,7 @@ export const useSocialAuditStore = create<SocialAuditState>()(
           state.isEditMode = false;
           state.selectedRecordForCompletion = null;
           state.hasUnsavedChanges = false;
+          if (!state.monthlyReportDrafts) state.monthlyReportDrafts = {};
 
           // Rehydrate activity logs if missing
           if (!state.activityLogs || !Array.isArray(state.activityLogs) || state.activityLogs.length === 0) {

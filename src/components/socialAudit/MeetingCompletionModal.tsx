@@ -5,6 +5,7 @@ import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { SocialAuditRecord } from '@/types/socialAudit';
 import { validateMeetingCompletionDate } from '@/lib/socialAuditAuth';
+import { getEffectiveMeetingDate, getProgressCutoffDate } from '@/lib/dateResolution';
 import { 
   CheckCircle2, AlertTriangle, Calendar, User, Phone, 
   Building2, X, ShieldAlert, Clock, Sparkles, Loader2 
@@ -59,7 +60,7 @@ export default function MeetingCompletionModal({
   };
 
   // Perform client-side preliminary validation
-  const validation = validateMeetingCompletionDate(record.meetingDate, asOfDate);
+  const validation = validateMeetingCompletionDate(getEffectiveMeetingDate(record), getProgressCutoffDate(asOfDate));
 
   const handleConfirm = async () => {
     setErrorMessage(null);
@@ -85,7 +86,7 @@ export default function MeetingCompletionModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           recordId: record.id,
-          meetingDate: record.meetingDate,
+          meetingDate: getEffectiveMeetingDate(record),
           desiredStatus: 'completed',
           userRole: currentUser?.role || 'ddo',
           gpName: record.gpNameUnicode
@@ -101,7 +102,7 @@ export default function MeetingCompletionModal({
       }
 
       // 4. Update store and Firestore
-      markCompleted(record.id, true);
+      if (!markCompleted(record.id, true)) return;
 
       if (onSuccess) onSuccess();
       onClose();

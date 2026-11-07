@@ -9,7 +9,7 @@ import {
   ArrowRight, ShieldCheck, CheckCircle2, Clock
 } from 'lucide-react';
 import { SocialAuditRecord } from '@/types/socialAudit';
-import { isEffectiveDateOnOrBefore } from '@/lib/dateResolution';
+import { isMeetingCompletedEffective } from '@/lib/dateResolution';
 
 interface SearchResultItem {
   id: string;
@@ -90,8 +90,8 @@ export default function GlobalSearchModal() {
           categoryLabel: 'ग्राम पंचायत',
           title: r.gpNameUnicode,
           subtitle: `${r.block === 'Baghpat' ? 'विकास खण्ड बागपत' : 'विकास खण्ड बड़ौत'} • क्र० सं० ${r.sno || '-'} • BRP: ${r.brpName}`,
-          badge: isEffectiveDateOnOrBefore(r, asOfDate) ? 'सम्पन्न' : 'प्रस्तावित',
-          badgeColor: isEffectiveDateOnOrBefore(r, asOfDate) 
+          badge: isMeetingCompletedEffective(r, asOfDate) ? 'सम्पन्न' : 'प्रस्तावित',
+          badgeColor: isMeetingCompletedEffective(r, asOfDate)
             ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
             : 'bg-blue-50 text-blue-800 border-blue-200',
           record: r,

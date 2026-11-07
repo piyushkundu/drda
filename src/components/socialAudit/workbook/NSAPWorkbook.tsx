@@ -15,9 +15,11 @@ import { normalizeKrutiDevText } from '@/lib/fontConversion/normalizeKrutiDev';
 import { processSmartCellText } from '@/lib/fontConversion/smartTextPipeline';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { AuditBlock, NSAPGramPanchayatData } from '@/types/socialAudit';
+import { getNSAPVerification, NSAP_REVIEW_REQUIRED } from '@/lib/nsapVerification';
 import { 
   buildNSAPWorkbookData, 
   extractNSAPDataFromWorkbook,
+  getNSAPSheetRowCount,
   getCellValue 
 } from './nsapWorkbookService';
 import { 
@@ -35,13 +37,16 @@ export default function NSAPWorkbook() {
     setNsapRecords,
     currentUser,
     fontViewMode,
-    setFontViewMode
+    setFontViewMode,
+    nsapWorkbookTargetId,
+    clearNsapWorkbookTarget,
   } = useSocialAuditStore();
 
   const sheetRef = useRef<WorkbookInstance>(null);
   const workbookContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isRecalculatingRef = useRef(false);
 
   // Mounted guard for client-side rendering
   const [mounted, setMounted] = useState(false);
@@ -58,7 +63,7 @@ export default function NSAPWorkbook() {
       try {
         const allSheets = sheetRef.current.getAllSheets();
         const updated = extractNSAPDataFromWorkbook(allSheets, nsapRecords, records);
-        setNsapRecords(updated);
+        if (!setNsapRecords(updated)) return;
       } catch (_) {}
     }
     setFontViewMode(mode);
@@ -71,7 +76,10 @@ export default function NSAPWorkbook() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Active Sheet Index (0 is summary, 1..88 are GPs)
-  const [activeSheetIndex, setActiveSheetIndex] = useState(0);
+  const [activeSheetIndex, setActiveSheetIndex] = useState(() => {
+    if (!nsapWorkbookTargetId) return 0;
+    return records.filter(record => record.hasNSAP).findIndex(record => record.id === nsapWorkbookTargetId) + 1;
+  });
 
   // Cloud save status: 'saved' | 'saving' | 'unsaved'
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
@@ -229,6 +237,25 @@ export default function NSAPWorkbook() {
     }, 120);
     return () => clearTimeout(timer);
   }, []);
+
+  const savePendingSheetChanges = useCallback(() => {
+    if (isEditMode && saveStatus === 'unsaved' && sheetRef.current) {
+      const updated = extractNSAPDataFromWorkbook(sheetRef.current.getAllSheets(), nsapRecords, records);
+      if (!setNsapRecords(updated)) return false;
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      setSaveStatus('saved');
+    }
+    return true;
+  }, [isEditMode, saveStatus, nsapRecords, records, setNsapRecords]);
+
+  useEffect(() => {
+    if (mounted && nsapWorkbookTargetId && sheetRef.current) {
+      if (!savePendingSheetChanges()) return;
+      sheetRef.current.activateSheet({ id: `sheet-${nsapWorkbookTargetId}` });
+      setActiveSheetIndex(nsapGps.findIndex(record => record.id === nsapWorkbookTargetId) + 1);
+      clearNsapWorkbookTarget();
+    }
+  }, [mounted, nsapWorkbookTargetId, clearNsapWorkbookTarget, nsapGps, savePendingSheetChanges]);
 
   // Escape key cancels active Format Painter
   useEffect(() => {
@@ -552,8 +579,11 @@ export default function NSAPWorkbook() {
   // Jump to specific sheet
   const handleJumpToSheet = (sheetIndex: number) => {
     if (!sheetRef.current) return;
+    if (!savePendingSheetChanges()) return;
     try {
-      sheetRef.current.activateSheet({ index: sheetIndex });
+      const id = sheetIndex === 0 ? 'sheet-summary' : `sheet-${nsapGps[sheetIndex - 1]?.id}`;
+      sheetRef.current.activateSheet({ id });
+      // FortuneSheet's imperative API does not invoke activation hooks.
       setActiveSheetIndex(sheetIndex);
     } catch (err) {
       console.error('Failed to activate sheet:', err);
@@ -576,6 +606,8 @@ export default function NSAPWorkbook() {
   // Recalculate summary sheet whenever any GP sheet is modified
   const handleRecalculateSummary = useCallback(() => {
     if (!sheetRef.current) return;
+    if (isRecalculatingRef.current) return;
+    isRecalculatingRef.current = true;
     try {
       const allSheets = sheetRef.current.getAllSheets();
       if (!allSheets || allSheets.length < 2) return;
@@ -588,6 +620,7 @@ export default function NSAPWorkbook() {
       let grandVerifiedFamily = 0;
       let grandVerifiedTotal = 0;
       let grandUnverified = 0;
+      let hasInvalidVerification = false;
       let grandNotReceived = 0;
       let grandIneligible = 0;
       let grandDeceased = 0;
@@ -597,19 +630,25 @@ export default function NSAPWorkbook() {
         const gpSheet = allSheets[s];
         if (!gpSheet) continue;
 
-        const totalBens = parseInt(getCellValue(gpSheet, 5, 2), 10) || 0;
-        const verDirect = parseInt(getCellValue(gpSheet, 5, 3), 10) || 0;
-        const verFamily = parseInt(getCellValue(gpSheet, 5, 4), 10) || 0;
-        const verTotal = parseInt(getCellValue(gpSheet, 5, 5), 10) || (verDirect + verFamily);
+        const totalText = getCellValue(gpSheet, 5, 2);
+        const totalBens = Number(totalText);
+        const verDirect = Number(getCellValue(gpSheet, 5, 3));
+        const verFamily = Number(getCellValue(gpSheet, 5, 4));
+        const verifiedText = getCellValue(gpSheet, 5, 5);
+        const verTotal = verifiedText === '' ? verDirect + verFamily : Number(verifiedText);
+        const verification = getNSAPVerification({ totalBeneficiaries: totalBens, verifiedDirect: verDirect, verifiedFamily: verFamily, verifiedTotal: verTotal });
+        const unverified = totalText === '' ? '' : verification.unverified ?? NSAP_REVIEW_REQUIRED;
+        if (totalText !== '' && !verification.valid) hasInvalidVerification = true;
+        if (String(unverified) !== getCellValue(gpSheet, 5, 7)) {
+          sheetRef.current.setCellValue(5, 7, unverified, { id: gpSheet.id });
+        }
 
         // Count beneficiaries in this sheet
         let inelCount = 0;
         let decCount = 0;
-        let unverCount = 0;
         let notRecvCount = 0;
 
-        for (let r = 5; r <= 50; r++) {
-          if (getCellValue(gpSheet, r, 9)) unverCount++;
+        for (let r = 5; r < getNSAPSheetRowCount(gpSheet); r++) {
           if (getCellValue(gpSheet, r, 12)) notRecvCount++;
           if (getCellValue(gpSheet, r, 15)) inelCount++;
           if (getCellValue(gpSheet, r, 19)) decCount++;
@@ -619,18 +658,20 @@ export default function NSAPWorkbook() {
         grandVerifiedDirect += verDirect;
         grandVerifiedFamily += verFamily;
         grandVerifiedTotal += verTotal;
-        grandUnverified += unverCount;
+        grandUnverified += verification.unverified ?? 0;
         grandNotReceived += notRecvCount;
         grandIneligible += inelCount;
         grandDeceased += decCount;
 
         // Update corresponding row in summary sheet
-        const summaryRow = 5 + (s - 1);
-        sheetRef.current.setCellValue(summaryRow, 2, totalBens || '', { id: 'sheet-summary' });
-        sheetRef.current.setCellValue(summaryRow, 3, verDirect || '', { id: 'sheet-summary' });
-        sheetRef.current.setCellValue(summaryRow, 4, verFamily || '', { id: 'sheet-summary' });
-        sheetRef.current.setCellValue(summaryRow, 5, verTotal || '', { id: 'sheet-summary' });
-        sheetRef.current.setCellValue(summaryRow, 7, unverCount || '', { id: 'sheet-summary' });
+        const gpIndex = nsapGps.findIndex(record => gpSheet.id === `sheet-${record.id}`);
+        if (gpIndex === -1) continue;
+        const summaryRow = 5 + gpIndex;
+        sheetRef.current.setCellValue(summaryRow, 2, totalText === '' ? '' : totalBens, { id: 'sheet-summary' });
+        sheetRef.current.setCellValue(summaryRow, 3, totalText === '' ? '' : verDirect, { id: 'sheet-summary' });
+        sheetRef.current.setCellValue(summaryRow, 4, totalText === '' ? '' : verFamily, { id: 'sheet-summary' });
+        sheetRef.current.setCellValue(summaryRow, 5, totalText === '' ? '' : verTotal, { id: 'sheet-summary' });
+        sheetRef.current.setCellValue(summaryRow, 7, unverified, { id: 'sheet-summary' });
         sheetRef.current.setCellValue(summaryRow, 10, notRecvCount || '', { id: 'sheet-summary' });
         sheetRef.current.setCellValue(summaryRow, 13, inelCount || '', { id: 'sheet-summary' });
         sheetRef.current.setCellValue(summaryRow, 17, decCount || '', { id: 'sheet-summary' });
@@ -642,18 +683,21 @@ export default function NSAPWorkbook() {
       sheetRef.current.setCellValue(totalRow, 3, grandVerifiedDirect, { id: 'sheet-summary' });
       sheetRef.current.setCellValue(totalRow, 4, grandVerifiedFamily, { id: 'sheet-summary' });
       sheetRef.current.setCellValue(totalRow, 5, grandVerifiedTotal, { id: 'sheet-summary' });
-      sheetRef.current.setCellValue(totalRow, 7, grandUnverified, { id: 'sheet-summary' });
+      sheetRef.current.setCellValue(totalRow, 7, hasInvalidVerification ? NSAP_REVIEW_REQUIRED : grandUnverified, { id: 'sheet-summary' });
       sheetRef.current.setCellValue(totalRow, 10, grandNotReceived, { id: 'sheet-summary' });
       sheetRef.current.setCellValue(totalRow, 13, grandIneligible, { id: 'sheet-summary' });
       sheetRef.current.setCellValue(totalRow, 17, grandDeceased, { id: 'sheet-summary' });
     } catch (e) {
       console.error('Error recalculating summary sheet:', e);
+    } finally {
+      isRecalculatingRef.current = false;
     }
-  }, [nsapGps.length]);
+  }, [nsapGps]);
 
   // Hook triggered when a cell is edited
   const afterUpdateCell = useCallback((row: number, column: number, oldValue: any, newValue: any) => {
     if (!sheetRef.current) return;
+    if (isRecalculatingRef.current) return;
 
     if (!isEditMode) {
       showToast('यह वर्कबुक केवल पठन हेतु है। संपादन के लिए कृपया Edit Mode ON करें।', 'warning');
@@ -693,7 +737,10 @@ export default function NSAPWorkbook() {
         setSaveStatus('saving');
         const allSheets = sheetRef.current.getAllSheets();
         const updated = extractNSAPDataFromWorkbook(allSheets, nsapRecords, records);
-        setNsapRecords(updated);
+        if (!setNsapRecords(updated)) {
+          setSaveStatus('unsaved');
+          return;
+        }
         setSaveStatus('saved');
         showToast('परिवर्तन क्लाउड पर सुरक्षित किए गए', 'success');
       }
@@ -740,7 +787,10 @@ export default function NSAPWorkbook() {
       setSaveStatus('saving');
       const allSheets = sheetRef.current.getAllSheets();
       const updated = extractNSAPDataFromWorkbook(allSheets, nsapRecords, records);
-      setNsapRecords(updated);
+      if (!setNsapRecords(updated)) {
+        setSaveStatus('unsaved');
+        return;
+      }
       setSaveStatus('saved');
       showToast(`सफलतापूर्वक ${updated.length} ग्राम पंचायतों का NSAP डेटा क्लाउड पर सुरक्षित हुआ!`, 'success');
     } catch (err: any) {
@@ -798,7 +848,7 @@ export default function NSAPWorkbook() {
   // Confirm Apply Imported Records
   const handleConfirmImport = () => {
     if (!importPreview.records.length) return;
-    setNsapRecords(importPreview.records);
+    if (!setNsapRecords(importPreview.records)) return;
     setImportPreview(prev => ({ ...prev, isOpen: false }));
     showToast(`${importPreview.sheetCount} ग्राम पंचायतों का डेटा सफलतापूर्वक लागू हुआ!`, 'success');
   };
@@ -1185,6 +1235,7 @@ export default function NSAPWorkbook() {
           key={`nsap-workbook-${fontMode}`}
           ref={sheetRef}
           data={initialData}
+          allowEdit={isEditMode}
           lang="en"
           defaultFontSize={10}
           toolbarItems={[
@@ -1197,6 +1248,24 @@ export default function NSAPWorkbook() {
             "screenshot", "search"
           ]}
           hooks={{
+            beforeActivateSheet: savePendingSheetChanges,
+            afterActivateSheet: id => {
+              const index = id === 'sheet-summary' ? 0 : nsapGps.findIndex(record => id === `sheet-${record.id}`) + 1;
+              setActiveSheetIndex(index);
+            },
+            beforeUpdateCell: (row, column) => {
+              if (isRecalculatingRef.current) return true;
+              if (!isEditMode) return false;
+              if (activeSheetIndex === 0 && row >= 5) {
+                showToast('सारांश स्वतः बनता है। संबंधित ग्राम पंचायत की शीट में डेटा बदलें।', 'warning');
+                return false;
+              }
+              if (activeSheetIndex > 0 && row >= 5 && column === 7) {
+                showToast('असत्यापित = कुल लाभार्थी − कुल सत्यापित। कुल या सत्यापित संख्या बदलें।', 'warning');
+                return false;
+              }
+              return true;
+            },
             afterUpdateCell,
             afterSelectionChange
           }}

@@ -2,11 +2,13 @@
 
 import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { useSocialAuditAsOf } from '@/hooks/useSocialAuditAsOf';
 import { renderAuditText } from '@/lib/renderAuditText';
 import { NSAPReportSummary, NSAPReportRow, SocialAuditRecord } from '@/types/socialAudit';
 import { exportNSAPReportExcel } from '@/lib/exportSocialAuditExcel';
 import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
-import { matchesBRP } from '@/lib/brpHelper';
+import { isMeetingCompletedEffective } from '@/lib/dateResolution';
+import { filterRecordsByGlobalFilters } from '@/lib/globalFilterHelper';
 import { getDelhiDateString, formatDelhiDateHindi } from '@/lib/delhiTime';
 import { 
   FileText, Calendar, Download, Printer, CheckCircle2, 
@@ -15,7 +17,8 @@ import {
 } from 'lucide-react';
 
 export default function NSAPReportTab() {
-  const { records, selectedBRP, asOfDate, setAsOfDate, fontViewMode, openEditModal, isEditMode, setActiveTab } = useSocialAuditStore();
+  const { selectedBRP, selectedBlock, dateRange, asOfDate, setAsOfDate, fontViewMode, openEditModal, isEditMode, setActiveTab } = useSocialAuditStore();
+  const { records } = useSocialAuditAsOf();
   const [downloading, setDownloading] = useState(false);
   const [amendedFilter, setAmendedFilter] = useState<'nsap' | 'uptoDate' | 'all10'>('nsap');
   const [amendedBlockFilter, setAmendedBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
@@ -53,9 +56,8 @@ export default function NSAPReportTab() {
 
   // Filter records by global selectedBRP
   const effectiveRecords = useMemo(() => {
-    if (!selectedBRP || selectedBRP === 'all') return records;
-    return records.filter((r) => matchesBRP(r, selectedBRP));
-  }, [records, selectedBRP]);
+    return filterRecordsByGlobalFilters(records, selectedBRP, selectedBlock, dateRange);
+  }, [records, selectedBRP, selectedBlock, dateRange]);
 
   // Generate dynamic NSAP Report calculations based on asOfDate and selected BRP
   const reportSummary: NSAPReportSummary = useMemo(() => {
@@ -141,16 +143,6 @@ export default function NSAPReportTab() {
             >
               <Download className="w-3.5 h-3.5" />
               <span>Excel (कृतिदेव 010)</span>
-            </button>
-
-            <button
-              onClick={() => handleDownload('unicode')}
-              disabled={downloading}
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all active:scale-95"
-              title="यूनिकोड / मंगल में Excel फाइल डाउनलोड करें"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Excel (यूनिकोड)</span>
             </button>
 
             <button
@@ -611,7 +603,7 @@ export default function NSAPReportTab() {
               ) : (
                 reportSummary.rows.flatMap((r) =>
                   r.gramPanchayatsList.map((gp, i) => {
-                    const isCompl = gp.meetingDate <= asOfDate;
+                    const isCompl = isMeetingCompletedEffective(gp, asOfDate);
                     return (
                       <tr key={gp.id} className={`hover:bg-slate-50 ${gp.isAmended ? 'bg-amber-50/50' : ''}`}>
                         <td className="py-2.5 px-3 text-slate-400 font-mono">{i + 1}</td>

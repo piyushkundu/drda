@@ -159,7 +159,7 @@ export default function EditRecordModal() {
       panchayatNirnayCapturedDate: nirnayStatus === 'captured' ? (nirnayCapturedDate || meetingDate) : undefined
     };
 
-    updateRecord(selectedRecordForEdit.id, updates);
+    if (!updateRecord(selectedRecordForEdit.id, updates)) return;
     setHasUnsavedChanges(false);
     closeEditModal();
   };

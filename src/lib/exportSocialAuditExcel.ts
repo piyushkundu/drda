@@ -3,6 +3,7 @@ import { saveAs } from 'file-saver';
 import { SocialAuditRecord, NSAPReportSummary } from '@/types/socialAudit';
 import {
   getEffectiveMeetingDate,
+  isMeetingCompletedEffective,
   isMeetingAmended,
   getOriginalMeetingDate,
   formatDisplayDate
@@ -474,7 +475,7 @@ export async function exportNSAPReportExcel(
 
   const nsapAmendedRecords = summary.allAmendedNSAP || [];
   nsapAmendedRecords.forEach((gp, idx) => {
-    const isCompleted = gp.meetingDate <= summary.asOfDate;
+    const isCompleted = isMeetingCompletedEffective(gp, summary.asOfDate);
     const oldDate = gp.amendmentDetails?.originalDate || gp.originalMeetingDate || '';
     const newDate = gp.meetingDate;
     const oldBRP = isKruti ? 'gfjfd\'ku ¼8859660315½' : 'हरिकिशन (8859660315) - कार्यमुक्त';
@@ -551,7 +552,7 @@ export async function exportNSAPReportExcel(
   let counter = 1;
   summary.rows.forEach((blockRow) => {
     blockRow.gramPanchayatsList.forEach((gp) => {
-      const isCompl = gp.meetingDate <= summary.asOfDate;
+      const isCompl = isMeetingCompletedEffective(gp, summary.asOfDate);
       const dRow = detailSheet.addRow([
         counter++,
         isKruti ? gp.blockKrutiDev : gp.blockHindi,

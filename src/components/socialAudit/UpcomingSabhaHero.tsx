@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { renderAuditText } from '@/lib/renderAuditText';
 import { SocialAuditRecord } from '@/types/socialAudit';
-import { getEffectiveMeetingDate, isEffectiveDateOnOrBefore } from '@/lib/dateResolution';
+import { getEffectiveMeetingDate, isMeetingCompletedEffective } from '@/lib/dateResolution';
 import { 
   Calendar, Clock, MapPin, Phone, Users, Shield, 
   AlertCircle, CheckCircle2, ChevronRight, Sparkles,
@@ -56,20 +56,20 @@ export default function UpcomingSabhaHero() {
       const all = records.filter((r) => r.block === blockName);
       const total = all.length; // 44
 
-      const completed = all.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
-      const remaining = all.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
+      const completed = all.filter((r) => isMeetingCompletedEffective(r, asOfDate));
+      const remaining = all.filter((r) => !isMeetingCompletedEffective(r, asOfDate));
 
       const amendedAll = all.filter((r) => r.isAmended);
-      const amendedCompleted = amendedAll.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
-      const amendedRemaining = amendedAll.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
+      const amendedCompleted = amendedAll.filter((r) => isMeetingCompletedEffective(r, asOfDate));
+      const amendedRemaining = amendedAll.filter((r) => !isMeetingCompletedEffective(r, asOfDate));
 
       const nsapAll = all.filter((r) => r.hasNSAP);
-      const nsapCompleted = nsapAll.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
-      const nsapRemaining = nsapAll.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
+      const nsapCompleted = nsapAll.filter((r) => isMeetingCompletedEffective(r, asOfDate));
+      const nsapRemaining = nsapAll.filter((r) => !isMeetingCompletedEffective(r, asOfDate));
 
       const mgnregaAll = all.filter((r) => r.hasMGNREGA);
-      const mgnregaCompleted = mgnregaAll.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
-      const mgnregaRemaining = mgnregaAll.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
+      const mgnregaCompleted = mgnregaAll.filter((r) => isMeetingCompletedEffective(r, asOfDate));
+      const mgnregaRemaining = mgnregaAll.filter((r) => !isMeetingCompletedEffective(r, asOfDate));
 
       return {
         total,
@@ -693,7 +693,7 @@ export default function UpcomingSabhaHero() {
         {/* 10 Amended Grid Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-1">
           {records.filter(r => r.isAmended).map(gp => {
-            const isCompleted = gp.meetingDate <= asOfDate || gp.status === 'completed';
+            const isCompleted = isMeetingCompletedEffective(gp, asOfDate);
             const diff = getDaysDiff(gp.meetingDate);
 
             return (

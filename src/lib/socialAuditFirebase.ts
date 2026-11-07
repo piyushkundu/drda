@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { doc, getDoc, setDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import { SocialAuditRecord, NSAPGramPanchayatData, SocialAuditActivityLog, VRPMember } from '@/types/socialAudit';
+import { SocialAuditRecord, NSAPGramPanchayatData, SocialAuditActivityLog, VRPMember, MonthlyReportDraft } from '@/types/socialAudit';
 
 export const SOCIAL_AUDIT_DOC_ID = 'baghpat-2026-27';
 
@@ -9,6 +9,7 @@ export interface SocialAuditFirestoreDoc {
   nsapRecords: NSAPGramPanchayatData[];
   activityLogs?: SocialAuditActivityLog[];
   vrpMembers?: VRPMember[];
+  monthlyReportDrafts?: Record<string, MonthlyReportDraft>;
   asOfDate: string;
   isLiveSync?: boolean;
   updatedAt: string;
@@ -52,6 +53,7 @@ let pendingData: {
   nsapRecords: NSAPGramPanchayatData[];
   activityLogs?: SocialAuditActivityLog[];
   vrpMembers?: VRPMember[];
+  monthlyReportDrafts?: Record<string, MonthlyReportDraft>;
   asOfDate: string;
   isLiveSync?: boolean;
 } | null = null;
@@ -67,11 +69,12 @@ export async function saveSocialAuditToFirestore(
   isLiveSync: boolean = true,
   immediate: boolean = false,
   activityLogs?: SocialAuditActivityLog[],
-  vrpMembers?: VRPMember[]
+  vrpMembers?: VRPMember[],
+  monthlyReportDrafts?: Record<string, MonthlyReportDraft>
 ): Promise<boolean> {
   if (typeof window === 'undefined') return false;
 
-  pendingData = { records, nsapRecords, activityLogs, vrpMembers, asOfDate, isLiveSync };
+  pendingData = { records, nsapRecords, activityLogs, vrpMembers, monthlyReportDrafts, asOfDate, isLiveSync };
 
   if (saveTimeout) {
     clearTimeout(saveTimeout);
@@ -90,6 +93,7 @@ export async function saveSocialAuditToFirestore(
         nsapRecords: toSave.nsapRecords,
         activityLogs: toSave.activityLogs ? toSave.activityLogs.slice(-200) : [],
         vrpMembers: toSave.vrpMembers,
+        ...(toSave.monthlyReportDrafts !== undefined ? { monthlyReportDrafts: toSave.monthlyReportDrafts } : {}),
         asOfDate: toSave.asOfDate,
         isLiveSync: toSave.isLiveSync,
         updatedAt: new Date().toISOString(),
@@ -98,7 +102,7 @@ export async function saveSocialAuditToFirestore(
       };
 
       const cleanPayload = sanitizeForFirestore(payload);
-      await setDoc(docRef, cleanPayload);
+      await setDoc(docRef, cleanPayload, { mergeFields: Object.keys(cleanPayload) });
       return true;
     } catch (err) {
       console.error('Failed to save social audit data to Firebase:', err);

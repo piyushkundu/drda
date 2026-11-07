@@ -7,13 +7,13 @@
 import { 
   SocialAuditRecord, 
   NSAPGramPanchayatData, 
-  NSAPBeneficiaryRecord,
-  NSAPBeneficiaryCategory
+  NSAPBeneficiaryRecord
 } from '@/types/socialAudit';
 import { unicodeToKrutiDev } from '@/lib/fontConversion/unicodeToKrutiDev';
 import { krutiDevToUnicode } from '@/lib/fontConversion/krutiDevToUnicode';
 import { normalizeKrutiDevText } from '@/lib/fontConversion/normalizeKrutiDev';
 import { processSmartCellText, classifyText } from '@/lib/fontConversion/smartTextPipeline';
+import { getNSAPVerification, NSAP_REVIEW_REQUIRED } from '@/lib/nsapVerification';
 import { 
   NSAP_COLUMN_DEFS, 
   STANDARD_HEADER_MERGES, 
@@ -222,6 +222,7 @@ export function buildSummarySheet(
   let grandVerifiedFamily = 0;
   let grandVerifiedTotal = 0;
   let grandUnverified = 0;
+  let hasInvalidVerification = false;
   let grandNotReceived = 0;
   let grandIneligible = 0;
   let grandDeceased = 0;
@@ -236,13 +237,15 @@ export function buildSummarySheet(
 
     const inelCount = nsapData?.beneficiaries?.filter(b => b.category === 'ineligible').length || 0;
     const decCount = nsapData?.beneficiaries?.filter(b => b.category === 'deceased').length || 0;
-    const unverCount = nsapData?.beneficiaries?.filter(b => b.category === 'unverified').length || nsapData?.unverifiedCount || 0;
+    const verification = nsapData ? getNSAPVerification(nsapData) : undefined;
+    const unverCount = verification?.unverified ?? 0;
+    if (verification && !verification.valid) hasInvalidVerification = true;
     const notRecvCount = nsapData?.beneficiaries?.filter(b => b.category === 'other').length || 0;
 
     const totalBens = nsapData?.totalBeneficiaries || 0;
     const verDirect = nsapData?.verifiedDirect || 0;
     const verFamily = nsapData?.verifiedFamily || 0;
-    const verTotal = nsapData?.verifiedTotal || (verDirect + verFamily);
+    const verTotal = nsapData?.verifiedTotal ?? (verDirect + verFamily);
     const irregAmount = nsapData?.financialIrregularityAmount || 0;
 
     grandTotalBeneficiaries += totalBens;
@@ -266,17 +269,17 @@ export function buildSummarySheet(
     // Col 1: GP Name
     celldata.push({ r, c: 1, v: createCell(gpName, { fontName, ht: 1 }) });
     // Col 2: Total Beneficiaries
-    celldata.push({ r, c: 2, v: createCell(totalBens || '', { fontName: 'Arial', ht: 0, isText: false }) });
+    celldata.push({ r, c: 2, v: createCell(nsapData ? totalBens : '', { fontName: 'Arial', ht: 0, isText: false }) });
     // Col 3: Direct verified
-    celldata.push({ r, c: 3, v: createCell(verDirect || '', { fontName: 'Arial', ht: 0, isText: false }) });
+    celldata.push({ r, c: 3, v: createCell(nsapData ? verDirect : '', { fontName: 'Arial', ht: 0, isText: false }) });
     // Col 4: Family verified
-    celldata.push({ r, c: 4, v: createCell(verFamily || '', { fontName: 'Arial', ht: 0, isText: false }) });
+    celldata.push({ r, c: 4, v: createCell(nsapData ? verFamily : '', { fontName: 'Arial', ht: 0, isText: false }) });
     // Col 5: Total verified
-    celldata.push({ r, c: 5, v: createCell(verTotal || '', { fontName: 'Arial', ht: 0, isText: false }) });
+    celldata.push({ r, c: 5, v: createCell(nsapData ? verTotal : '', { fontName: 'Arial', ht: 0, isText: false }) });
     // Col 6: Reason for non-contact
     celldata.push({ r, c: 6, v: createCell(unverReason, { fontName, ht: 1 }) });
     // Col 7: Unverified count
-    celldata.push({ r, c: 7, v: createCell(unverCount || '', { fontName: 'Arial', ht: 0, isText: false }) });
+    celldata.push({ r, c: 7, v: createCell(nsapData ? (verification?.unverified ?? NSAP_REVIEW_REQUIRED) : '', { fontName: 'Arial', ht: 0, isText: verification?.unverified === null, color: verification?.valid === false ? '#be123c' : undefined }) });
     // Col 10: Not received count
     celldata.push({ r, c: 10, v: createCell(notRecvCount || '', { fontName: 'Arial', ht: 0, isText: false }) });
     // Col 13: Ineligible count
@@ -324,7 +327,7 @@ export function buildSummarySheet(
   celldata.push({
     r: totalRowIndex,
     c: 7,
-    v: createCell(grandUnverified, { fontName: 'Arial', bold: true, ht: 0, bg: '#fef08a', isText: false })
+    v: createCell(hasInvalidVerification ? NSAP_REVIEW_REQUIRED : grandUnverified, { fontName: 'Arial', bold: true, ht: 0, bg: '#fef08a', isText: hasInvalidVerification })
   });
   celldata.push({
     r: totalRowIndex,
@@ -424,6 +427,11 @@ export function buildGPSheet(
   celldata.push({ r: 5, c: 4, v: createCell(nsapData?.verifiedFamily ?? '', { fontName: 'Arial', ht: 0, vt: 0, isText: false }) });
   celldata.push({ r: 5, c: 5, v: createCell(nsapData?.verifiedTotal ?? '', { fontName: 'Arial', ht: 0, vt: 0, isText: false }) });
   celldata.push({ r: 5, c: 6, v: createCell(unverReason, { fontName, ht: 1, vt: 0 }) });
+  const verification = nsapData ? getNSAPVerification(nsapData) : undefined;
+  celldata.push({ r: 5, c: 7, v: {
+    ...createCell(nsapData ? (verification?.unverified ?? NSAP_REVIEW_REQUIRED) : '', { fontName: 'Arial', ht: 0, bold: true, bg: '#fff7ed', color: verification?.valid === false ? '#be123c' : '#9a3412', isText: verification?.unverified === null }),
+    ...(nsapData ? { f: '=IF(OR(C6<0,F6<0,F6>C6),"जाँच आवश्यक",C6-F6)' } : {}),
+  } });
 
   // Irregularities & Remarks (Row 5)
   celldata.push({ r: 5, c: 21, v: createCell(irregNotes || '', { fontName: typeof irregNotes === 'number' ? 'Arial' : fontName, ht: typeof irregNotes === 'number' ? 0 : 1, vt: 0 }) });
@@ -438,7 +446,6 @@ export function buildGPSheet(
     if (unver[i]) {
       const b = unver[i];
       const bName = formatHindiCellText(fontMode, b.nameUnicode, b.nameKrutiDev);
-      celldata.push({ r, c: 7, v: createCell(i + 1, { fontName: 'Arial', ht: 0 }) });
       celldata.push({ r, c: 8, v: createCell(bName, { fontName, ht: 1 }) });
       celldata.push({ r, c: 9, v: createCell(b.registrationId, { fontName: 'Arial', ht: 0, isText: true }) });
     }
@@ -559,15 +566,20 @@ export function getCellValue(sheet: any, r: number, c: number): string {
   if (sheet.data && sheet.data[r] && sheet.data[r][c] !== undefined) {
     const cell = sheet.data[r][c];
     if (cell === null || cell === undefined) return '';
-    return String(cell.m !== undefined ? cell.m : (cell.v !== undefined ? cell.v : '')).trim();
+    return String(cell.v !== undefined ? cell.v : (cell.m !== undefined ? cell.m : '')).trim();
   }
   if (sheet.celldata) {
     const found = sheet.celldata.find((cell: any) => cell.r === r && cell.c === c);
     if (found && found.v !== undefined) {
-      return String(found.v.m !== undefined ? found.v.m : (found.v.v !== undefined ? found.v.v : '')).trim();
+      return String(found.v.v !== undefined ? found.v.v : (found.v.m !== undefined ? found.v.m : '')).trim();
     }
   }
   return '';
+}
+
+export function getNSAPSheetRowCount(sheet: { row?: number; data?: unknown[][]; celldata?: { r: number }[] }): number {
+  const sparseRows = (sheet.celldata || []).reduce((max, cell) => Math.max(max, cell.r + 1), 0);
+  return Math.max(sheet.row || 0, sheet.data?.length || 0, sparseRows);
 }
 
 /**
@@ -594,13 +606,15 @@ export function extractNSAPDataFromWorkbook(
     if (!sheet) continue;
 
     // Identify corresponding SocialAuditRecord from the 47 NSAP GPs
-    const record = nsapGps[sIdx - 1];
+    const record = nsapGps.find(record => sheet.id === `sheet-${record.id}`);
     if (!record) continue;
+    const previous = existingNsapRecords.find(item => item.rosterRecordId === record.id || item.id === record.id);
 
-    const totalBeneficiaries = parseInt(getCellValue(sheet, 5, 2), 10) || 0;
-    const verifiedDirect = parseInt(getCellValue(sheet, 5, 3), 10) || 0;
-    const verifiedFamily = parseInt(getCellValue(sheet, 5, 4), 10) || 0;
-    const verifiedTotal = parseInt(getCellValue(sheet, 5, 5), 10) || (verifiedDirect + verifiedFamily);
+    const totalBeneficiaries = Number(getCellValue(sheet, 5, 2));
+    const verifiedDirect = Number(getCellValue(sheet, 5, 3));
+    const verifiedFamily = Number(getCellValue(sheet, 5, 4));
+    const verifiedTotalText = getCellValue(sheet, 5, 5);
+    const verifiedTotal = verifiedTotalText === '' ? verifiedDirect + verifiedFamily : Number(verifiedTotalText);
     const unverifiedReason = getCellValue(sheet, 5, 6);
     const financialIrregText = getCellValue(sheet, 5, 21);
     const financialIrregularityAmount = parseFloat(financialIrregText.replace(/[^0-9.]/g, '')) || 0;
@@ -627,7 +641,7 @@ export function extractNSAPDataFromWorkbook(
     };
 
     const beneficiaries: NSAPBeneficiaryRecord[] = [];
-    const maxRowScan = Math.min(sheet.row || 80, 100);
+    const maxRowScan = getNSAPSheetRowCount(sheet);
 
     for (let r = 5; r < maxRowScan; r++) {
       // 1. Unverified (Cols 8: Name, 9: RegId)
@@ -641,7 +655,7 @@ export function extractNSAPDataFromWorkbook(
           categoryHindi: 'सत्यापन नहीं किया जा सका',
           nameUnicode: parsed.nameUnicode,
           nameKrutiDev: parsed.nameKrutiDev,
-          registrationId: unverRegId.replace(/[^0-9A-Za-z]/g, '')
+          registrationId: unverRegId
         });
       }
 
@@ -656,7 +670,7 @@ export function extractNSAPDataFromWorkbook(
           categoryHindi: 'लाभ प्राप्त नहीं हुआ',
           nameUnicode: parsed.nameUnicode,
           nameKrutiDev: parsed.nameKrutiDev,
-          registrationId: notRecvRegId.replace(/[^0-9A-Za-z]/g, '')
+          registrationId: notRecvRegId
         });
       }
 
@@ -672,7 +686,7 @@ export function extractNSAPDataFromWorkbook(
           categoryHindi: 'अपात्र लाभार्थी',
           nameUnicode: parsed.nameUnicode,
           nameKrutiDev: parsed.nameKrutiDev,
-          registrationId: inelRegId.replace(/[^0-9A-Za-z]/g, ''),
+          registrationId: inelRegId,
           reason: inelReason || 'लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं'
         });
       }
@@ -689,7 +703,7 @@ export function extractNSAPDataFromWorkbook(
           categoryHindi: 'सत्यापित में मृतक',
           nameUnicode: parsed.nameUnicode,
           nameKrutiDev: parsed.nameKrutiDev,
-          registrationId: decRegId.replace(/[^0-9A-Za-z]/g, ''),
+          registrationId: decRegId,
           deathDate: decDate,
           reason: 'मृत्यु'
         });
@@ -697,27 +711,35 @@ export function extractNSAPDataFromWorkbook(
     }
 
     // Only update if there are either beneficiaries or stats
-    if (totalBeneficiaries > 0 || beneficiaries.length > 0 || verifiedTotal > 0) {
+    if (previous || totalBeneficiaries > 0 || beneficiaries.length > 0 || verifiedTotal > 0) {
+      const usedBeneficiaryIds = new Set<string>();
       resultMap.set(record.id, {
-        id: `nsap-${record.id}`,
+        ...previous,
+        id: previous?.id || `nsap-${record.id}`,
         rosterRecordId: record.id,
         sno: record.sno,
         gpNameKrutiDev: record.gpNameKrutiDev,
         gpNameUnicode: record.gpNameUnicode,
         block: record.block,
-        meetingDate: record.meetingDate,
+        meetingDate: previous?.meetingDate || record.meetingDate,
         totalBeneficiaries,
         verifiedDirect,
         verifiedFamily,
         verifiedTotal,
         unverifiedReason,
-        unverifiedCount: beneficiaries.filter(b => b.category === 'unverified').length,
+        unverifiedCount: getNSAPVerification({ totalBeneficiaries, verifiedDirect, verifiedFamily, verifiedTotal }).unverified ?? undefined,
         financialIrregularityAmount,
         irregularityNotes: financialIrregText,
         responsiblePersons,
         otherNotes,
-        beneficiaries,
-        recordedDate: new Date().toISOString()
+        beneficiaries: beneficiaries.map(beneficiary => {
+          const old = previous?.beneficiaries.find(item => item.category === beneficiary.category && item.registrationId === beneficiary.registrationId && !usedBeneficiaryIds.has(item.id));
+          if (!old) return beneficiary;
+          usedBeneficiaryIds.add(old.id);
+          const sameName = beneficiary.nameUnicode === old.nameUnicode || beneficiary.nameKrutiDev === old.nameKrutiDev;
+          return { ...old, ...beneficiary, id: old.id, ...(sameName ? { nameUnicode: old.nameUnicode, nameKrutiDev: old.nameKrutiDev } : {}) };
+        }),
+        recordedDate: previous?.recordedDate || new Date().toISOString()
       });
     }
   }

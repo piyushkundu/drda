@@ -3,6 +3,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { useSocialAuditAsOf } from '@/hooks/useSocialAuditAsOf';
+import NSAPGramPanchayatCard from './NSAPGramPanchayatCard';
+import { getNSAPVerification, sumNSAPUnverified, NSAP_REVIEW_REQUIRED } from '@/lib/nsapVerification';
 import { renderAuditText } from '@/lib/renderAuditText';
 import { 
   NSAPGramPanchayatData, 
@@ -22,11 +25,9 @@ import {
 
 export default function NSAPDataTab() {
   const { 
-    records, 
     selectedBRP,
     selectedBlock,
     dateRange,
-    nsapRecords, 
     asOfDate, 
     fontViewMode,
     isEditMode,
@@ -36,8 +37,10 @@ export default function NSAPDataTab() {
     addNsapBeneficiary,
     addNsapBeneficiariesBatch,
     deleteNsapBeneficiary,
-    setActiveTab
+    setActiveTab,
+    openNsapWorkbook,
   } = useSocialAuditStore();
+  const { records, nsapRecords } = useSocialAuditAsOf();
 
   // Active section view mode: 'completed' | 'pending' | 'report' | 'beneficiaries' | 'upcoming'
   const [activeSection, setActiveSection] = useState<'completed' | 'pending' | 'report' | 'beneficiaries' | 'upcoming'>('completed');
@@ -71,7 +74,6 @@ export default function NSAPDataTab() {
   const [modalTotalBens, setModalTotalBens] = useState<number>(0);
   const [modalVerDirect, setModalVerDirect] = useState<number>(0);
   const [modalVerFamily, setModalVerFamily] = useState<number>(0);
-  const [modalUnverCount, setModalUnverCount] = useState<number>(0);
   const [modalUnverReason, setModalUnverReason] = useState<string>('');
   
   // 2. Edit GP Modal states
@@ -83,7 +85,6 @@ export default function NSAPDataTab() {
   const [editTotalBens, setEditTotalBens] = useState<number>(0);
   const [editVerDirect, setEditVerDirect] = useState<number>(0);
   const [editVerFamily, setEditVerFamily] = useState<number>(0);
-  const [editUnverCount, setEditUnverCount] = useState<number>(0);
   const [editUnverReason, setEditUnverReason] = useState<string>('');
   const [editFinIrreg, setEditFinIrreg] = useState<number>(0);
   const [editIrregNotes, setEditIrregNotes] = useState<string>('');
@@ -143,29 +144,6 @@ export default function NSAPDataTab() {
     return renderAuditText(fontViewMode, unicodeText, krutiText, options);
   };
 
-  // Baseline recorded Roster IDs (19 Gram Panchayats from Excel data)
-  const baselineRecordedRosterIds = useMemo(() => new Set([
-    'baghpat-1',  // अ0 शाहपुर पदडा (अहमदपुर शाहपुर पदडा)
-    'baghpat-4',  // बाधू / बाघू
-    'baghpat-5',  // बली
-    'baghpat-8',  // बुढेड़ा / बुढेरा
-    'baghpat-11', // धनाैंरा सिल्वर नगर / धनौरा सिल्वरनगर
-    'baghpat-16', // फै. निनाना / फैजुल्लापुर निनाना
-    'baghpat-17', // गाध़ी / गांधी
-    'baghpat-19', // गौरीपुरजवाहरनगर
-    'baghpat-20', // ग्वालीखेड़ा / ग्वालीखेड़ा
-    'baghpat-25', // खेड़की
-    'baghpat-28', // नैथला
-    'baghpat-30', // निरोजपुर गूर्जर
-    'baraut-7',   // बावली
-    'baraut-9',   // बड़का देवीगढ़ / बड़का
-    'baraut-11',  // भूड़पुर / बुढपुर
-    'baraut-12',  // बिजरोल / बिजरौल
-    'baraut-13',  // बिराल
-    'baraut-15',  // चौबाली / चौबली
-    'baraut-16'   // ढिकाना
-  ]), []);
-
   // Global filtering (BRP + Block + Date Range) for NSAP Data
   const effectiveRecords = useMemo(() => {
     return filterRecordsByGlobalFilters(records, selectedBRP, selectedBlock, dateRange);
@@ -174,26 +152,25 @@ export default function NSAPDataTab() {
   const assignedGpRecordIds = useMemo(() => new Set(effectiveRecords.map((r) => r.id)), [effectiveRecords]);
   const assignedGpNames = useMemo(() => new Set(effectiveRecords.map((r) => r.gpNameUnicode?.trim())), [effectiveRecords]);
 
-  // Combined set of all recorded roster IDs (baseline + dynamically added records)
+  // Only work present by the selected cutoff can count as recorded.
   const recordedRosterIdSet = useMemo(() => {
-    const s = new Set(baselineRecordedRosterIds);
+    const s = new Set<string>();
     nsapRecords.forEach(nr => {
       if (nr.rosterRecordId) {
         s.add(nr.rosterRecordId);
       }
     });
     return s;
-  }, [baselineRecordedRosterIds, nsapRecords]);
+  }, [nsapRecords]);
 
   // Effective NSAP records belonging to selected BRP's assigned Gram Panchayats
   const effectiveNsapRecords = useMemo(() => {
-    if (!selectedBRP || selectedBRP === 'all') return nsapRecords;
     return nsapRecords.filter((nr) => 
       (nr.rosterRecordId && assignedGpRecordIds.has(nr.rosterRecordId)) ||
       assignedGpRecordIds.has(nr.id) ||
       (nr.gpNameUnicode && assignedGpNames.has(nr.gpNameUnicode.trim()))
     );
-  }, [nsapRecords, selectedBRP, assignedGpRecordIds, assignedGpNames]);
+  }, [nsapRecords, assignedGpRecordIds, assignedGpNames]);
 
   // All NSAP Gram Panchayats from main roster assigned to selected BRP
   const allNsapRosterRecords = useMemo(() => {
@@ -268,20 +245,18 @@ export default function NSAPDataTab() {
     let totalVerified = 0;
     let point7_ineligible = 0;
     let point8_deceased = 0;
-    let totalUnverified = 0;
     let point9_financialIrregularity = 0;
 
     effectiveNsapRecords.forEach(gp => {
       point4_totalBeneficiaries += (gp.totalBeneficiaries || 0);
       point5_verifiedDirect += (gp.verifiedDirect || 0);
       point6_verifiedFamily += (gp.verifiedFamily || 0);
-      totalVerified += (gp.verifiedTotal || ((gp.verifiedDirect || 0) + (gp.verifiedFamily || 0)));
+      totalVerified += getNSAPVerification(gp).verified;
       point9_financialIrregularity += (gp.financialIrregularityAmount || 0);
 
       if (gp.beneficiaries && Array.isArray(gp.beneficiaries)) {
         point7_ineligible += gp.beneficiaries.filter(b => b.category === 'ineligible').length;
         point8_deceased += gp.beneficiaries.filter(b => b.category === 'deceased').length;
-        totalUnverified += gp.beneficiaries.filter(b => b.category === 'unverified').length;
       }
     });
 
@@ -301,7 +276,7 @@ export default function NSAPDataTab() {
       totalVerified,
       point7_ineligible,
       point8_deceased,
-      totalUnverified,
+      totalUnverified: sumNSAPUnverified(effectiveNsapRecords),
       point9_financialIrregularity,
     };
   }, [allNsapRosterRecords, effectiveNsapRecords, asOfDate]);
@@ -378,7 +353,6 @@ export default function NSAPDataTab() {
     setModalTotalBens(100);
     setModalVerDirect(85);
     setModalVerFamily(10);
-    setModalUnverCount(5);
     setModalUnverReason('घर पर ताला बंद मिला');
     setIsAddModalOpen(true);
   };
@@ -405,14 +379,14 @@ export default function NSAPDataTab() {
       verifiedDirect: modalVerDirect,
       verifiedFamily: modalVerFamily,
       verifiedTotal: modalVerDirect + modalVerFamily,
-      unverifiedCount: modalUnverCount,
+      unverifiedCount: modalTotalBens - modalVerDirect - modalVerFamily,
       unverifiedReason: modalUnverReason,
       financialIrregularityAmount: 0,
       beneficiaries: [],
       recordedDate: asOfDate
     };
 
-    addNsapRecord(newRecord);
+    if (!addNsapRecord(newRecord)) return;
     setIsAddModalOpen(false);
     setSelectedGpForAdd('');
     showToast(`ग्राम पंचायत ${selectedGpForAdd} का नया डेटा सफलतापूर्वक जोड़ा गया!`);
@@ -427,12 +401,13 @@ export default function NSAPDataTab() {
     setEditTotalBens(gp.totalBeneficiaries || 0);
     setEditVerDirect(gp.verifiedDirect || 0);
     setEditVerFamily(gp.verifiedFamily || 0);
-    setEditUnverCount(gp.unverifiedCount || 0);
     setEditUnverReason(gp.unverifiedReason || '');
     setEditFinIrreg(gp.financialIrregularityAmount || 0);
     setEditIrregNotes(gp.irregularityNotes || '');
     setEditRespPersons(gp.responsiblePersons || '');
-    setIsEditModalOpen(true);
+    const roster = records.find(record => record.id === gp.rosterRecordId || record.id === gp.id || (record.block === gp.block && record.gpNameUnicode.trim() === gp.gpNameUnicode.trim()));
+    if (roster) openNsapWorkbook(roster.id);
+    else showToast('इस पंचायत की रोस्टर शीट नहीं मिली। कृपया ग्राम पंचायत का लिंक जाँचें।');
   };
 
   // Submit Edit GP Record
@@ -446,18 +421,18 @@ export default function NSAPDataTab() {
 
     const updatedTotalVer = editVerDirect + editVerFamily;
 
-    updateNsapRecord(editingGpId, {
+    if (!updateNsapRecord(editingGpId, {
       meetingDate: editMeetingDate,
       totalBeneficiaries: editTotalBens,
       verifiedDirect: editVerDirect,
       verifiedFamily: editVerFamily,
       verifiedTotal: updatedTotalVer,
-      unverifiedCount: editUnverCount,
+      unverifiedCount: editTotalBens - updatedTotalVer,
       unverifiedReason: editUnverReason,
       financialIrregularityAmount: editFinIrreg,
       irregularityNotes: editIrregNotes,
       responsiblePersons: editRespPersons,
-    });
+    })) return;
 
     setIsEditModalOpen(false);
     showToast(`ग्राम पंचायत ${editingGpName} का डेटा सफलतापूर्वक अपडेट हो गया!`);
@@ -472,14 +447,14 @@ export default function NSAPDataTab() {
     }
     if (!targetGpIdForBen || !newBenName || !newBenRegId) return;
 
-    addNsapBeneficiary(targetGpIdForBen, {
+    if (!addNsapBeneficiary(targetGpIdForBen, {
       category: newBenCategory,
       categoryHindi: newBenCategory === 'ineligible' ? 'अपात्र लाभार्थी' : newBenCategory === 'deceased' ? 'सत्यापित में मृतक' : 'सत्यापन नहीं हो सका',
       nameUnicode: newBenName,
       registrationId: newBenRegId,
       reason: newBenReason,
       deathDate: newBenDeathDate
-    });
+    })) return;
 
     setIsBenModalOpen(false);
     setNewBenName('');
@@ -641,7 +616,7 @@ export default function NSAPDataTab() {
     }
     if (!excelTargetGpId || parsedBeneficiaries.length === 0) return;
 
-    addNsapBeneficiariesBatch(excelTargetGpId, parsedBeneficiaries);
+    if (!addNsapBeneficiariesBatch(excelTargetGpId, parsedBeneficiaries)) return;
     
     const targetGp = nsapRecords.find(r => r.id === excelTargetGpId);
     const gpName = targetGp?.gpNameUnicode || 'ग्राम पंचायत';
@@ -658,12 +633,12 @@ export default function NSAPDataTab() {
     const rows = filteredBeneficiaries.map((b, idx) => [
       idx + 1,
       b.block === 'Baghpat' ? 'बागपत' : 'बड़ौत',
-      `"${b.gpNameUnicode}"`,
-      `"${b.nameUnicode}"`,
-      `"${b.registrationId}"`,
-      `"${b.categoryHindi}"`,
-      `"${b.reason || b.deathDate || ''}"`
-    ].join(','));
+      b.gpNameUnicode,
+      b.nameUnicode,
+      b.registrationId,
+      b.categoryHindi,
+      b.reason || b.deathDate || ''
+    ].map(value => `"${String(value).replace(/"/g, '""')}"`).join(','));
 
     const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -851,6 +826,13 @@ export default function NSAPDataTab() {
           </div>
         </div>
 
+        <div className="mt-4 grid grid-cols-3 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+          <div><p className="text-[11px] font-semibold text-slate-500">कुल लाभार्थी</p><p className="mt-1 font-mono text-lg font-black text-slate-900">{monthlyReportStats.point4_totalBeneficiaries}</p></div>
+          <div><p className="text-[11px] font-semibold text-emerald-700">कुल सत्यापित</p><p className="mt-1 font-mono text-lg font-black text-emerald-900">{monthlyReportStats.totalVerified}</p></div>
+          <div title="कुल लाभार्थी − कुल सत्यापित"><p className="text-[11px] font-semibold text-amber-700">कुल असत्यापित</p><p className="mt-1 font-mono text-lg font-black text-amber-900">{monthlyReportStats.totalUnverified ?? NSAP_REVIEW_REQUIRED}</p></div>
+          {monthlyReportStats.totalUnverified === null && <p className="col-span-3 text-[11px] font-medium text-rose-800">कुछ पंचायतों में कुल सत्यापित, कुल लाभार्थियों से अधिक है। उनके स्रोत आँकड़े जाँचें; असत्यापित का गलत कुल नहीं दिखाया गया है।</p>}
+        </div>
+
         {/* Section Navigation Pills */}
         <div className="mt-5 pt-4 border-t border-slate-200 flex flex-wrap items-center gap-2">
           {/* Tab 1: सम्पन्न ग्राम पंचायतें */}
@@ -1023,146 +1005,19 @@ export default function NSAPDataTab() {
 
           {/* Cards Grid View */}
           {recordedViewMode === 'cards' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {filteredRecordedGps.map((gp, idx) => {
-                const inelCount = gp.beneficiaries.filter(b => b.category === 'ineligible').length;
-                const decCount = gp.beneficiaries.filter(b => b.category === 'deceased').length;
-                const hasDeceased = decCount > 0;
-
-                return (
-                  <div
-                    key={gp.id}
-                    className={`p-4 rounded-2xl transition-all space-y-3 shadow-sm group relative ${
-                      !hasDeceased
-                        ? 'bg-amber-50/70 border-2 border-amber-400 shadow-sm'
-                        : 'bg-white border border-slate-200/90 hover:border-emerald-400'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                            SR# {idx + 1}
-                          </span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            gp.block === 'Baghpat' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                          }`}>
-                            {gp.block === 'Baghpat' ? 'बागपत' : 'बड़ौत'}
-                          </span>
-
-                          {/* Zero Deceased Alert Pill on the Card */}
-                          {!hasDeceased && (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 animate-pulse">
-                              <AlertTriangle className="w-3 h-3 text-amber-600" />
-                              0 मृतक (अलर्ट)
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-base font-black text-slate-900 pt-1">
-                          {renderText(gp.gpNameUnicode, gp.gpNameKrutiDev)}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Edit Button (Visible only in Edit Mode) */}
-                        {isEditMode && (
-                          <button
-                            onClick={() => handleOpenEditForGp(gp)}
-                            className="p-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs transition-all cursor-pointer"
-                            title="इस पंचायत का डेटा एडिट करें"
-                          >
-                            <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                          </button>
-                        )}
-
-                        <span className="text-[10px] font-black px-2.5 py-1 rounded-xl border text-emerald-800 bg-emerald-50 border-emerald-200 flex items-center gap-1 shrink-0">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                          <span>सम्पन्न</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-slate-500 flex items-center justify-between pt-1 border-t border-slate-100">
-                      <span>बैठक संपन्न तिथि:</span>
-                      <strong className="text-slate-800 font-mono">{formatDateHi(gp.meetingDate)}</strong>
-                    </div>
-
-                    {/* 4 Stat Boxes (With Warning Amber Highlight if Deceased === 0) */}
-                    <div className="grid grid-cols-4 gap-1.5 text-center">
-                      <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-                        <div className="text-[10px] text-slate-500 font-medium">कुल पेंशनर</div>
-                        <div className="text-sm font-black text-slate-900 font-mono">{gp.totalBeneficiaries}</div>
-                      </div>
-                      <div className="p-2 rounded-xl bg-teal-50 border border-teal-200">
-                        <div className="text-[10px] text-teal-700 font-medium">सत्यापित</div>
-                        <div className="text-sm font-black text-teal-800 font-mono">{gp.verifiedTotal}</div>
-                      </div>
-                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200">
-                        <div className="text-[10px] text-amber-700 font-medium">अपात्र</div>
-                        <div className="text-sm font-black text-amber-800 font-mono">{inelCount}</div>
-                      </div>
-
-                      {/* Deceased Stat Box: Glowing Warning if 0, Rose if > 0 */}
-                      <div className={`p-2 rounded-xl transition-all ${
-                        !hasDeceased
-                          ? 'bg-amber-100 border-2 border-amber-400 text-amber-900 ring-2 ring-amber-300 animate-pulse'
-                          : 'bg-rose-50 border border-rose-200 text-rose-800'
-                      }`}>
-                        <div className={`text-[10px] font-bold flex items-center justify-center gap-0.5 ${
-                          !hasDeceased ? 'text-amber-900' : 'text-rose-800'
-                        }`}>
-                          {!hasDeceased && <AlertTriangle className="w-2.5 h-2.5 text-amber-600" />}
-                          <span>मृतक</span>
-                        </div>
-                        <div className={`text-sm font-black font-mono ${
-                          !hasDeceased ? 'text-amber-900' : 'text-rose-800'
-                        }`}>
-                          {decCount} {!hasDeceased && '⚠️'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons Toolbar */}
-                    <div className="grid grid-cols-3 gap-1.5 pt-1">
-                      {/* View Beneficiaries */}
-                      <button
-                        onClick={() => {
-                          setBenGpFilter(gp.gpNameUnicode);
-                          setActiveSection('beneficiaries');
-                        }}
-                        className="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center justify-center gap-1 border border-slate-200 transition-all"
-                        title="लाभार्थी विवरण देखें"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>विवरण ({gp.beneficiaries.length})</span>
-                      </button>
-
-                      {/* Edit Mode Action Buttons (Visible only in Edit Mode) */}
-                      {isEditMode && (
-                        <>
-                          <button
-                            onClick={() => handleOpenExcelPaste(gp.id)}
-                            className="py-1.5 px-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer"
-                            title="एक्सेल से सीधे कॉपी-पेस्ट करें"
-                          >
-                            <ClipboardPaste className="w-3.5 h-3.5 text-cyan-600" />
-                            <span>एक्सेल पेस्ट</span>
-                          </button>
-
-                          <button
-                            onClick={() => handleOpenEditForGp(gp)}
-                            className="py-1.5 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-200"
-                            title="संख्या व बैठक डेटा एडिट करें"
-                          >
-                            <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                            <span>एडिट</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredRecordedGps.map((gp, idx) => (
+                <NSAPGramPanchayatCard
+                  key={gp.id}
+                  record={gp}
+                  index={idx}
+                  fontViewMode={fontViewMode}
+                  isEditMode={isEditMode}
+                  onView={() => { setBenGpFilter(gp.gpNameUnicode); setActiveSection('beneficiaries'); }}
+                  onOpenWorkbook={() => handleOpenEditForGp(gp)}
+                  onPaste={() => handleOpenExcelPaste(gp.id)}
+                />
+              ))}
             </div>
           )}
 
@@ -1195,7 +1050,7 @@ export default function NSAPDataTab() {
                   {filteredRecordedGps.map((gp, idx) => {
                     const inelCount = gp.beneficiaries.filter(b => b.category === 'ineligible').length;
                     const decCount = gp.beneficiaries.filter(b => b.category === 'deceased').length;
-                    const unverCount = gp.beneficiaries.filter(b => b.category === 'unverified').length;
+                    const unverCount = getNSAPVerification(gp).unverified;
                     const hasDeceased = decCount > 0;
                     const isExpanded = expandedGpId === gp.id;
 
@@ -1246,7 +1101,7 @@ export default function NSAPDataTab() {
                               </span>
                             )}
                           </td>
-                          <td className="py-3 px-3 text-center font-mono text-slate-500">{unverCount || gp.unverifiedCount || 0}</td>
+                          <td className="py-3 px-3 text-center font-mono text-amber-800 font-bold" title="कुल लाभार्थी − कुल सत्यापित">{unverCount ?? NSAP_REVIEW_REQUIRED}</td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-1">
                               {/* Edit GP Button (Visible only in Edit Mode) */}
@@ -1610,7 +1465,7 @@ export default function NSAPDataTab() {
                 <tr className="hover:bg-slate-50">
                   <td className="py-3.5 px-3 text-center font-bold text-slate-500">(ख)</td>
                   <td className="py-3.5 px-6 font-semibold text-slate-900">
-                    माह अक्टूबर तक कुल प्रस्तावित ग्राम पंचायतों की संख्या (दिनांक {formatDateHi(asOfDate)} तक)
+                    चयनित तिथि तक कुल प्रस्तावित ग्राम पंचायतों की संख्या (दिनांक {formatDateHi(asOfDate)} तक)
                   </td>
                   <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">{monthlyReportStats.baghpatProposedUpToDate}</td>
                   <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">{monthlyReportStats.barautProposedUpToDate}</td>
@@ -1755,7 +1610,7 @@ export default function NSAPDataTab() {
                 <option value="all">सभी श्रेणियाँ ({allBeneficiaries.length})</option>
                 <option value="ineligible">अपात्र लाभार्थी ({monthlyReportStats.point7_ineligible})</option>
                 <option value="deceased">सत्यापित में मृतक ({monthlyReportStats.point8_deceased})</option>
-                <option value="unverified">असत्यापित ({monthlyReportStats.totalUnverified})</option>
+                <option value="unverified">असत्यापित नाम/ID ({allBeneficiaries.filter(beneficiary => beneficiary.category === 'unverified').length})</option>
               </select>
 
               {/* GP Filter */}
@@ -2066,8 +1921,9 @@ export default function NSAPDataTab() {
                   <label className="block text-[11px] font-semibold text-slate-600 mb-1">असत्यापित संख्या:</label>
                   <input
                     type="number"
-                    value={modalUnverCount}
-                    onChange={(e) => setModalUnverCount(parseInt(e.target.value) || 0)}
+                    value={modalTotalBens - modalVerDirect - modalVerFamily}
+                    readOnly
+                    title="कुल लाभार्थी − कुल सत्यापित; यह संख्या स्वतः निकलती है"
                     disabled={!isEditMode}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs text-slate-800 disabled:bg-slate-100 disabled:cursor-not-allowed font-mono"
                   />
@@ -2238,10 +2094,10 @@ export default function NSAPDataTab() {
                   <label className="block text-[11px] font-semibold text-slate-700 mb-1">असत्यापित संख्या:</label>
                   <input
                     type="number"
-                    value={editUnverCount}
-                    onChange={(e) => setEditUnverCount(parseInt(e.target.value) || 0)}
+                    value={editTotalBens - editVerDirect - editVerFamily}
+                    readOnly
+                    title="कुल लाभार्थी − कुल सत्यापित; यह संख्या स्वतः निकलती है"
                     disabled={!isEditMode}
-                    readOnly={!isEditMode}
                     className={`w-full border rounded-xl p-2 text-xs font-mono ${
                       !isEditMode ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-slate-200 text-slate-800'
                     }`}

@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { useSocialAuditAsOf } from '@/hooks/useSocialAuditAsOf';
 import { renderAuditText } from '@/lib/renderAuditText';
 import { PanchayatNirnayStatus, SocialAuditRecord } from '@/types/socialAudit';
 import { matchesBRP } from '@/lib/brpHelper';
@@ -16,7 +17,6 @@ import {
 
 export default function PanchayatNirnayTab() {
   const { 
-    records, 
     selectedBRP,
     selectedBlock,
     dateRange,
@@ -26,6 +26,7 @@ export default function PanchayatNirnayTab() {
     updatePanchayatNirnayStatus,
     openEditModal 
   } = useSocialAuditStore();
+  const { records } = useSocialAuditAsOf();
 
   const [selectedBlockFilter, setSelectedBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'captured' | 'due_pending' | 'upcoming' | 'not_captured'>('all');
@@ -190,7 +191,7 @@ export default function PanchayatNirnayTab() {
       alert('त्रुटि: पंचायत निर्णय स्थिति बदलने के लिए कृपया पहले Header से Edit Mode ON करें।');
       return;
     }
-    updatePanchayatNirnayStatus(id, newStatus);
+    if (!updatePanchayatNirnayStatus(id, newStatus)) return;
     setJustUpdatedId(id);
     setTimeout(() => setJustUpdatedId(null), 1500);
   };

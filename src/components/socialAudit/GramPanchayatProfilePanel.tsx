@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { renderAuditText } from '@/lib/renderAuditText';
+import { isMeetingCompletedEffective } from '@/lib/dateResolution';
+import { getNSAPVerification, NSAP_REVIEW_REQUIRED } from '@/lib/nsapVerification';
 import { 
   X, Building2, Calendar, User, Phone, ShieldCheck, CheckCircle2, 
   AlertTriangle, Clock, Edit3, Check, FileSpreadsheet, Smartphone, 
@@ -61,8 +63,7 @@ export default function GramPanchayatProfilePanel() {
   const r = selectedGPForProfile;
 
   // Determine meeting completion
-  const isCompleted = r.status === 'completed' || 
-    (r.meetingDate <= asOfDate && (!r.isAmended || r.gpNameUnicode?.includes('खेड़की') || r.gpNameUnicode?.includes('खड़की')));
+  const isCompleted = isMeetingCompletedEffective(r, asOfDate);
   const isAmended = Boolean(r.isAmended);
   const isUpcoming = !isCompleted && r.meetingDate > asOfDate;
   const isOverdue = !isCompleted && r.meetingDate <= asOfDate;
@@ -570,7 +571,7 @@ export default function GramPanchayatProfilePanel() {
                     </div>
                     <div className="bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100">
                       <div className="text-[10px] text-emerald-900 font-semibold uppercase">सत्यापित</div>
-                      <div className="text-base font-black text-emerald-900 mt-0.5">{matchingNsap.verifiedTotal || matchingNsap.verifiedDirect}</div>
+                      <div className="text-base font-black text-emerald-900 mt-0.5">{getNSAPVerification(matchingNsap).verified}</div>
                     </div>
                     <div className="bg-rose-50/60 p-2.5 rounded-xl border border-rose-100">
                       <div className="text-[10px] text-rose-900 font-semibold uppercase">मृतक / अपात्र</div>
@@ -581,7 +582,7 @@ export default function GramPanchayatProfilePanel() {
                     <div className="bg-amber-50/60 p-2.5 rounded-xl border border-amber-100">
                       <div className="text-[10px] text-amber-900 font-semibold uppercase">अपुष्ट / शेष</div>
                       <div className="text-base font-black text-amber-900 mt-0.5">
-                        {matchingNsap.unverifiedCount || 0}
+                        {getNSAPVerification(matchingNsap).unverified ?? NSAP_REVIEW_REQUIRED}
                       </div>
                     </div>
                   </div>

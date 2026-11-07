@@ -486,13 +486,6 @@ export default function CalendarTableTab() {
                     <span>कृतिदेव 010 फ़ॉन्ट में</span>
                     <span className="text-[10px] text-slate-500 font-sans">शासकीय मुद्रण हेतु</span>
                   </button>
-                  <button
-                    onClick={() => handleDownloadPDF('unicode')}
-                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-800 font-bold flex items-center justify-between"
-                  >
-                    <span>यूनिकोड / मंगल फ़ॉन्ट में</span>
-                    <span className="text-[10px] text-slate-500">मानक प्रारूप</span>
-                  </button>
                   {selectedBRP && selectedBRP !== 'all' && (
                     <>
                       <div className="my-1 border-t border-slate-100" />
@@ -537,13 +530,6 @@ export default function CalendarTableTab() {
                   >
                     <span>कृतिदेव 010 फ़ॉन्ट में</span>
                     <span className="text-[10px] text-slate-500 font-sans">शासकीय मुद्रण हेतु</span>
-                  </button>
-                  <button
-                    onClick={() => handleDownloadExcel('unicode')}
-                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-800 font-bold flex items-center justify-between"
-                  >
-                    <span>यूनिकोड / मंगल फ़ॉन्ट में</span>
-                    <span className="text-[10px] text-slate-500">मानक प्रारूप</span>
                   </button>
                 </div>
               )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
-import { canUserEnableEditMode, validateMeetingCompletionDate } from '@/lib/socialAuditAuth';
+import { canUserEnableEditMode } from '@/lib/socialAuditAuth';
 import { SocialAuditRecord } from '@/types/socialAudit';
 
 /**
@@ -12,6 +12,7 @@ export function useEditMode() {
   const setIsEditMode = useSocialAuditStore((s) => s.setIsEditMode);
   const currentUser = useSocialAuditStore((s) => s.currentUser);
   const asOfDate = useSocialAuditStore((s) => s.asOfDate);
+  const canCompleteMeeting = useSocialAuditStore((s) => s.canCompleteMeeting);
   const openCompletionModal = useSocialAuditStore((s) => s.openCompletionModal);
   const openEditModal = useSocialAuditStore((s) => s.openEditModal);
   const openAddModal = useSocialAuditStore((s) => s.openAddModal);
@@ -50,7 +51,7 @@ export function useEditMode() {
    * Validates if a meeting is eligible for completion
    */
   const checkMeetingCompletion = (record: SocialAuditRecord | null | undefined) => {
-    return validateMeetingCompletionDate(record?.meetingDate, asOfDate);
+    return canCompleteMeeting(record);
   };
 
   return {

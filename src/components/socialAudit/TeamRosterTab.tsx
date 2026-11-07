@@ -1,22 +1,26 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
 import { VRPMember, AuditBlock, VRPTeamCode } from '@/types/socialAudit';
 import { exportVRPRosterExcel } from '@/lib/exportVRPExcel';
 import { matchesBRP } from '@/lib/brpHelper';
-import { isEffectiveDateOnOrBefore } from '@/lib/dateResolution';
+import { isMeetingCompletedEffective } from '@/lib/dateResolution';
+import { socialAuditRecordAsOf } from '@/lib/socialAuditAsOf';
+import { buildVrpAuditProgress, vrpProfilesForMember } from '@/lib/vrpAuditProgress';
+import VrpAuditProgressPanel from './VrpAuditProgressPanel';
 import { 
   Users, Phone, PhoneCall, Copy, Check, Plus, Trash2, Edit3, 
-  Search, Filter, Download, Shield, CheckCircle2, 
-  AlertCircle, RefreshCw, X, ChevronLeft, ChevronRight, Sparkles,
-  UserPlus, MapPin, Building2, UserX, ArrowRight, Layers
+  Search, Download, Shield,
+  RefreshCw, X, ChevronLeft, ChevronRight,
+  UserPlus, Building2
 } from 'lucide-react';
 
 export default function TeamRosterTab() {
   const { 
     records, 
     asOfDate, 
+    liveDelhiDate,
     openEditModal, 
     openGPProfile, 
     isEditMode, 
@@ -32,7 +36,19 @@ export default function TeamRosterTab() {
   } = useSocialAuditStore();
 
   // Tab View state
-  const [activeSubTab, setActiveSubTab] = useState<'active_teams' | 'master_roster' | 'brp_supervisors'>('active_teams');
+  const [activeSubTab, setActiveSubTab] = useState<'active_teams' | 'master_roster' | 'brp_supervisors' | 'vrp_progress'>('active_teams');
+  const [progressMemberId, setProgressMemberId] = useState<string | null>(null);
+  useEffect(() => { if (activeSubTab === 'vrp_progress') document.getElementById('vrp-progress-panel')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, [activeSubTab, progressMemberId]);
+  const vrpProgress = useMemo(() => buildVrpAuditProgress(records, vrpMembers, asOfDate, liveDelhiDate, { block: selectedBlock, brp: selectedBRP }), [records, vrpMembers, asOfDate, liveDelhiDate, selectedBlock, selectedBRP]);
+  const openMemberProgress = (member: VRPMember) => { setProgressMemberId(member.id); setActiveSubTab('vrp_progress'); };
+  const memberProgressButton = (member: VRPMember) => {
+    const profiles = vrpProfilesForMember(vrpProgress, member.id);
+    const certain = profiles.filter(profile => profile.member?.id === member.id);
+    const completed = new Set(certain.flatMap(profile => profile.duties.filter(duty => duty.status === 'completed').map(duty => duty.record.id))).size;
+    const total = new Set(certain.flatMap(profile => profile.duties.map(duty => duty.record.id))).size;
+    const review = profiles.some(profile => !profile.member);
+    return <button type="button" onClick={() => openMemberProgress(member)} className="mt-2 w-full rounded-lg border border-blue-100 bg-blue-50/70 px-2 py-2 text-left text-[10px] leading-relaxed text-blue-900"><strong>{certain.length ? `${completed} सम्पन्न / ${total} कैलेंडर ड्यूटी` : review ? 'कैलेंडर नाम का मिलान शेष' : 'कैलेंडर में निश्चित नाम नहीं मिला'}</strong>{review && profiles.filter(profile => !profile.member).map(profile => <span key={profile.id} className="block text-amber-800">संभावित: {profile.name} ({profile.locality}) • {profile.counts.completed} सम्पन्न; कोड मिलान शेष</span>)}<span className="mt-0.5 block font-bold text-blue-700">ऑडिट / ग्राम सभा विवरण →</span></button>;
+  };
 
   // Copy feedback state
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
@@ -226,12 +242,12 @@ export default function TeamRosterTab() {
   // Section 3: BRP & Supervisor Data (Preserved)
   // ==========================================================================
   const effectiveRecords = useMemo(() => {
-    return records.filter((r) => {
+    return records.map(record => socialAuditRecordAsOf(record, asOfDate, liveDelhiDate)).filter((r) => {
       if (!matchesBRP(r, selectedBRP)) return false;
       if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
       return true;
     });
-  }, [records, selectedBRP, selectedBlock]);
+  }, [records, selectedBRP, selectedBlock, asOfDate, liveDelhiDate]);
 
   const brpDirectory = useMemo(() => {
     const map = new Map<string, {
@@ -276,7 +292,7 @@ export default function TeamRosterTab() {
       const item = map.get(phone);
       if (item) {
         item.allGPs.push(r);
-        if (isEffectiveDateOnOrBefore(r, asOfDate)) {
+        if (isMeetingCompletedEffective(r, asOfDate, liveDelhiDate)) {
           item.completedGPs.push(r);
         } else {
           item.upcomingGPs.push(r);
@@ -285,7 +301,7 @@ export default function TeamRosterTab() {
     });
 
     return Array.from(map.values()).sort((a, b) => b.allGPs.length - a.allGPs.length);
-  }, [effectiveRecords, asOfDate]);
+  }, [effectiveRecords, asOfDate, liveDelhiDate]);
 
   const filteredBrpDirectory = useMemo(() => {
     if (!selectedBRP || selectedBRP === 'all') return brpDirectory;
@@ -447,6 +463,7 @@ export default function TeamRosterTab() {
                 </div>
 
                 {/* Qualification & Gender tags */}
+                {memberProgressButton(member)}
                 <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
                   <span className="truncate max-w-[150px]" title={member.qualification}>
                     {member.qualification}
@@ -578,6 +595,7 @@ export default function TeamRosterTab() {
 
       {/* Navigation Sub-Tabs */}
       <div className="flex border-b border-slate-200 bg-white rounded-xl p-1.5 shadow-sm gap-1 overflow-x-auto">
+        <button type="button" onClick={() => { setProgressMemberId(null); setActiveSubTab('vrp_progress'); }} className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs font-bold md:text-sm ${activeSubTab === 'vrp_progress' ? 'bg-blue-700 text-white shadow-sm' : 'text-blue-800 hover:bg-blue-50'}`}><Users className="h-4 w-4" />VRP ऑडिट प्रगति • ग्राम सभाएँ<span className="rounded-full bg-blue-100 px-2 py-0.5 font-mono text-[11px] text-blue-900">{vrpProgress.profiles.length}</span></button>
         <button
           onClick={() => setActiveSubTab('active_teams')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold transition whitespace-nowrap cursor-pointer ${
@@ -629,6 +647,8 @@ export default function TeamRosterTab() {
           </span>
         </button>
       </div>
+
+      {activeSubTab === 'vrp_progress' && <VrpAuditProgressPanel progress={vrpProgress} memberId={progressMemberId} onClearMember={() => setProgressMemberId(null)} />}
 
       {/* ===================================================================== */}
       {/* SUB-TAB 1: ब्लॉक सक्रिय टीमें (3-3 व 4-4 सदस्य टीमें) */}
@@ -847,7 +867,7 @@ export default function TeamRosterTab() {
               <span className="text-[11px] text-slate-500 font-semibold px-2">टीम फ़िल्टर:</span>
               <select
                 value={blockFilter}
-                onChange={(e) => { setBlockFilter(e.target.value as any); setCurrentPage(1); }}
+                onChange={(e) => { setBlockFilter(e.target.value as typeof blockFilter); setCurrentPage(1); }}
                 className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
               >
                 <option value="all">सभी ({totalVRPs})</option>
@@ -872,7 +892,7 @@ export default function TeamRosterTab() {
               <span className="text-[11px] text-slate-500 font-semibold px-2">लिंग:</span>
               <select
                 value={genderFilter}
-                onChange={(e) => { setGenderFilter(e.target.value as any); setCurrentPage(1); }}
+                onChange={(e) => { setGenderFilter(e.target.value as typeof genderFilter); setCurrentPage(1); }}
                 className="bg-transparent text-xs font-medium text-slate-700 focus:outline-none cursor-pointer"
               >
                 <option value="all">सभी</option>
@@ -886,7 +906,7 @@ export default function TeamRosterTab() {
               <span className="text-[11px] text-slate-500 font-semibold px-2">आधार:</span>
               <select
                 value={aadharFilter}
-                onChange={(e) => { setAadharFilter(e.target.value as any); setCurrentPage(1); }}
+                onChange={(e) => { setAadharFilter(e.target.value as typeof aadharFilter); setCurrentPage(1); }}
                 className="bg-transparent text-xs font-medium text-slate-700 focus:outline-none cursor-pointer"
               >
                 <option value="all">सभी</option>
@@ -902,6 +922,7 @@ export default function TeamRosterTab() {
               <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
                 <tr>
                   <th className="py-2.5 px-3 w-12 text-center">क्र०</th>
+                  <th className="py-2.5 px-3 min-w-48">कैलेंडर ऑडिट / ग्राम सभाएँ</th>
                   <th className="py-2.5 px-3 w-32">कार्मिक कोड</th>
                   <th className="py-2.5 px-3">नाम (हिंदी / English)</th>
                   <th className="py-2.5 px-3 w-40">मोबाइल नंबर</th>
@@ -915,7 +936,7 @@ export default function TeamRosterTab() {
               <tbody className="divide-y divide-slate-100 font-medium">
                 {paginatedMasterRoster.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-8 text-slate-500">
+                    <td colSpan={10} className="text-center py-8 text-slate-500">
                       कोई कार्मिक रिकॉर्ड नहीं मिला। फ़िल्टर बदल कर देखें।
                     </td>
                   </tr>
@@ -929,6 +950,7 @@ export default function TeamRosterTab() {
                     return (
                       <tr key={member.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-2.5 px-3 text-center text-slate-400 font-mono">{rowNumber}</td>
+                        <td className="py-2.5 px-3">{memberProgressButton(member)}</td>
                         <td className="py-2.5 px-3 font-mono font-semibold text-slate-800">
                           {member.empCode}
                         </td>
@@ -1471,9 +1493,9 @@ export default function TeamRosterTab() {
                     onChange={(e) => setNewVrpData({ ...newVrpData, assignedSubTeam: e.target.value as VRPTeamCode })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold disabled:opacity-40"
                   >
-                    <option value="Team A">टीम 'ए' (Team A)</option>
-                    <option value="Team B">टीम 'बी' (Team B)</option>
-                    <option value="Team C">टीम 'सी' (Team C)</option>
+                    <option value="Team A">टीम ए (Team A)</option>
+                    <option value="Team B">टीम बी (Team B)</option>
+                    <option value="Team C">टीम सी (Team C)</option>
                   </select>
                 </div>
               </div>
@@ -1483,7 +1505,7 @@ export default function TeamRosterTab() {
                   <label className="block font-semibold text-slate-700 mb-1">लिंग:</label>
                   <select
                     value={newVrpData.gender}
-                    onChange={(e) => setNewVrpData({ ...newVrpData, gender: e.target.value as any })}
+                    onChange={(e) => setNewVrpData({ ...newVrpData, gender: e.target.value as VRPMember['gender'] })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
                   >
                     <option value="Male">पुरुष (Male)</option>
@@ -1495,7 +1517,7 @@ export default function TeamRosterTab() {
                   <label className="block font-semibold text-slate-700 mb-1">आधार स्थिति:</label>
                   <select
                     value={newVrpData.aadharStatus}
-                    onChange={(e) => setNewVrpData({ ...newVrpData, aadharStatus: e.target.value as any })}
+                    onChange={(e) => setNewVrpData({ ...newVrpData, aadharStatus: e.target.value as VRPMember['aadharStatus'] })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
                   >
                     <option value="Verified">सत्यापित (Verified)</option>
@@ -1623,9 +1645,9 @@ export default function TeamRosterTab() {
                     })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold disabled:opacity-40"
                   >
-                    <option value="Team A">टीम 'ए' (Team A)</option>
-                    <option value="Team B">टीम 'बी' (Team B)</option>
-                    <option value="Team C">टीम 'सी' (Team C)</option>
+                    <option value="Team A">टीम ए (Team A)</option>
+                    <option value="Team B">टीम बी (Team B)</option>
+                    <option value="Team C">टीम सी (Team C)</option>
                   </select>
                 </div>
 
@@ -1633,7 +1655,7 @@ export default function TeamRosterTab() {
                   <label className="block font-semibold text-slate-700 mb-1">आधार स्थिति:</label>
                   <select
                     value={editingMember.aadharStatus}
-                    onChange={(e) => setEditingMember({ ...editingMember, aadharStatus: e.target.value as any })}
+                    onChange={(e) => setEditingMember({ ...editingMember, aadharStatus: e.target.value as VRPMember['aadharStatus'] })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
                   >
                     <option value="Verified">सत्यापित</option>
@@ -1647,7 +1669,7 @@ export default function TeamRosterTab() {
                   <label className="block font-semibold text-slate-700 mb-1">लिंग:</label>
                   <select
                     value={editingMember.gender}
-                    onChange={(e) => setEditingMember({ ...editingMember, gender: e.target.value as any })}
+                    onChange={(e) => setEditingMember({ ...editingMember, gender: e.target.value as VRPMember['gender'] })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
                   >
                     <option value="Male">पुरुष</option>
@@ -1659,7 +1681,7 @@ export default function TeamRosterTab() {
                   <label className="block font-semibold text-slate-700 mb-1">कार्य स्थिति:</label>
                   <select
                     value={editingMember.employeeStatus}
-                    onChange={(e) => setEditingMember({ ...editingMember, employeeStatus: e.target.value as any })}
+                    onChange={(e) => setEditingMember({ ...editingMember, employeeStatus: e.target.value as VRPMember['employeeStatus'] })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
                   >
                     <option value="Working">कार्यरत (Working)</option>

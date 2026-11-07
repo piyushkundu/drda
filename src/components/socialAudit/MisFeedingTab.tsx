@@ -2,6 +2,8 @@
 
 import React, { useMemo, useState } from 'react';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { useSocialAuditAsOf } from '@/hooks/useSocialAuditAsOf';
+import { isMeetingCompletedEffective } from '@/lib/dateResolution';
 import { renderAuditText } from '@/lib/renderAuditText';
 import { MisAuditStatus, SocialAuditRecord } from '@/types/socialAudit';
 import { matchesBRP } from '@/lib/brpHelper';
@@ -15,7 +17,6 @@ import {
 
 export default function MisFeedingTab() {
   const { 
-    records, 
     selectedBRP,
     selectedBlock,
     dateRange,
@@ -25,6 +26,7 @@ export default function MisFeedingTab() {
     updateMisStatus,
     openEditModal 
   } = useSocialAuditStore();
+  const { records } = useSocialAuditAsOf();
 
   const [selectedBlockFilter, setSelectedBlockFilter] = useState<'all' | 'Baghpat' | 'Baraut'>('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'fed' | 'all_pending' | 'due_pending' | 'pending_nsap' | 'upcoming'>('all');
@@ -59,16 +61,7 @@ export default function MisFeedingTab() {
 
   // Helper to determine completed meetings
   const isMeetingCompleted = (r: SocialAuditRecord) => {
-    if (r.status === 'cancelled') return false;
-    if (r.status === 'completed') return true;
-    if (r.isAmended) {
-      return (
-        r.meetingDate <= asOfDate ||
-        (r.gpNameUnicode?.includes('खेड़की') ?? false) ||
-        (r.gpNameUnicode?.includes('खड़की') ?? false)
-      );
-    }
-    return r.meetingDate <= asOfDate;
+    return isMeetingCompletedEffective(r, asOfDate);
   };
 
   // Detailed Metrics computation strictly respecting asOfDate and selected BRP
@@ -221,7 +214,7 @@ export default function MisFeedingTab() {
       alert('त्रुटि: MIS फीडिंग स्थिति बदलने के लिए कृपया पहले Header से Edit Mode ON करें।');
       return;
     }
-    updateMisStatus(id, newStatus);
+    if (!updateMisStatus(id, newStatus)) return;
     setJustUpdatedId(id);
     setTimeout(() => setJustUpdatedId(null), 1500);
   };

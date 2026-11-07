@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { getEffectiveMeetingDate } from '@/lib/dateResolution';
+import { REPORT_CATALOG } from '@/lib/socialAuditReports';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -158,9 +159,9 @@ export default function SocialAuditSidebar({
     {
       id: 'reports',
       label: 'रिपोर्ट सेंटर',
-      sublabel: 'Central Report Center (9 Reports)',
+      sublabel: `Central Report Center (${REPORT_CATALOG.length} Reports)`,
       icon: FileBarChart2,
-      badge: '9 रिपोर्ट',
+      badge: `${REPORT_CATALOG.length} रिपोर्ट`,
       badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-200',
       iconColor: 'text-emerald-800 bg-emerald-50 border-emerald-200',
     },

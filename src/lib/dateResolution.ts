@@ -5,6 +5,17 @@
  */
 
 import { SocialAuditRecord } from '@/types/socialAudit';
+import { getDelhiDateString } from './delhiTime';
+
+/** A future report date cannot turn work after the real IST date into progress. */
+export function getProgressCutoffDate(reportDate: string, today = getDelhiDateString()): string {
+  return reportDate > today ? today : reportDate;
+}
+
+// Preserve the existing historical progress when manual confirmation is introduced.
+// Meetings after this rollout date must remain pending until explicitly completed,
+// including after their scheduled date has passed.
+export const LEGACY_COMPLETION_THROUGH = '2026-11-07';
 
 /**
  * Returns the single effective meeting date for a Social Audit record.
@@ -100,18 +111,22 @@ export function isEffectiveDateOnOrBefore(
 }
 
 /**
- * Helper to determine if a meeting is completed based on effective meeting date.
- * Rule: Meeting is completed as of cutoffDate ONLY if its effective meeting date <= cutoffDate.
- * A meeting scheduled in the future relative to cutoffDate can NEVER be considered completed.
+ * Historical baseline is retained through the manual-confirmation rollout date.
+ * Later meetings require an explicit completed status and a completion date by cutoff.
+ * A future report date never advances actual work beyond the real IST date.
  */
 export function isMeetingCompletedEffective(
   record: SocialAuditRecord,
-  cutoffDate: string
+  cutoffDate: string,
+  today = getDelhiDateString()
 ): boolean {
-  if (record.status === 'cancelled') return false;
+  if (record.status === 'cancelled' || record.rescheduleStatus === 'pending') return false;
   const effectiveDate = getEffectiveMeetingDate(record);
   if (!effectiveDate) return false;
-  return effectiveDate <= cutoffDate;
+  const progressCutoff = getProgressCutoffDate(cutoffDate, today);
+  if (effectiveDate > progressCutoff) return false;
+  if (effectiveDate <= LEGACY_COMPLETION_THROUGH) return true;
+  return record.status === 'completed' && (record.completedDate || effectiveDate) <= progressCutoff;
 }
 
 /**

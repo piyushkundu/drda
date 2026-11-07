@@ -1,5 +1,6 @@
 import { SocialAuditRecord, NSAPReportSummary, NSAPReportRow } from '@/types/socialAudit';
-import { getEffectiveMeetingDate } from './dateResolution';
+import { getEffectiveMeetingDate, isMeetingCompletedEffective } from './dateResolution';
+import { socialAuditRecordAsOf } from './socialAuditAsOf';
 
 /**
  * Calculates official NSAP (National Social Assistance Programme) Social Audit
@@ -7,7 +8,8 @@ import { getEffectiveMeetingDate } from './dateResolution';
  * Reused identically across NSAPReportTab and ExecutiveDashboardTab.
  */
 export function calculateNSAPReportSummary(records: SocialAuditRecord[], asOfDate: string): NSAPReportSummary {
-  const nsapRecords = records.filter((r) => r.hasNSAP);
+  const reportingRecords = records.map(record => socialAuditRecordAsOf(record, asOfDate));
+  const nsapRecords = reportingRecords.filter((r) => r.hasNSAP);
 
   const computeBlock = (
     blockName: 'Baghpat' | 'Baraut',
@@ -34,8 +36,7 @@ export function calculateNSAPReportSummary(records: SocialAuditRecord[], asOfDat
     // Strictly date-bounded: effective meeting date MUST be on or before asOfDate.
     // A meeting scheduled in the future relative to asOfDate can NEVER be considered completed.
     const completedUpTo = proposedUpTo.filter((r) => {
-      const effDate = getEffectiveMeetingDate(r);
-      return effDate <= asOfDate;
+      return isMeetingCompletedEffective(r, asOfDate);
     });
 
     // All amended in the whole session for this block
@@ -70,8 +71,8 @@ export function calculateNSAPReportSummary(records: SocialAuditRecord[], asOfDat
     totalAmendedInFY: row1.totalAmendedInFY + row2.totalAmendedInFY
   };
 
-  const allAmendedNSAP = records.filter((r) => r.hasNSAP && r.isAmended);
-  const allAmendedOverall = records.filter((r) => r.isAmended);
+  const allAmendedNSAP = reportingRecords.filter((r) => r.hasNSAP && r.isAmended);
+  const allAmendedOverall = reportingRecords.filter((r) => r.isAmended);
 
   const formatDateHiShort = (dStr: string) => {
     if (!dStr) return '';

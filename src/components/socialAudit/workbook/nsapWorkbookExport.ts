@@ -7,10 +7,11 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { 
   SocialAuditRecord, 
-  NSAPGramPanchayatData, 
-  NSAPBeneficiaryRecord 
+  NSAPGramPanchayatData
 } from '@/types/socialAudit';
-import { NSAP_COLUMN_DEFS } from './nsapWorkbookTemplate';
+import { NSAP_REVIEW_REQUIRED } from '@/lib/nsapVerification';
+import { getCellValue, extractNSAPDataFromWorkbook } from './nsapWorkbookService';
+import { matchNSAPWorkbookSheet } from './nsapWorkbookMatching';
 
 /**
  * Converts Hex / RGB string to ARGB string for ExcelJS
@@ -71,6 +72,7 @@ export async function exportNSAPWorkbookToExcel(
     workbook.lastModifiedBy = 'Social Audit Nodal Officer';
     workbook.created = new Date();
     workbook.modified = new Date();
+    workbook.calcProperties.fullCalcOnLoad = true;
 
     const defaultFontName = fontMode === 'krutidev' ? 'Kruti Dev 010' : 'Mangal';
 
@@ -118,7 +120,7 @@ export async function exportNSAPWorkbookToExcel(
         const excelCell = ws.getCell(rIndex + 1, cIndex + 1);
 
         const isRegIdCol = cIndex === 9 || cIndex === 12 || cIndex === 15 || cIndex === 19;
-        const rawVal = cell.m !== undefined ? cell.m : cell.v;
+        const rawVal = cell.v !== undefined ? cell.v : cell.m;
 
         if (isRegIdCol && rIndex >= 4) {
           // Strictly force text formatting for Registration IDs
@@ -126,6 +128,20 @@ export async function exportNSAPWorkbookToExcel(
           excelCell.value = rawVal !== null && rawVal !== undefined ? String(rawVal).trim() : '';
         } else {
           excelCell.value = rawVal;
+        }
+        if (cell.f && !isRegIdCol) {
+          excelCell.value = { formula: String(cell.f).replace(/^=/, ''), result: rawVal };
+        }
+        if (cIndex === 7 && rIndex >= 5 && getCellValue(sheetData, rIndex, 2) !== '' && getCellValue(sheetData, rIndex, 5) !== '') {
+          const total = Number(getCellValue(sheetData, rIndex, 2));
+          const verified = Number(getCellValue(sheetData, rIndex, 5));
+          const result = Number.isInteger(total) && Number.isInteger(verified) && verified >= 0 && total >= verified ? total - verified : NSAP_REVIEW_REQUIRED;
+          const row = rIndex + 1;
+          excelCell.value = { formula: `IF(OR(C${row}<0,F${row}<0,F${row}>C${row}),"जाँच आवश्यक",C${row}-F${row})`, result };
+          // A total row must retain per-GP validation instead of hiding invalid rows.
+          if (sheetData.id === 'sheet-summary' && sheetData.config?.merge?.[`${rIndex}_0`]?.cs === 2) {
+            excelCell.value = { formula: `IF(COUNTIF(H6:H${row - 1},"जाँच आवश्यक")>0,"जाँच आवश्यक",SUM(H6:H${row - 1}))`, result: rawVal };
+          }
         }
 
         // Font
@@ -232,142 +248,45 @@ export async function importNSAPWorkbookFromExcel(
       };
     }
 
-    const resultMap = new Map<string, NSAPGramPanchayatData>();
-    currentNsapRecords.forEach((r) => {
-      resultMap.set(r.rosterRecordId || r.gpNameUnicode.trim(), { ...r });
+    const importedSheets: Array<{ id: string; row: number; celldata: Array<{ r: number; c: number; v: { v: string | number } }> }> = [];
+    const readValue = (value: ExcelJS.CellValue): string | number => {
+      if (value === null || value === undefined) return '';
+      if (value instanceof Date) return value.toISOString().slice(0, 10);
+      if (typeof value === 'object') {
+        if ('result' in value) return String(value.result ?? '');
+        if ('richText' in value) return value.richText.map(part => part.text).join('');
+        if ('text' in value) return String(value.text);
+        return '';
+      }
+      return typeof value === 'number' ? value : String(value);
+    };
+    workbook.eachSheet(ws => {
+      const record = matchNSAPWorkbookSheet(ws.name, records);
+      if (!record) return;
+      let dataRow = 0;
+      for (let row = 1; row <= Math.min(ws.rowCount, 12); row++) {
+        if ([1, 2, 3, 4, 5, 6].every((value, column) => Number(readValue(ws.getCell(row, column + 1).value)) === value)) {
+          dataRow = row + 1;
+          break;
+        }
+      }
+      if (!dataRow) throw new Error(ws.name + ': आधिकारिक स्तम्भ क्रम नहीं मिला।');
+      const celldata: Array<{ r: number; c: number; v: { v: string | number } }> = [];
+      for (let row = dataRow; row <= ws.rowCount; row++) {
+        for (let column = 1; column <= 24; column++) {
+          const value = readValue(ws.getCell(row, column).value);
+          if (value !== '') celldata.push({ r: 5 + row - dataRow, c: column - 1, v: { v: value } });
+        }
+      }
+      if (!celldata.some(cell => cell.c >= 2)) return;
+      importedSheets.push({ id: 'sheet-' + record.id, row: Math.max(60, 6 + ws.rowCount - dataRow), celldata });
     });
-
-    let updatedCount = 0;
-
-    // Process each worksheet
-    workbook.worksheets.forEach((ws) => {
-      const sheetName = ws.name.trim();
-      // Skip the summary sheet if named 'सभी ग्राम पंचायत' or 'Summary'
-      if (sheetName.includes('सभी') || sheetName.toLowerCase().includes('summary') || sheetName.includes('lkjka\'k')) {
-        return;
-      }
-
-      // Match sheet to a SocialAuditRecord
-      let matchedRecord = records.find(
-        (r) => ws.name.includes(r.gpNameUnicode.trim()) || 
-               r.gpNameUnicode.includes(ws.name.replace(/^[0-9.\s]+/, ''))
-      );
-
-      // Try matching by S.No prefix (e.g. "1. शाहपुर पदडां")
-      if (!matchedRecord) {
-        const snoMatch = sheetName.match(/^(\d+)/);
-        if (snoMatch) {
-          const sno = parseInt(snoMatch[1], 10);
-          matchedRecord = records.find((r) => r.sno === sno);
-        }
-      }
-
-      if (!matchedRecord) return;
-
-      // Extract row 6 (in 1-based indexing) for GP stats
-      const r6 = ws.getRow(6);
-      const totalBeneficiaries = parseInt(String(r6.getCell(3).value || 0), 10) || 0;
-      const verifiedDirect = parseInt(String(r6.getCell(4).value || 0), 10) || 0;
-      const verifiedFamily = parseInt(String(r6.getCell(5).value || 0), 10) || 0;
-      const verifiedTotal = parseInt(String(r6.getCell(6).value || 0), 10) || (verifiedDirect + verifiedFamily);
-      const unverifiedReason = String(r6.getCell(7).value || '').trim();
-      const irregText = String(r6.getCell(22).value || '').trim();
-      const responsiblePersons = String(r6.getCell(23).value || '').trim();
-      const otherNotes = String(r6.getCell(24).value || '').trim();
-
-      const beneficiaries: NSAPBeneficiaryRecord[] = [];
-
-      // Scan rows 6 to max row
-      for (let r = 6; r <= Math.min(ws.rowCount, 100); r++) {
-        const row = ws.getRow(r);
-
-        // 1. Unverified (Col 9: Name, 10: RegId)
-        const unvName = String(row.getCell(9).value || '').trim();
-        const unvId = String(row.getCell(10).value || '').trim();
-        if (unvName || unvId) {
-          beneficiaries.push({
-            id: `ben-${matchedRecord.id}-unver-${r}`,
-            category: 'unverified',
-            categoryHindi: 'सत्यापन नहीं किया जा सका',
-            nameUnicode: unvName,
-            registrationId: unvId.replace(/[^0-9A-Za-z]/g, '')
-          });
-        }
-
-        // 2. Benefit not received (Col 12: Name, 13: RegId)
-        const notRecvName = String(row.getCell(12).value || '').trim();
-        const notRecvId = String(row.getCell(13).value || '').trim();
-        if (notRecvName || notRecvId) {
-          beneficiaries.push({
-            id: `ben-${matchedRecord.id}-notrecv-${r}`,
-            category: 'other',
-            categoryHindi: 'लाभ प्राप्त नहीं हुआ',
-            nameUnicode: notRecvName,
-            registrationId: notRecvId.replace(/[^0-9A-Za-z]/g, '')
-          });
-        }
-
-        // 3. Ineligible (Col 15: Name, 16: RegId, 17: Reason)
-        const inelName = String(row.getCell(15).value || '').trim();
-        const inelId = String(row.getCell(16).value || '').trim();
-        const inelReason = String(row.getCell(17).value || '').trim();
-        if (inelName || inelId) {
-          beneficiaries.push({
-            id: `ben-${matchedRecord.id}-inel-${r}`,
-            category: 'ineligible',
-            categoryHindi: 'अपात्र लाभार्थी',
-            nameUnicode: inelName,
-            registrationId: inelId.replace(/[^0-9A-Za-z]/g, ''),
-            reason: inelReason || 'लाभार्थी एक से अधिक पेंशन प्राप्त कर रहे हैं'
-          });
-        }
-
-        // 4. Deceased (Col 19: Name, 20: RegId, 21: Death Date)
-        const decName = String(row.getCell(19).value || '').trim();
-        const decId = String(row.getCell(20).value || '').trim();
-        const decDate = String(row.getCell(21).value || '').trim();
-        if (decName || decId) {
-          beneficiaries.push({
-            id: `ben-${matchedRecord.id}-dec-${r}`,
-            category: 'deceased',
-            categoryHindi: 'सत्यापित में मृतक',
-            nameUnicode: decName,
-            registrationId: decId.replace(/[^0-9A-Za-z]/g, ''),
-            deathDate: decDate,
-            reason: 'मृत्यु'
-          });
-        }
-      }
-
-      if (totalBeneficiaries > 0 || beneficiaries.length > 0) {
-        resultMap.set(matchedRecord.id, {
-          id: `nsap-${matchedRecord.id}`,
-          rosterRecordId: matchedRecord.id,
-          sno: matchedRecord.sno,
-          gpNameKrutiDev: matchedRecord.gpNameKrutiDev,
-          gpNameUnicode: matchedRecord.gpNameUnicode,
-          block: matchedRecord.block,
-          meetingDate: matchedRecord.meetingDate,
-          totalBeneficiaries,
-          verifiedDirect,
-          verifiedFamily,
-          verifiedTotal,
-          unverifiedReason,
-          unverifiedCount: beneficiaries.filter(b => b.category === 'unverified').length,
-          financialIrregularityAmount: parseFloat(irregText.replace(/[^0-9.]/g, '')) || 0,
-          irregularityNotes: irregText,
-          responsiblePersons,
-          otherNotes,
-          beneficiaries,
-          recordedDate: new Date().toISOString()
-        });
-        updatedCount++;
-      }
-    });
-
+    const updatedCount = importedSheets.length;
+    if (!updatedCount) throw new Error('कोई पहचानी हुई NSAP ग्राम पंचायत शीट नहीं मिली।');
+    const extracted = extractNSAPDataFromWorkbook([{ id: 'sheet-summary' }, ...importedSheets], currentNsapRecords, records);
     return {
       success: true,
-      updatedRecords: Array.from(resultMap.values()),
+      updatedRecords: extracted,
       sheetsCount: updatedCount,
       message: `सफलतापूर्वक ${updatedCount} ग्राम पंचायतों का NSAP डेटा आयात किया गया।`
     };
@@ -400,6 +319,7 @@ export function printNSAPActiveSheet(
 
   // Construct table HTML from FortuneSheet data
   const data = sheetData.data || [];
+  const escapeHtml = (value: unknown) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   let tableHtml = '<table border="1" style="border-collapse: collapse; width: 100%; font-size: 9pt;">';
 
   data.forEach((row: any[], rIdx: number) => {
@@ -407,11 +327,11 @@ export function printNSAPActiveSheet(
     tableHtml += '<tr>';
     row.forEach((cell: any, cIdx: number) => {
       if (cIdx >= 24) return;
-      const val = cell?.m !== undefined ? cell.m : (cell?.v !== undefined ? cell.v : '');
+      const val = getCellValue(sheetData, rIdx, cIdx);
       const bg = cell?.bg ? `background-color: ${cell.bg};` : '';
       const bold = cell?.bl ? 'font-weight: bold;' : '';
       const align = cell?.ht === 0 ? 'text-align: center;' : cell?.ht === 2 ? 'text-align: right;' : 'text-align: left;';
-      tableHtml += `<td style="padding: 4px; border: 1px solid #666; ${bg} ${bold} ${align}">${val}</td>`;
+      tableHtml += `<td style="padding: 4px; border: 1px solid #666; ${bg} ${bold} ${align}">${escapeHtml(val)}</td>`;
     });
     tableHtml += '</tr>';
   });
@@ -421,7 +341,7 @@ export function printNSAPActiveSheet(
     <!DOCTYPE html>
     <html>
       <head>
-        <title>${title}</title>
+        <title>${escapeHtml(title)}</title>
         <style>
           @page { size: landscape; margin: 8mm; }
           body { font-family: ${fontMode === 'krutidev' ? "'Kruti Dev 010', sans-serif" : "'Noto Sans Devanagari', sans-serif"}; margin: 0; padding: 10px; }
@@ -431,7 +351,7 @@ export function printNSAPActiveSheet(
         </style>
       </head>
       <body>
-        <h2>${title}</h2>
+        <h2>${escapeHtml(title)}</h2>
         ${tableHtml}
         <script>
           window.onload = () => {

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSocialAuditStore } from '@/stores/socialAuditStore';
+import { isHistoricalDate, reportingDate } from '@/lib/socialAuditAsOf';
 import SocialAuditCompactHeader from './SocialAuditCompactHeader';
 import GlobalBRPFilterBar from './GlobalBRPFilterBar';
 import SocialAuditSidebar from './SocialAuditSidebar';
@@ -36,6 +37,11 @@ const NSAPWorkbook = dynamic(() => import('./workbook/NSAPWorkbook'), {
 export default function SocialAuditDashboard() {
   const { 
     activeTab, 
+    asOfDate,
+    liveDelhiDate,
+    setLiveSync,
+    records,
+    nsapRecords,
     selectedRecordForCompletion, 
     closeCompletionModal,
     selectedRecordForCancel,
@@ -47,6 +53,10 @@ export default function SocialAuditDashboard() {
   // Desktop sidebar collapse state & mobile drawer state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const undatedWorkCount = records.filter(record =>
+    (record.misStatus === 'fed' && !reportingDate(record.misFedDate)) ||
+    (record.panchayatNirnayStatus === 'captured' && !reportingDate(record.panchayatNirnayCapturedDate))
+  ).length + nsapRecords.filter(record => !reportingDate(record.meetingDate) && !reportingDate(record.recordedDate)).length;
 
   return (
     <div className="social-audit-shell flex flex-col h-screen w-screen bg-slate-100/80 text-slate-800 overflow-hidden font-sans">
@@ -60,6 +70,28 @@ export default function SocialAuditDashboard() {
 
       {/* Global BRP Filter Toolbar - Persistent across all tabs */}
       <GlobalBRPFilterBar />
+
+      {isHistoricalDate(asOfDate, liveDelhiDate) && (
+        <div role="status" className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-2">
+          <span>
+            <strong>पुरानी तारीख की रिपोर्ट: {asOfDate.split('-').reverse().join('/')}</strong>
+            {' '}तक का काम दर्ज कार्य-तिथियों के अनुसार दिखाया जा रहा है। डेटा बदलने से पहले चेतावनी आएगी।
+            {undatedWorkCount > 0 && (
+              <span className="block font-medium">कुछ कार्यों की तारीख उपलब्ध नहीं है; वे पुरानी प्रगति में शामिल नहीं हैं।</span>
+            )}
+          </span>
+          <button type="button" onClick={() => setLiveSync(true)} className="font-bold underline underline-offset-2">
+            आज की तारीख पर वापस जाएँ
+          </button>
+        </div>
+      )}
+
+      {asOfDate > liveDelhiDate && (
+        <div role="status" className="shrink-0 border-b border-blue-200 bg-blue-50 px-4 py-2 text-xs text-blue-950">
+          <strong>भविष्य की तारीख: {asOfDate.split('-').reverse().join('/')}</strong>
+          {' '}प्रस्तावित बैठकें रोस्टर के अनुसार हैं। आगे की बैठकें आपके द्वारा “सम्पन्न” करने पर ही प्रगति में जुड़ेंगी।
+        </div>
+      )}
 
       {/* 2. Main Shell: Collapsible Left Sidebar + Main Content Area */}
       <div className="flex flex-1 overflow-hidden relative w-full min-w-0">
@@ -119,7 +151,7 @@ export default function SocialAuditDashboard() {
                 <TeamRosterTab />
               )}
 
-              {/* 9. केन्द्रीय रिपोर्ट सेंटर (Report Center - 9 Reports) */}
+              {/* केन्द्रीय रिपोर्ट सेंटर */}
               {activeTab === 'reports' && (
                 <ReportCenterTab />
               )}

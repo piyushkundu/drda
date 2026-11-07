@@ -3,11 +3,13 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import SocialAuditPortal from './SocialAuditPortal';
 import { useSocialAuditStore, SocialAuditTab } from '@/stores/socialAuditStore';
+import { useSocialAuditAsOf } from '@/hooks/useSocialAuditAsOf';
+import { getNSAPVerification, sumNSAPUnverified, NSAP_REVIEW_REQUIRED } from '@/lib/nsapVerification';
 import { renderAuditText } from '@/lib/renderAuditText';
 import { SocialAuditRecord, AuditBlock } from '@/types/socialAudit';
 import { calculateNSAPReportSummary } from '@/lib/nsapReportHelper';
 import { matchesBRP, getBRPDisplayName } from '@/lib/brpHelper';
-import { getEffectiveMeetingDate, isEffectiveDateOnOrBefore } from '@/lib/dateResolution';
+import { getEffectiveMeetingDate, getProgressCutoffDate, isEffectiveDateOnOrBefore, isMeetingCompletedEffective } from '@/lib/dateResolution';
 import { 
   filterRecordsByGlobalFilters, 
   formatRangeLabel 
@@ -23,8 +25,6 @@ import {
 
 export default function ExecutiveDashboardTab() {
   const { 
-    records, 
-    nsapRecords, 
     selectedBRP,
     setSelectedBRP,
     resetSelectedBRP,
@@ -39,11 +39,11 @@ export default function ExecutiveDashboardTab() {
     openEditModal, 
     setActiveTab,
     syncWithDelhiTime,
-    forceSyncToFirebase,
     firebaseSyncStatus,
     firebaseLastSyncedAt,
     openGPProfile
   } = useSocialAuditStore();
+  const { records, nsapRecords } = useSocialAuditAsOf();
 
   // Modal drill-down state for KPI cards
   // null | 'all' | 'completed' | 'upcoming' | 'pending' | 'nirnay' | 'mis' | 'nsap'
@@ -124,19 +124,18 @@ export default function ExecutiveDashboardTab() {
 
   // Filter NSAP records for selected BRP assigned GPs
   const filteredNsapList = useMemo(() => {
-    if (!selectedBRP || selectedBRP === 'all') return nsapRecords || [];
     return (nsapRecords || []).filter((g) => 
       (g.rosterRecordId && assignedGpRecordIds.has(g.rosterRecordId)) ||
       assignedGpRecordIds.has(g.id) ||
       (g.gpNameUnicode && assignedGpNames.has(g.gpNameUnicode.trim()))
     );
-  }, [nsapRecords, selectedBRP, assignedGpRecordIds, assignedGpNames]);
+  }, [nsapRecords, assignedGpRecordIds, assignedGpNames]);
 
   // Compute metrics dynamically from effective records & asOfDate
   // CRITICAL: All date-based calculations use getEffectiveMeetingDate(r) — the canonical
   // effective meeting date — NOT r.meetingDate directly, to correctly handle amended records.
-  // "X तिथि तक सम्पन्न" strictly means effectiveDate <= asOfDate.
-  // r.status === 'completed' must NEVER bypass the date boundary.
+  // Planned counts use the selected date; completed work is capped at real IST today.
+  // Meetings after the historical baseline require manual completion.
   const metrics = useMemo(() => {
     const totalGPs = effectiveRecords.length;
 
@@ -144,16 +143,16 @@ export default function ExecutiveDashboardTab() {
     const baghpatRecords = effectiveRecords.filter((r) => r.block === 'Baghpat');
     const barautRecords = effectiveRecords.filter((r) => r.block === 'Baraut');
 
-    // Completed & Upcoming — strictly date-based, status NEVER overrides date boundary
+    // Completion uses the same manual-confirmation rule as reports and calendar.
     // Cancelled meetings must NOT be counted as completed, upcoming or duePending
-    const completedRecords = effectiveRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
-    const upcomingRecords = effectiveRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
-    const duePendingRecords = effectiveRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'completed' && r.status !== 'cancelled');
+    const completedRecords = effectiveRecords.filter((r) => isMeetingCompletedEffective(r, asOfDate, liveDelhiDate));
+    const upcomingRecords = effectiveRecords.filter((r) => !isMeetingCompletedEffective(r, asOfDate, liveDelhiDate) && r.status !== 'cancelled');
+    const duePendingRecords = effectiveRecords.filter((r) => isEffectiveDateOnOrBefore(r, getProgressCutoffDate(asOfDate, liveDelhiDate)) && !isMeetingCompletedEffective(r, asOfDate, liveDelhiDate) && r.status !== 'cancelled');
 
-    const baghpatCompleted = baghpatRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
-    const baghpatUpcoming = baghpatRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
-    const barautCompleted = barautRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
-    const barautUpcoming = barautRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate) && r.status !== 'cancelled');
+    const baghpatCompleted = completedRecords.filter((r) => r.block === 'Baghpat');
+    const baghpatUpcoming = upcomingRecords.filter((r) => r.block === 'Baghpat');
+    const barautCompleted = completedRecords.filter((r) => r.block === 'Baraut');
+    const barautUpcoming = upcomingRecords.filter((r) => r.block === 'Baraut');
 
     // Cancelled / Reschedule Pending
     const cancelledRecords = effectiveRecords.filter((r) => r.status === 'cancelled' || r.rescheduleStatus === 'pending');
@@ -187,7 +186,8 @@ export default function ExecutiveDashboardTab() {
     const totalBeneficiaries = nsapList.reduce((acc, item) => acc + (item.totalBeneficiaries || 0), 0);
     const totalDirect = nsapList.reduce((acc, item) => acc + (item.verifiedDirect || 0), 0);
     const totalFamily = nsapList.reduce((acc, item) => acc + (item.verifiedFamily || 0), 0);
-    const totalVerified = nsapList.reduce((acc, item) => acc + (item.verifiedTotal || 0), 0);
+    const totalVerified = nsapList.reduce((acc, item) => acc + getNSAPVerification(item).verified, 0);
+    const totalUnverified = sumNSAPUnverified(nsapList);
     const totalFinancialIrreg = nsapList.reduce((acc, item) => acc + (item.financialIrregularityAmount || 0), 0);
 
     let totalDeceased = 0;
@@ -203,8 +203,8 @@ export default function ExecutiveDashboardTab() {
     // An amendment is only counted "by asOfDate" if the EFFECTIVE (new) meeting date is on or before asOfDate.
     // r.isAmended flag alone is NOT sufficient — it must be date-bounded.
     const amendedRecords = effectiveRecords.filter((r) => r.isAmended);
-    const amendedCompleted = amendedRecords.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
-    const amendedRemaining = amendedRecords.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
+    const amendedCompleted = amendedRecords.filter((r) => isMeetingCompletedEffective(r, asOfDate, liveDelhiDate));
+    const amendedRemaining = amendedRecords.filter((r) => !isMeetingCompletedEffective(r, asOfDate, liveDelhiDate) && r.status !== 'cancelled');
 
     // Original proposed meetings — using original date if amended, else effective date
     const originalProposedUpToDateRecords = effectiveRecords.filter((r) => {
@@ -272,6 +272,7 @@ export default function ExecutiveDashboardTab() {
       totalDirect,
       totalFamily,
       totalVerified,
+      totalUnverified,
       totalDeceased,
       totalIneligible,
       totalFinancialIrreg,
@@ -299,7 +300,7 @@ export default function ExecutiveDashboardTab() {
       recentlyCompleted,
       upcomingNext,
     };
-  }, [effectiveRecords, filteredNsapList, asOfDate]);
+  }, [effectiveRecords, filteredNsapList, asOfDate, liveDelhiDate]);
 
   // Dynamic NSAP Social Audit Progress Report (GPs calculation strictly matching NSAPReportTab)
   const nsapReport = useMemo(() => {
@@ -311,7 +312,6 @@ export default function ExecutiveDashboardTab() {
     setIsRefreshing(true);
     try {
       await syncWithDelhiTime();
-      await forceSyncToFirebase();
     } finally {
       setIsRefreshing(false);
     }
@@ -358,13 +358,13 @@ export default function ExecutiveDashboardTab() {
       } else if (modalSortBy === 'date') {
         comparison = (getEffectiveMeetingDate(a) || '').localeCompare(getEffectiveMeetingDate(b) || '');
       } else if (modalSortBy === 'status') {
-        const compA = isEffectiveDateOnOrBefore(a, asOfDate) ? 1 : 0;
-        const compB = isEffectiveDateOnOrBefore(b, asOfDate) ? 1 : 0;
+        const compA = isMeetingCompletedEffective(a, asOfDate, liveDelhiDate) ? 1 : 0;
+        const compB = isMeetingCompletedEffective(b, asOfDate, liveDelhiDate) ? 1 : 0;
         comparison = compB - compA;
       }
       return modalSortOrder === 'asc' ? comparison : -comparison;
     });
-  }, [filteredModalRecords, modalSortBy, modalSortOrder, asOfDate]);
+  }, [filteredModalRecords, modalSortBy, modalSortOrder, asOfDate, liveDelhiDate]);
 
   // Paginated records inside modal
   const totalModalPages = Math.ceil(sortedModalRecords.length / modalPageSize) || 1;
@@ -401,12 +401,12 @@ export default function ExecutiveDashboardTab() {
 
     return list.map((b) => {
       const assigned = records.filter((r) => r.brpPhone === b.phone || r.brpName?.includes(b.name.split(' ')[0]));
-      const completed = assigned.filter((r) => isEffectiveDateOnOrBefore(r, asOfDate));
-      const upcoming = assigned.filter((r) => !isEffectiveDateOnOrBefore(r, asOfDate));
+      const completed = assigned.filter((r) => isMeetingCompletedEffective(r, asOfDate, liveDelhiDate));
+      const upcoming = assigned.filter((r) => !isMeetingCompletedEffective(r, asOfDate, liveDelhiDate) && r.status !== 'cancelled');
       const percent = assigned.length > 0 ? Math.round((completed.length / assigned.length) * 100) : 0;
       return { ...b, assignedCount: assigned.length, completedCount: completed.length, upcomingCount: upcoming.length, percent };
     });
-  }, [records, asOfDate]);
+  }, [records, asOfDate, liveDelhiDate]);
 
   return (
     <div className="bg-slate-50 text-slate-800 rounded-2xl sm:rounded-3xl p-3 sm:p-6 md:p-8 space-y-4 sm:space-y-6 border border-slate-200/90 shadow-sm font-sans">
@@ -695,7 +695,7 @@ export default function ExecutiveDashboardTab() {
               </span>
             </div>
             <div className="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-slate-100">
-              <span>सत्यापित: <strong className="text-emerald-700">{metrics.totalDirect + metrics.totalFamily}</strong> (मृतक: {metrics.totalDeceased})</span>
+              <span>सत्यापित: <strong className="text-emerald-700">{metrics.totalVerified}</strong> | असत्यापित: <strong className="text-amber-800">{metrics.totalUnverified ?? NSAP_REVIEW_REQUIRED}</strong> (मृतक: {metrics.totalDeceased})</span>
               <span className="text-[11px] text-purple-700 font-bold group-hover:underline">डेटा देखें →</span>
             </div>
           </div>
@@ -1687,7 +1687,7 @@ export default function ExecutiveDashboardTab() {
                 /* NSAP Special List */
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    {(nsapRecords || []).map((gp) => {
+                    {filteredNsapList.map((gp) => {
                       const dec = (gp.beneficiaries || []).filter(b => b.category === 'deceased').length;
                       const inel = (gp.beneficiaries || []).filter(b => b.category === 'ineligible').length;
                       const matchedRecord = records.find(rec => rec.id === gp.id || rec.gpNameUnicode === gp.gpNameUnicode);
@@ -1788,7 +1788,7 @@ export default function ExecutiveDashboardTab() {
                       </tr>
                     ) : (
                       paginatedModalRecords.map((r, i) => {
-                        const isCompleted = isEffectiveDateOnOrBefore(r, asOfDate);
+                        const isCompleted = isMeetingCompletedEffective(r, asOfDate, liveDelhiDate);
                         const displayIndex = (modalPage - 1) * modalPageSize + i + 1;
                         const origDate = r.originalMeetingDate || r.amendmentDetails?.originalDate;
                         return (
